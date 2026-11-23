@@ -17,7 +17,7 @@
 | M2 Archive Read & Extract | 15 tickets | **Complete** (14 done; TKT-M2-12 deferred to M4 by design) |
 | M3 Compression | 8 tickets | **Complete** (8/8) |
 | M4 File-Management Enhancements | 9 tickets (incl. deferred TKT-M2-12) | **Complete** (9/9; drag/favourites/dual-pane UI need a manual desktop check) |
-| M5 macOS Integration | 8 tickets | Not started |
+| M5 macOS Integration | 8 tickets | In progress (2 implemented; M5-04 policy-only) |
 | M6 Performance/Security/Release | 8 tickets | Not started (M6-04/05 external-blocked) |
 
 ## Next eligible work
