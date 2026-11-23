@@ -70,18 +70,15 @@ jobs:
           W="$GITHUB_WORKSPACE/tmp/diag"; rm -rf "$W"; mkdir -p "$W/src"
           echo hi > "$W/src/a.txt"; cd "$W"
           ZZ="$GITHUB_WORKSPACE/Vendor/7zz/26.06/arm64/7zz"
-          echo "@@@ONE_CREATE@@@"
-          printf 'pw123\n' | "$ZZ" a -t7z -p one.7z src; echo "exit=$?"
-          echo "@@@TWO_CREATE@@@"
-          printf 'pw123\npw123\n' | "$ZZ" a -t7z -p two.7z src; echo "exit=$?"
-          echo "@@@LIST_ONE@@@"
-          printf 'pw123\n' | "$ZZ" l -slt -p one.7z 2>&1 | tail -5; echo "exit=$?"
-          echo "@@@EXTRACT_ONE@@@"
-          printf 'pw123\n' | "$ZZ" x -p one.7z -oout1 -y 2>&1 | tail -8; echo "exit=$?"
-          echo "@@@EXTRACT_TWO@@@"
-          printf 'pw123\n' | "$ZZ" x -p two.7z -oout2 -y 2>&1 | tail -8; echo "exit=$?"
-          echo "@@@LIST_NO_PW@@@"
-          "$ZZ" l two.7z 2>&1 | tail -5; echo "exit=$?"
+          printf 'pw123\n'      | "$ZZ" a -t7z -p one.7z src >/dev/null 2>&1; echo "CREATE_one=$?"
+          printf 'pw123\npw123\n' | "$ZZ" a -t7z -p two.7z src >/dev/null 2>&1; echo "CREATE_two=$?"
+          for m in one two; do
+            printf 'pw123\n' | "$ZZ" t -p "$m.7z" >/dev/null 2>&1; echo "TEST_${m}_good=$?"
+            printf 'bad\n'   | "$ZZ" t -p "$m.7z" >/dev/null 2>&1; echo "TEST_${m}_bad=$?"
+            printf 'pw123\n' | "$ZZ" x -p "$m.7z" -o"out_$m" -y >/dev/null 2>&1; echo "EXTRACT_${m}=$?"
+            ls "out_$m/src" 2>/dev/null | tr '\n' ',' ; echo " <- files_$m"
+          done
+          echo "DIAGDONE"
 
       - name: Compile check (Debug)
         run: |
