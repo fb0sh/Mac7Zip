@@ -14,7 +14,7 @@
 | Milestone | Scope | State |
 |---|---|---|
 | M1 File Browser Core | 12 tickets | **Complete** (12/12 implemented & verified) |
-| M2 Archive Read & Extract | 15 tickets | **Complete** (14 done; TKT-M2-12 deferred to M4 by design) |
+| M2 Archive Read & Extract | 15 tickets | **Complete** (15/15; M2-12 done in M4, M2-13 via M5-02) |
 | M3 Compression | 8 tickets | **Complete** (8/8) |
 | M4 File-Management Enhancements | 9 tickets (incl. deferred TKT-M2-12) | **Complete** (9/9; drag/favourites/dual-pane UI need a manual desktop check) |
 | M5 macOS Integration | 8 tickets | **Complete** (8/8; several need manual desktop checks) |
@@ -50,7 +50,7 @@
 | TKT-M2-09 — Cancellation & cleanup | M2 | Implemented/verified (integration) | #20 | TKT-M2-08. | integration/m1-m6 / PR #62 | [run 45135709912](https://github.com/fb0sh/Mac7Zip/actions/runs/45135709912) — 69 tests OK | — |
 | TKT-M2-10 — Test integrity + password prompt flow | M2 | Implemented/verified (integration) | #21 | TKT-M2-02, TKT-M2-03. | integration/m1-m6 / PR #62 | [run 45145185598](https://github.com/fb0sh/Mac7Zip/actions/runs/45145185598) — 92 tests OK | — |
 | TKT-M2-11 — Integration & security tests + fixtures | M2 | Implemented/verified (integration) | #22 | TKT-M2-06, TKT-M2-07, TKT-M2-09. | integration/m1-m6 / PR #62 | [run 45147612184+](https://github.com/fb0sh/Mac7Zip/actions/runs/45147612184) green — 104 tests | — |
-| TKT-M2-13 — Archive activation preference (Open vs Extract) | M2 | Planned | #24 | TKT-M2-07 (extraction), TKT-M1-08 (activation handling). | — | — | — |
+| TKT-M2-13 — Archive activation preference (Open vs Extract) | M2 | Implemented/verified (superseded by TKT-M5-02 `AppSettings.activation`) | #24 | TKT-M2-07 (extraction), TKT-M1-08 (activation handling). | integration/m1-m6 / PR #62 | [run 45160622088](https://github.com/fb0sh/Mac7Zip/actions/runs/45160622088) — AppSettingsTests | — |
 | TKT-M2-14 — Archive-specific columns in archive browser | M2 | Implemented/verified (integration) | #58 | TKT-M2-03, TKT-M2-05. | integration/m1-m6 / PR #62 | [run 45145185598](https://github.com/fb0sh/Mac7Zip/actions/runs/45145185598) — 92 tests OK | — |
 | TKT-M2-15 — Extract options sheet | M2 | Implemented/verified (integration) | #59 | TKT-M2-05, TKT-M2-06, TKT-M2-07. | integration/m1-m6 / PR #62 | [run 45146202056](https://github.com/fb0sh/Mac7Zip/actions/runs/45146202056) — 92 tests OK | — |
 | TKT-M2-16 — Rich task progress metrics | M2 | Implemented/verified (integration) | #60 | TKT-M2-08. | integration/m1-m6 / PR #62 | [run 45146202056](https://github.com/fb0sh/Mac7Zip/actions/runs/45146202056) — 92 tests OK | — |
