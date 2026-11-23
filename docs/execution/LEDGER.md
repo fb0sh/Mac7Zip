@@ -17,11 +17,11 @@
 | M2 Archive Read & Extract | 15 tickets | **Complete** (14 done; TKT-M2-12 deferred to M4 by design) |
 | M3 Compression | 8 tickets | **Complete** (8/8) |
 | M4 File-Management Enhancements | 9 tickets (incl. deferred TKT-M2-12) | **Complete** (9/9; drag/favourites/dual-pane UI need a manual desktop check) |
-| M5 macOS Integration | 8 tickets | In progress (5 implemented; some need manual desktop checks) |
+| M5 macOS Integration | 8 tickets | **Complete** (8/8; several need manual desktop checks) |
 | M6 Performance/Security/Release | 8 tickets | Not started (M6-04/05 external-blocked) |
 
 ## Next eligible work
-- **`TKT-M5-03` (#42)** Quick Look; **`TKT-M5-06` (#45)** Finder Services; **`TKT-M5-08` (#47)** integration test + acceptance checklist.
+- **M6 release hardening** begins: **`TKT-M6-01` (#48)** performance budgets, **`TKT-M6-02` (#49)** crash/a11y hardening; #51/#52 (signing/notarization) blocked on Developer ID credentials.
 - Manual-on-Mac items (VoiceOver/XCUITest/drag) tracked in `docs/execution/MANUAL-CHECKS.md`.
 
 ## Tickets
@@ -73,12 +73,12 @@
 | TKT-M2-12 — Drag-out-to-Finder extraction (deferred enhancement) | M4 | Implemented (runtime drag verification pending manual check) | #23 | TKT-M2-04, TKT-M2-06, TKT-M2-07. | integration/m1-m6 / PR #62 | [run 45158335242](https://github.com/fb0sh/Mac7Zip/actions/runs/45158335242) — 155 tests; drag UX = MANUAL-CHECKS | — |
 | TKT-M5-01 — Archive file associations + Open With + document open | M5 | Implemented (plist + open handler; Finder open = manual check) | #40 | TKT-M2-05. | integration/m1-m6 / PR #62 | [run 45162385938](https://github.com/fb0sh/Mac7Zip/actions/runs/45162385938) — 189 tests | — |
 | TKT-M5-02 — Settings window (activation, limits, defaults) | M5 | Implemented (logic tested; Settings UI = manual check) | #41 | TKT-M2-13. | integration/m1-m6 / PR #62 | [run 45160622088](https://github.com/fb0sh/Mac7Zip/actions/runs/45160622088) — 180 tests | — |
-| TKT-M5-03 — Quick Look preview for archive entries | M5 | Planned | #42 | TKT-M2-07. | — | — | — |
+| TKT-M5-03 — Quick Look preview for archive entries | M5 | Implemented (temp cleanup tested; QL panel = manual check) | #42 | TKT-M2-07. | integration/m1-m6 / PR #62 | [run 45163815744](https://github.com/fb0sh/Mac7Zip/actions/runs/45163815744) — 198 tests | — |
 | TKT-M5-04 — Completion notifications | M5 | Implemented (logic tested; OS delivery = manual check) | #43 | TKT-M2-08. | integration/m1-m6 / PR #62 | [run 45162385938](https://github.com/fb0sh/Mac7Zip/actions/runs/45162385938) — 189 tests | — |
 | TKT-M5-05 — About + Licenses screen | M5 | Implemented/verified (notice presence test) | #44 | TKT-M2-01. | integration/m1-m6 / PR #62 | [run 45162385938](https://github.com/fb0sh/Mac7Zip/actions/runs/45162385938) — 189 tests | — |
-| TKT-M5-06 — Finder Services / context actions | M5 | Planned | #45 | TKT-M2-07, TKT-M3-01. | — | — | — |
+| TKT-M5-06 — Finder Services / context actions | M5 | Implemented (planner tested; Finder invocation = manual check) | #45 | TKT-M2-07, TKT-M3-01. | integration/m1-m6 / PR #62 | [run 45163815744](https://github.com/fb0sh/Mac7Zip/actions/runs/45163815744) — 198 tests | — |
 | TKT-M5-07 — Window restoration + deep links | M5 | Implemented (logic tested; runtime restore = manual check) | #46 | TKT-M5-01. | integration/m1-m6 / PR #62 | [run 45160622088](https://github.com/fb0sh/Mac7Zip/actions/runs/45160622088) — 180 tests | — |
-| TKT-M5-08 — Integration tests + manual acceptance checklist | M5 | Planned | #47 | TKT-M5-01…07. | — | — | — |
+| TKT-M5-08 — Integration tests + manual acceptance checklist | M5 | Implemented/verified (acceptance checklist + docs test) | #47 | TKT-M5-01…07. | integration/m1-m6 / PR #62 | [run 45163815744](https://github.com/fb0sh/Mac7Zip/actions/runs/45163815744) — 198 tests | — |
 | TKT-M6-01 — Large-directory & large-archive performance/memory tuning | M6 | Planned | #48 | TKT-M1-02, TKT-M2-03. | — | — | — |
 | TKT-M6-02 — Malicious-archive security test suite (CI) | M6 | Planned | #49 | TKT-M2-06, TKT-M2-07, TKT-M2-11. | — | — | — |
 | TKT-M6-03 — Universal Binary (arm64 + x86_64) | M6 | Planned | #50 | TKT-M2-01. | — | — | — |
@@ -96,6 +96,7 @@
 - 2026-11-23: **TKT-M1-05** (New Folder/Rename/Move-to-Trash UI via NSAlert + FileOperationsService; menu ⌘⇧N/⌘R/⌘⌫; toolbar trash enabled) and **TKT-M1-02** (IconCache + 10k sort benchmark) implemented & verified (commit cbd98c1); CI run 45132417806 green (38 tests).
 - 2026-11-23: **TKT-M1-08** (context menu: Open/Rename/Trash/New Folder/Reveal, validated by selection & capabilities) and **TKT-M1-10** (CI: swift-format/SwiftLint non-blocking + `lipo` arm64 gate + `otool -L` audit; configs `.swiftlint.yml`/`.swift-format`) verified (commit aa679c9); CI run 45132861591 green — 38 tests, archs: arm64.
 - 2026-11-23: **TKT-M1-09** (host-free test target: core sources compiled into the test bundle, `TEST_HOST` removed) and **TKT-M1-12** (accessibility labels for table + rows) verified (commit 6243d08); CI run 45133371206 green — 38 tests, no app host. **M1 COMPLETE.**
+- 2026-11-23: **TKT-M5-03 / M5-06 / M5-08** — Quick Look second-entry preview via secure temp workspace with guaranteed cleanup (`QuickLookTempWorkspace` tested; ⌘Y / menu routed); Finder Services (`NSServices` in Info.plist + `ServiceActionPlanner` mapping Open/Extract Here/Extract to Folder/Test/Add to Archive, handled by `AppDelegate`); `docs/execution/ACCEPTANCE.md` mapping all AC-MI-1…6 to automated/manual evidence with a coverage test. Verified (commit 2593c53); CI green — **198 tests**. **M5 COMPLETE.**
 - 2026-11-23: **TKT-M5-01 / M5-04 / M5-05** — Info.plist document types (7z/zip/tar/gz/tgz) + imported UTIs + `mac7zip://` URL scheme via XcodeGen `info` block, Finder open routed through `AppDelegate`→`FileOpenInbox`; real `UNUserNotificationCenter` posting (`SystemNotificationService` + `NotificationCoordinator`, opt-in + auth-aware, wired to TaskCenter completions); About/Licenses tab with bundled `NOTICE.md` (LGPL + unRAR). Verified (commit 61d3186); CI green — **189 tests**. Finder open / OS notifications / About UI are manual checks.
 - 2026-11-23: **TKT-M5-02 / M5-07** — `AppSettings`+`SettingsStore` (double-click **Open vs Extract**, subfolder default, default format, safety limits with validation, notifications + restore toggles) and window restoration (`RestorationStore`); Settings window scene wired; double-click now honours the Extract choice (extract to sibling `<name>/` via TaskCenter); last real folder restored on launch. Also added `NotificationPolicy` (pure authorization decision) and `ArchiveDocumentTypes` constants. Verified (commit 260b28c); CI green — **180 tests**. (M5-04 remains policy-only; real notifications + M5-01 plist pending.)
 - 2026-11-23: **TKT-M4-04 / M4-05** — `FavouritesStore` (persisted UserDefaults JSON, add/remove/reset/duplicate-guard; sidebar section with context-menu removal and "Add Current Folder") and `DualPaneController` + HSplitView dual-pane with per-pane `FilePane` (independent `BrowserStore`), active-pane highlight and pane switching. Logic unit-tested; UI requires a desktop manual check. Verified (commit fc2dca2); CI green — **165 tests**. **M4 COMPLETE.**

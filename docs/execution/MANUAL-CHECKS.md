@@ -48,3 +48,9 @@ Never mark an item verified without performing it. CI green is a *different* cla
 - [ ] "Open With → Mac7Zip" works; `mac7zip://` URL opens the app.
 - [ ] With notifications enabled, finishing a task posts a banner; with permission denied, none appears and nothing breaks.
 - [ ] Settings ▸ About shows version and readable 7-Zip LGPL/unRAR notice.
+
+## Quick Look & Finder Services (M5-03, M5-06)
+- [ ] Select an entry inside an archive, press ⌘Y → Quick Look preview shows the file; closing it removes the temp copy (verify no `Mac7Zip-QuickLook-*` folder remains).
+- [ ] Preview an unsupported type → handled gracefully (no crash).
+- [ ] In Finder, right-click an archive → Services shows Open Archive / Extract Here / Extract to Folder / Test Archive; each works.
+- [ ] Right-click plain files → Services ▸ Add to Archive… opens the compression flow.
