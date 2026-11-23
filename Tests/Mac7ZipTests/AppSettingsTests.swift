@@ -1,6 +1,7 @@
 import XCTest
 @testable import Mac7Zip
 
+@MainActor
 final class AppSettingsTests: XCTestCase {
     private var defaults: UserDefaults!
     private var suiteName: String!
