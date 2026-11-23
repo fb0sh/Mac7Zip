@@ -10,49 +10,41 @@ struct ContentView: View {
     @StateObject private var favourites = FavouritesStore()
     @StateObject private var panes = DualPaneController()
     @StateObject private var secondaryModel = BrowserStore()
-    @State private var columnVisibility: NavigationSplitViewVisibility = .all
+    @State private var showSidebar = true
 
     var body: some View {
-        NavigationSplitView(columnVisibility: $columnVisibility) {
-            SidebarView(favourites: favourites) { url in
-                activeModel.navigate(to: url)
-            }
-            .safeAreaInset(edge: .bottom) {
-                Button {
-                    favourites.add(url: activeModel.currentDirectory)
-                } label: {
-                    Label("Add Current Folder", systemImage: "star")
-                        .font(.caption)
+        HSplitView {
+            detailContent
+                .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
+
+            if showSidebar {
+                SidebarView(favourites: favourites) { url in
+                    activeModel.navigate(to: url)
                 }
-                .buttonStyle(.borderless)
-                .padding(8)
-                .disabled(favourites.isFavourite(activeModel.currentDirectory))
-            }
-        } detail: {
-            if panes.isDualPane {
-                HSplitView {
-                    FilePane(model: model)
-                        .overlay(paneBorder(index: 0))
-                        .onTapGesture { panes.setActive(0) }
-                    FilePane(model: secondaryModel)
-                        .overlay(paneBorder(index: 1))
-                        .onTapGesture { panes.setActive(1) }
+                .safeAreaInset(edge: .bottom) {
+                    Button {
+                        favourites.add(url: activeModel.currentDirectory)
+                    } label: {
+                        Label("Add Current Folder", systemImage: "star")
+                            .font(.caption)
+                    }
+                    .buttonStyle(.borderless)
+                    .padding(8)
+                    .disabled(favourites.isFavourite(activeModel.currentDirectory))
                 }
-            } else {
-                FilePane(model: model)
+                .frame(minWidth: 180, idealWidth: 220, maxWidth: 320)
             }
         }
         .toolbar {
             MainToolbar(
                 model: model,
                 tasks: tasks,
-                columnVisibility: $columnVisibility,
+                showSidebar: $showSidebar,
                 isDualPane: panes.isDualPane,
                 onToggleDualPane: {
                     panes.toggle()
                     if panes.isDualPane { secondaryModel.navigate(to: model.currentDirectory) }
-                },
-                onAddFavourite: { favourites.add(url: model.currentDirectory) }
+                }
             )
         }
         .navigationTitle(model.currentDirectory.lastPathComponent.isEmpty ? "Mac7Zip" : model.currentDirectory.lastPathComponent)
@@ -201,6 +193,22 @@ struct ContentView: View {
             quickLook.present()
         } catch {
             model.operationError = error.localizedDescription
+        }
+    }
+
+    @ViewBuilder
+    private var detailContent: some View {
+        if panes.isDualPane {
+            HSplitView {
+                FilePane(model: model)
+                    .overlay(paneBorder(index: 0))
+                    .onTapGesture { panes.setActive(0) }
+                FilePane(model: secondaryModel)
+                    .overlay(paneBorder(index: 1))
+                    .onTapGesture { panes.setActive(1) }
+            }
+        } else {
+            FilePane(model: model)
         }
     }
 
