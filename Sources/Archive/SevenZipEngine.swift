@@ -105,18 +105,44 @@ struct SevenZipEngine: ArchiveEngine {
             throw ArchiveError.engineFailure(code: 7, diagnostic: "No sources selected")
         }
 
-        var arguments = ["a", "-t\(options.format.switchValue)", "-mx\(max(0, min(9, options.compressionLevel)))", "-sccUTF-8"]
-        if options.format == .sevenZip && options.encryptFileNames {
-            arguments.append("-mhe")
+        // Write to a temporary file first so a failed/cancelled run never leaves a
+        // half-written archive at the final path, and an existing file survives
+        // until success (SPEC-CW FR-CW-09).
+        let parent = destination.deletingLastPathComponent()
+        let tempDestination = parent.appendingPathComponent(".mac7zip-\(UUID().uuidString).partial")
+
+        // Resolve the password through the transport policy first: this throws
+        // (fail closed) before anything is written.
+        let passwordArguments = try passwordArguments(options.password)
+
+        let request = CompressionRequest(
+            sources: sources,
+            destination: tempDestination,
+            format: options.format,
+            level: options.compressionLevel,
+            method: nil,
+            password: nil,
+            encryptFileNames: options.encryptFileNames
+        )
+        var arguments = CompressionPlanner.arguments(for: request)
+        // Insert password switches immediately before the destination path.
+        if !passwordArguments.isEmpty {
+            arguments.insert(contentsOf: passwordArguments, at: arguments.count - sources.count - 1)
         }
-        arguments.append(contentsOf: try passwordArguments(options.password))
-        arguments.append(destination.path)
-        arguments.append(contentsOf: sources.map(\.path))
 
         let result = try await runner.run(arguments: arguments)
+
+        defer { try? FileManager.default.removeItem(at: tempDestination) }
         if let error = ArchiveError.from(exitCode: result.exitCode, diagnostic: result.combinedDiagnostic) {
             throw error
         }
+
+        // Atomically promote the finished archive into place.
+        let fileManager = FileManager.default
+        if fileManager.fileExists(atPath: destination.path) {
+            try fileManager.removeItem(at: destination)
+        }
+        try fileManager.moveItem(at: tempDestination, to: destination)
     }
 
     // MARK: - Extract

@@ -200,3 +200,91 @@ final class SevenZipEngineIntegrationTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: dest.appendingPathComponent("x.txt").path))
     }
 }
+
+/// Creation-focused integration tests (TKT-M3-01 / M3-04 / M3-07).
+final class CompressionIntegrationTests: XCTestCase {
+    private var workDir: URL!
+    private var engine: SevenZipEngine!
+
+    private static var helperURL: URL? {
+        var dir = URL(fileURLWithPath: #filePath)
+        for _ in 0..<8 {
+            dir = dir.deletingLastPathComponent()
+            let candidate = dir.appendingPathComponent("Vendor/7zz/26.06/arm64/7zz")
+            if FileManager.default.isExecutableFile(atPath: candidate.path) { return candidate }
+        }
+        return nil
+    }
+
+    override func setUpWithError() throws {
+        guard let helper = Self.helperURL else { throw XCTSkip("7zz helper not available") }
+        workDir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("Mac7ZipCompTests-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: workDir, withIntermediateDirectories: true)
+        engine = SevenZipEngine(executableURL: helper, timeout: 30)
+    }
+
+    override func tearDownWithError() throws {
+        if let workDir { try? FileManager.default.removeItem(at: workDir) }
+    }
+
+    private func makeFiles() throws -> [URL] {
+        let a = workDir.appendingPathComponent("one.txt")
+        let b = workDir.appendingPathComponent("two.txt")
+        try "one".write(to: a, atomically: true, encoding: .utf8)
+        try "two".write(to: b, atomically: true, encoding: .utf8)
+        return [a, b]
+    }
+
+    func testCreateZipAndVerifyContents() async throws {
+        let files = try makeFiles()
+        let archive = workDir.appendingPathComponent("out.zip")
+        try await engine.createArchive(at: archive, from: files, options: ArchiveOptions(format: .zip))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: archive.path))
+
+        let entries = try await engine.listContents(of: archive)
+        XCTAssertEqual(Set(entries.filter { !$0.isDirectory }.map { ($0.path as NSString).lastPathComponent }),
+                       ["one.txt", "two.txt"])
+    }
+
+    func testCreateDoesNotLeavePartialFileOnRefusedFormat() async throws {
+        let files = try makeFiles()
+        let archive = workDir.appendingPathComponent("bad.rar")
+        do {
+            try await engine.createArchive(at: archive, from: files, options: ArchiveOptions(format: .rar))
+            XCTFail("RAR creation must fail")
+        } catch { }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: archive.path))
+        let leftovers = (try? FileManager.default.contentsOfDirectory(atPath: workDir.path))?
+            .filter { $0.hasSuffix(".partial") } ?? []
+        XCTAssertTrue(leftovers.isEmpty, "No partial files may remain")
+    }
+
+    func testOverwriteReplacesExistingArchive() async throws {
+        let files = try makeFiles()
+        let archive = workDir.appendingPathComponent("replace.zip")
+        try await engine.createArchive(at: archive, from: [files[0]], options: ArchiveOptions(format: .zip))
+        let firstSize = try FileManager.default.attributesOfItem(atPath: archive.path)[.size] as? Int ?? 0
+
+        try await engine.createArchive(at: archive, from: files, options: ArchiveOptions(format: .zip))
+        let entries = try await engine.listContents(of: archive)
+        XCTAssertEqual(entries.filter { !$0.isDirectory }.count, 2)
+        XCTAssertGreaterThanOrEqual(try FileManager.default.attributesOfItem(atPath: archive.path)[.size] as? Int ?? 0, firstSize)
+    }
+
+    func testPasswordCreationFailsClosedByDefault() async throws {
+        let files = try makeFiles()
+        let archive = workDir.appendingPathComponent("enc.7z")
+        do {
+            try await engine.createArchive(
+                at: archive,
+                from: files,
+                options: ArchiveOptions(format: .sevenZip, password: "pw")
+            )
+            XCTFail("Expected passwordTransportUnavailable")
+        } catch let error as ArchiveError {
+            XCTAssertEqual(error, .passwordTransportUnavailable)
+        }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: archive.path))
+    }
+}
