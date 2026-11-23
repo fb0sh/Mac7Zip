@@ -30,3 +30,9 @@ Never mark an item verified without performing it. CI green is a *different* cla
 - [ ] Drag a real file row to Finder → normal move/copy.
 - [ ] Drag from Finder into the file list → copies (or moves with ⌘) into the current folder.
 - [ ] Cancel/drop-outside → no files written, no temp leaks.
+
+## Favourites & dual-pane (TKT-M4-04 / M4-05)
+- [ ] Sidebar shows Favourites + System; "Add Current Folder" adds and persists across relaunch.
+- [ ] Right-click a favourite → Remove; reopening the app shows the updated list.
+- [ ] Toggle dual-pane: two independent panes; navigation in one doesn't affect the other.
+- [ ] Active-pane highlight follows clicks; toggling off returns to a single pane.

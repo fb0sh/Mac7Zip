@@ -16,12 +16,12 @@
 | M1 File Browser Core | 12 tickets | **Complete** (12/12 implemented & verified) |
 | M2 Archive Read & Extract | 15 tickets | **Complete** (14 done; TKT-M2-12 deferred to M4 by design) |
 | M3 Compression | 8 tickets | **Complete** (8/8) |
-| M4 File-Management Enhancements | 9 tickets (incl. deferred TKT-M2-12) | In progress (7 implemented; 2 await manual drag check) |
+| M4 File-Management Enhancements | 9 tickets (incl. deferred TKT-M2-12) | **Complete** (9/9; drag/favourites/dual-pane UI need a manual desktop check) |
 | M5 macOS Integration | 8 tickets | Not started |
 | M6 Performance/Security/Release | 8 tickets | Not started (M6-04/05 external-blocked) |
 
 ## Next eligible work
-- **`TKT-M4-04` (#35)** favourites/bookmarks; **`TKT-M4-05` (#36)** dual-pane. (M4-09/M4-03 drag UX requires a manual Finder check — recorded in MANUAL-CHECKS.)
+- **M5 productivity & integration** begins: **`TKT-M5-01` (#40)** file associations/Open With, **`TKT-M5-02` (#41)** Settings.
 - Manual-on-Mac items (VoiceOver/XCUITest/drag) tracked in `docs/execution/MANUAL-CHECKS.md`.
 
 ## Tickets
@@ -65,8 +65,8 @@
 | TKT-M4-01 — Copy / Move / Duplicate core engine | M4 | Implemented/verified (integration) | #32 | TKT-M1-01, TKT-M1-06, TKT-M2-08 (TaskCenter). | integration/m1-m6 / PR #62 | [run 45154392056](https://github.com/fb0sh/Mac7Zip/actions/runs/45154392056) — 141 tests OK | — |
 | TKT-M4-02 — Conflict resolution engine + batch UI | M4 | Implemented/verified (integration) | #33 | TKT-M4-01. | integration/m1-m6 / PR #62 | [run 45154392056](https://github.com/fb0sh/Mac7Zip/actions/runs/45154392056) — 141 tests OK | — |
 | TKT-M4-03 — Drag-and-drop for real files (in/out) | M4 | Implemented (runtime drag verification pending manual check) | #34 | TKT-M4-01, TKT-M1-08. | integration/m1-m6 / PR #62 | [run 45158335242](https://github.com/fb0sh/Mac7Zip/actions/runs/45158335242) — 155 tests; drag UX = MANUAL-CHECKS | — |
-| TKT-M4-04 — Favourites management | M4 | Planned | #35 | TKT-M1-01. | — | — | — |
-| TKT-M4-05 — Dual-pane mode (F9-style) | M4 | Planned | #36 | TKT-M1-01, TKT-M4-01. | — | — | — |
+| TKT-M4-04 — Favourites management | M4 | Implemented (logic tested; UI = manual check) | #35 | TKT-M1-01. | integration/m1-m6 / PR #62 | [run 45159119210](https://github.com/fb0sh/Mac7Zip/actions/runs/45159119210) — 165 tests | — |
+| TKT-M4-05 — Dual-pane mode (F9-style) | M4 | Implemented (logic tested; UI = manual check) | #36 | TKT-M1-01, TKT-M4-01. | integration/m1-m6 / PR #62 | [run 45159119210](https://github.com/fb0sh/Mac7Zip/actions/runs/45159119210) — 165 tests | — |
 | TKT-M4-06 — Metadata, permissions & symlink handling | M4 | Implemented/verified (integration) | #37 | TKT-M4-01. | integration/m1-m6 / PR #62 | [run 45156083294](https://github.com/fb0sh/Mac7Zip/actions/runs/45156083294) — 151 tests OK | — |
 | TKT-M4-07 — Operation progress / cancel / completion feedback | M4 | Implemented/verified (integration) | #38 | TKT-M4-01, TKT-M2-08. | integration/m1-m6 / PR #62 | [run 45156083294](https://github.com/fb0sh/Mac7Zip/actions/runs/45156083294) — 151 tests OK | — |
 | TKT-M4-08 — File-operation integration tests | M4 | Implemented/verified (integration) | #39 | TKT-M4-01…07. | integration/m1-m6 / PR #62 | [run 45156083294](https://github.com/fb0sh/Mac7Zip/actions/runs/45156083294) — 151 tests OK | — |
@@ -96,6 +96,7 @@
 - 2026-11-23: **TKT-M1-05** (New Folder/Rename/Move-to-Trash UI via NSAlert + FileOperationsService; menu ⌘⇧N/⌘R/⌘⌫; toolbar trash enabled) and **TKT-M1-02** (IconCache + 10k sort benchmark) implemented & verified (commit cbd98c1); CI run 45132417806 green (38 tests).
 - 2026-11-23: **TKT-M1-08** (context menu: Open/Rename/Trash/New Folder/Reveal, validated by selection & capabilities) and **TKT-M1-10** (CI: swift-format/SwiftLint non-blocking + `lipo` arm64 gate + `otool -L` audit; configs `.swiftlint.yml`/`.swift-format`) verified (commit aa679c9); CI run 45132861591 green — 38 tests, archs: arm64.
 - 2026-11-23: **TKT-M1-09** (host-free test target: core sources compiled into the test bundle, `TEST_HOST` removed) and **TKT-M1-12** (accessibility labels for table + rows) verified (commit 6243d08); CI run 45133371206 green — 38 tests, no app host. **M1 COMPLETE.**
+- 2026-11-23: **TKT-M4-04 / M4-05** — `FavouritesStore` (persisted UserDefaults JSON, add/remove/reset/duplicate-guard; sidebar section with context-menu removal and "Add Current Folder") and `DualPaneController` + HSplitView dual-pane with per-pane `FilePane` (independent `BrowserStore`), active-pane highlight and pane switching. Logic unit-tested; UI requires a desktop manual check. Verified (commit fc2dca2); CI green — **165 tests**. **M4 COMPLETE.**
 - 2026-11-23: **TKT-M4-09 / M4-03** — drag-out to Finder (real files as file URLs; archive entries as **NSFilePromiseProvider**, extracted on drop by `ArchiveEntryExporter` with a bounded synchronous wait) and drag-in (copy/move via `FileTransferService`). Pure payload logic in `DragExportPlanner` (Archive layer) is unit-tested; **the actual drag gesture in Finder cannot be exercised in CI and is a manual check**. Verified (build+tests, commit c0be6c7); CI green — **155 tests**.
 - 2026-11-23: **TKT-M4-06 / M4-07 / M4-08** — `FileMetadataService` (size/kind/dates/owner/group/POSIX permissions read + change, symlink target, folder item counts, typed errors), native **Get Info** panel with permission picker and Finder-tags editor, `FinderTagService` (real `com.apple.metadata:_kMDItemUserTags` xattr round-trip), and transfers routed through `TaskCenter` (`FileTransferOperation` per-item progress + cancellation). Verified (commit d6245f1); CI green — **151 tests**.
 - 2026-11-23: **TKT-M4-01 / M4-02** — `FileTransferService` (recursive copy, same-volume atomic move / cross-volume copy+verify+delete, duplicate, per-item outcomes, symlinks preserved not followed) + conflict policies (replace/skip/keep-both with auto-suffix) + UI (toolbar Copy/Move, ⌥⌘C/⌥⌘M, ⇧⌘D duplicate, destination picker, conflict prompt). Verified (commit 74bc23b); CI green — **141 tests**.
