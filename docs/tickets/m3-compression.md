@@ -82,3 +82,15 @@
 - **Tests:** The tests themselves.
 - **DoD:** CI green; no flaky.
 - **Related:** SPEC-CW · ADR-010
+
+## TKT-M3-08 — Advanced compression options (full parameter set)
+
+- **Priority:** P2 · **Type:** Feature · **Status:** Planned
+- **Background:** FR-CW-10; complements TKT-M3-06 (which covers multi-volume/method/threads).
+- **Scope:** Remaining advanced fields: update mode, path mode, dictionary/word size, solid block size, memory-required estimate display, "delete source after", and "encrypt file names".
+- **Implementation Notes:** Map each to 7zz switches; disable invalid combos; encrypt-file-names requires 7z; show memory estimate from engine.
+- **Dependencies:** TKT-M3-01, TKT-M3-03.
+- **Acceptance Criteria:** Each option maps and round-trips; invalid combos disabled; encrypt-file-names only for 7z.
+- **Tests:** Option-mapping unit tests; round-trip integration.
+- **DoD:** CI green.
+- **Related:** SPEC-CW (FR-CW-10) · ADR-004, ADR-009

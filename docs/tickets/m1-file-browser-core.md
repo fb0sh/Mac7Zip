@@ -117,3 +117,27 @@
 - **Tests:** CI self-test.
 - **DoD:** Workflow updated; spike findings noted in PR.
 - **Related:** SPEC-REL · ADR-010
+
+## TKT-M1-11 — Column widths adjustable & persisted
+
+- **Milestone:** M1 · **Priority:** P1 · **Type:** Feature · **Status:** Planned
+- **Background:** FR-FM-13 requires adjustable columns that are remembered; Phase 0 uses fixed widths.
+- **Scope:** User-draggable column widths; persist per window; restore on relaunch; sensible defaults.
+- **Implementation Notes:** Save widths on column-resize notifications; store keyed by a stable window identifier; apply on table creation.
+- **Dependencies:** TKT-M1-01, TKT-M1-02.
+- **Acceptance Criteria:** Dragging borders resizes columns; widths persist across relaunch and folder changes.
+- **Tests:** Persistence round-trip unit test; UI smoke drag.
+- **DoD:** CI green.
+- **Related:** SPEC-FM (FR-FM-13) · ADR-002
+
+## TKT-M1-12 — Accessibility pass (VoiceOver + full keyboard)
+
+- **Milestone:** M1 · **Priority:** P2 · **Type:** Feature · **Status:** Planned
+- **Background:** User story 36 and HIG require a usable, accessible browser.
+- **Scope:** Accessible labels/roles for rows and controls; full keyboard reachability of toolbar/menu/context actions; sane focus order.
+- **Implementation Notes:** Set accessibility labels/elements on the table rows; `.accessibilityLabel` on SwiftUI controls; verify with Accessibility Inspector.
+- **Dependencies:** TKT-M1-04, TKT-M1-08.
+- **Acceptance Criteria:** VoiceOver announces name/size/date per row; every action is keyboard reachable; no blocking Accessibility Inspector issues.
+- **Tests:** Manual Accessibility Inspector checklist; UI smoke.
+- **DoD:** CI green; checklist signed off.
+- **Related:** SPEC-FM · ADR-001

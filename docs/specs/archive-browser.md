@@ -114,4 +114,4 @@ func directoryListing(prefix: String) -> [FileEntry]
 ## 15. Related ADRs / Tickets
 
 - ADRs: ADR-006, ADR-003, ADR-004
-- Tickets: `TKT-M2-04`, `TKT-M2-05`, `TKT-M2-07`, `TKT-M2-12`, `TKT-M2-13`; M5: `EPIC-M5`
+- Tickets: `TKT-M2-04`, `TKT-M2-05`, `TKT-M2-07`, `TKT-M2-12`, `TKT-M2-13`, `TKT-M2-14`, `TKT-M2-15`; M5: `EPIC-M5`

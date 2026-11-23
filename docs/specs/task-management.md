@@ -114,4 +114,4 @@ protocol TaskOperation: Sendable {
 ## 15. Related ADRs / Tickets
 
 - ADRs: ADR-005, ADR-008
-- Tickets: `TKT-M2-08`, `TKT-M2-09`, `TKT-M3-05`
+- Tickets: `TKT-M2-08`, `TKT-M2-09`, `TKT-M2-16`, `TKT-M3-05`

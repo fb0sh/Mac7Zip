@@ -24,6 +24,8 @@ All MVP tickets are **Planned** (not started). No feature implementation has beg
 | TKT-M1-08 | Keyboard shortcuts & context menus | P1 | Feature | M1-03, M1-04, M1-05 |
 | TKT-M1-09 | Tests: FS core, ops, performance | P0 | Test | M1-01…07 |
 | TKT-M1-10 | CI hardening: lint, arch/dependency check, XCUITest spike | P1 | Infrastructure | M1-01 |
+| TKT-M1-11 | Column widths adjustable & persisted | P1 | Feature | M1-01, M1-02 |
+| TKT-M1-12 | Accessibility pass (VoiceOver + full keyboard) | P2 | Feature | M1-04, M1-08 |
 
 ## M2 — Archive Read & Extract (MVP)
 
@@ -42,6 +44,9 @@ All MVP tickets are **Planned** (not started). No feature implementation has beg
 | TKT-M2-11 | Integration & security tests + fixtures | P0 | Test | M2-06, M2-07, M2-09 |
 | TKT-M2-12 | Drag-out-to-Finder extraction | P0 | Feature | M2-04, M2-06, M2-07 |
 | TKT-M2-13 | Archive activation preference (Open vs Extract) | P1 | Feature | M2-07, M1-08 |
+| TKT-M2-14 | Archive-specific columns in archive browser | P1 | Feature | M2-03, M2-05 |
+| TKT-M2-15 | Extract options sheet | P1 | Feature | M2-05, M2-06, M2-07 |
+| TKT-M2-16 | Rich task progress metrics | P2 | Feature | M2-08 |
 
 ## M3 — Compression (MVP)
 
@@ -54,6 +59,7 @@ All MVP tickets are **Planned** (not started). No feature implementation has beg
 | TKT-M3-05 | Compression progress/cancel + completion feedback | P0 | Feature | M3-01, M2-08 |
 | TKT-M3-06 | Advanced options (multi-volume, method, threads) | P2 | Feature | M3-01 |
 | TKT-M3-07 | Round-trip integration tests | P0 | Test | M3-01…05 |
+| TKT-M3-08 | Advanced compression options (full parameter set) | P2 | Feature | M3-01, M3-03 |
 
 ## M4 — File-Management Enhancements
 

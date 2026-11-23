@@ -151,3 +151,39 @@
 - **Tests:** Preference unit tests; UI smoke for both modes.
 - **DoD:** CI green.
 - **Related:** SPEC-FM (FR-FM-15), SPEC-AB · ADR-006
+
+## TKT-M2-14 — Archive-specific columns in archive browser
+
+- **Priority:** P1 · **Type:** Feature · **Status:** Planned
+- **Background:** FR-AB-10; 7-Zip shows Packed Size/CRC/Encrypted/Method/Folder·File counts inside archives.
+- **Scope:** Parse optional archive metadata; show these columns only in archive locations; sortable; hidden for real directories.
+- **Implementation Notes:** Extend entry metadata; column visibility keyed by provider kind; reuse sort model.
+- **Dependencies:** TKT-M2-03, TKT-M2-05.
+- **Acceptance Criteria:** Inside archive the extra columns populate and sort; real directories hide them.
+- **Tests:** Parser + column-visibility tests.
+- **DoD:** CI green.
+- **Related:** SPEC-AB (FR-AB-10) · ADR-002, ADR-006
+
+## TKT-M2-15 — Extract options sheet
+
+- **Priority:** P1 · **Type:** Feature · **Status:** Planned
+- **Background:** FR-AE-12/13, FR-AB-11; the 7-Zip extract dialog exposes destination/subfolder/overwrite/password/permissions.
+- **Scope:** Native extract sheet: destination, "extract to `<name>/`", path mode, eliminate-duplicate-root, overwrite mode (ask/overwrite/skip/rename), password+show, restore permissions; maps to `ExtractOptions`.
+- **Implementation Notes:** SwiftUI grouped form; validate; route to extraction pipeline; reuse for Extract…, double-click-extract, and drag-out.
+- **Dependencies:** TKT-M2-05, TKT-M2-06, TKT-M2-07.
+- **Acceptance Criteria:** Each option is honored; overwrite modes behave; password prompts; restore-permissions best-effort.
+- **Tests:** Integration tests per option; UI smoke.
+- **DoD:** CI green.
+- **Related:** SPEC-AE (FR-AE-12/13), SPEC-AB (FR-AB-11) · ADR-004, ADR-008
+
+## TKT-M2-16 — Rich task progress metrics
+
+- **Priority:** P2 · **Type:** Feature · **Status:** Planned
+- **Background:** FR-TM-10; the 7-Zip progress dialog shows elapsed/remaining/size/speed/ratio/files.
+- **Scope:** Record optional metrics (processed/total bytes, speed, files done/total, current item, ratio) and display them in the Tasks detail when available.
+- **Implementation Notes:** Extend `TaskRecord` optional fields; hide unknowns; keep snapshot coalescing.
+- **Dependencies:** TKT-M2-08.
+- **Acceptance Criteria:** Metrics displayed when provided; hidden when absent; no UI churn.
+- **Tests:** Model + snapshot tests.
+- **DoD:** CI green.
+- **Related:** SPEC-TM (FR-TM-10) · ADR-005

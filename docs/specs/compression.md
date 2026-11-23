@@ -114,4 +114,4 @@ struct CompressionRequest: Sendable {
 ## 15. Related ADRs / Tickets
 
 - ADRs: ADR-004, ADR-005, ADR-009
-- Tickets: `TKT-M3-01` … `TKT-M3-07`
+- Tickets: `TKT-M3-01` … `TKT-M3-08`
