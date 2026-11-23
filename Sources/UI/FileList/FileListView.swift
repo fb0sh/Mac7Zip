@@ -29,6 +29,9 @@ struct FileListView: NSViewRepresentable {
         let tableView = FileNSTableView()
         tableView.dataSource = context.coordinator
         tableView.delegate = context.coordinator
+        tableView.registerForDraggedTypes([.fileURL])
+        tableView.setDraggingSourceOperationMask([.copy, .move], forLocal: false)
+        tableView.setDraggingSourceOperationMask([.copy, .move], forLocal: true)
         tableView.allowsMultipleSelection = true
         tableView.allowsEmptySelection = true
         tableView.usesAlternatingRowBackgroundColors = true
@@ -121,6 +124,75 @@ extension FileListView {
 
         init(model: FileBrowserModel) {
             self.model = model
+        }
+
+        // MARK: - Dragging out (TKT-M4-09)
+
+        func tableView(_ tableView: NSTableView, pasteboardWriterForRow row: Int) -> NSPasteboardWriting? {
+            let items = model.items
+            guard items.indices.contains(row) else { return nil }
+            let payload = DragExportPlanner.payload(for: items[row], isInsideArchive: model.isInsideArchive)
+
+            switch payload {
+            case .fileURL(let url):
+                return url as NSURL
+            case .promise(let entryPath, let fileName):
+                guard let archiveURL = model.archiveURL,
+                      let helper = SevenZipLocator.helperURL() else { return nil }
+                let exporter = ArchiveEntryExporter(
+                    archiveURL: archiveURL,
+                    entryPath: entryPath,
+                    engineFactory: { SevenZipEngine(executableURL: helper) }
+                )
+                let delegate = ArchivePromiseDelegate(exporter: exporter)
+                let provider = NSFilePromiseProvider(fileType: DragExportPlanner.fileType(for: fileName), delegate: delegate)
+                provider.userInfo = fileName
+                DragDelegateStore.shared.retain(delegate, for: ObjectIdentifier(provider))
+                return provider
+            case .none:
+                return nil
+            }
+        }
+
+        func tableView(
+            _ tableView: NSTableView,
+            draggingSession session: NSDraggingSession,
+            endedAt screenPoint: NSPoint,
+            operation: NSDragOperation
+        ) {
+            for item in session.draggingPasteboard.pasteboardItems ?? [] {
+                if let provider = item as? NSFilePromiseProvider {
+                    DragDelegateStore.shared.release(ObjectIdentifier(provider))
+                }
+            }
+        }
+
+        // MARK: - Dropping in (TKT-M4-03)
+
+        func tableView(
+            _ tableView: NSTableView,
+            validateDrop info: NSDraggingInfo,
+            proposedRow row: Int,
+            proposedDropOperation dropOperation: NSTableView.DropOperation
+        ) -> NSDragOperation {
+            guard model.canModify, !model.isInsideArchive else { return [] }
+            return info.draggingSourceOperationMask.contains(.move) ? .move : .copy
+        }
+
+        func tableView(
+            _ tableView: NSTableView,
+            acceptDrop info: NSDraggingInfo,
+            row: Int,
+            dropOperation: NSTableView.DropOperation
+        ) -> Bool {
+            let urls = info.draggingPasteboard.readObjects(
+                forClasses: [NSURL.self],
+                options: [.urlReadingFileURLsOnly: true]
+            ) as? [URL] ?? []
+            guard !urls.isEmpty, model.canModify else { return false }
+            let kind: FileTransferRequest.Kind = info.draggingSourceOperationMask.contains(.move) ? .move : .copy
+            Task { await model.transfer(kind: kind, to: model.currentDirectory, policy: .ask) }
+            return true
         }
 
         func synchronize() {
