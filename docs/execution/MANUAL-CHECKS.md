@@ -42,3 +42,9 @@ Never mark an item verified without performing it. CI green is a *different* cla
 - [ ] Switching back to "Open" makes double-click browse the archive.
 - [ ] Limits tab persists values and rejects 0; reset restores defaults.
 - [ ] Relaunch restores the last browsed folder when enabled; disabled starts at Home.
+
+## File associations / notifications / About (M5-01, M5-04, M5-05)
+- [ ] Double-click a .7z/.zip in Finder → Mac7Zip opens and browses it (cold + warm launch).
+- [ ] "Open With → Mac7Zip" works; `mac7zip://` URL opens the app.
+- [ ] With notifications enabled, finishing a task posts a banner; with permission denied, none appears and nothing breaks.
+- [ ] Settings ▸ About shows version and readable 7-Zip LGPL/unRAR notice.
