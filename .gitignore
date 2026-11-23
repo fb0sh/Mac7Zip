@@ -1,0 +1,32 @@
+# keeprules: 临时目录
+/tmp/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Xcode / XcodeGen generated files
+*.xcodeproj
+*.xcworkspace
+xcuserdata/
+DerivedData/
+build/
+.build/
+
+# Swift Package Manager
+.swiftpm/
+Packages/
+Package.resolved
+
+# Build & test logs
+*.log
+build-debug.log
+test.log
+build-release.log
+
+# Project temp artifacts
+tmp/
+
+# Archives produced by CI/local packaging
+*.zip

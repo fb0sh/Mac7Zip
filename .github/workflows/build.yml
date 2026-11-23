@@ -1,0 +1,135 @@
+name: Build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  SCHEME: Mac7Zip
+  PROJECT: Mac7Zip.xcodeproj
+  APP_NAME: Mac7Zip
+
+jobs:
+  build:
+    name: Build & Test (macOS 26, arm64)
+    runs-on: macos-26
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode 26 and verify toolchain
+        run: |
+          set -euo pipefail
+          echo "Available Xcode installations:"
+          ls -d /Applications/Xcode*.app 2>/dev/null || true
+
+          XCODE_APP="$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -n 1 || true)"
+          if [ -z "$XCODE_APP" ]; then
+            XCODE_APP="$(ls -d /Applications/Xcode*.app 2>/dev/null | sort -V | tail -n 1 || true)"
+          fi
+          if [ -n "$XCODE_APP" ]; then
+            echo "Selecting $XCODE_APP"
+            sudo xcode-select -s "$XCODE_APP/Contents/Developer"
+          fi
+
+          echo "--- xcodebuild -version ---"
+          xcodebuild -version
+          XCODE_VERSION="$(xcodebuild -version | awk 'NR==1 {print $2}')"
+          echo "Xcode version: $XCODE_VERSION"
+          if [[ "$XCODE_VERSION" != 26.* ]]; then
+            echo "::error::Expected Xcode 26.x but found $XCODE_VERSION"
+            exit 1
+          fi
+
+          echo "--- swift --version ---"
+          swift --version
+
+      - name: Install XcodeGen
+        run: |
+          brew update >/dev/null 2>&1 || true
+          brew install xcodegen
+          xcodegen --version
+
+      - name: Generate Xcode project
+        run: |
+          xcodegen generate --spec project.yml
+          ls -la
+
+      - name: Compile check (Debug)
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project "$PROJECT" \
+            -scheme "$SCHEME" \
+            -configuration Debug \
+            -destination 'platform=macOS,arch=arm64' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            build | tee build-debug.log
+
+      - name: Run unit tests
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project "$PROJECT" \
+            -scheme "$SCHEME" \
+            -configuration Debug \
+            -destination 'platform=macOS,arch=arm64' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            test | tee test.log
+
+      - name: Release build (arm64)
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project "$PROJECT" \
+            -scheme "$SCHEME" \
+            -configuration Release \
+            -destination 'platform=macOS,arch=arm64' \
+            -derivedDataPath build \
+            ARCHS=arm64 ONLY_ACTIVE_ARCH=NO \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            build | tee build-release.log
+
+      - name: Package .app into ZIP
+        run: |
+          set -euo pipefail
+          APP_PATH="build/Build/Products/Release/${APP_NAME}.app"
+          if [ ! -d "$APP_PATH" ]; then
+            echo "::error::Expected app at $APP_PATH was not produced"
+            find build -maxdepth 6 -name "*.app" -print || true
+            exit 1
+          fi
+          /usr/bin/ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "${APP_NAME}-arm64.zip"
+          ls -lh "${APP_NAME}-arm64.zip"
+          echo "--- archive contents (top) ---"
+          /usr/bin/unzip -l "${APP_NAME}-arm64.zip" | head -40
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.APP_NAME }}-arm64
+          path: ${{ env.APP_NAME }}-arm64.zip
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs
+          path: |
+            build-debug.log
+            test.log
+            build-release.log
+          if-no-files-found: ignore

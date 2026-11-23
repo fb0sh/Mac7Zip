@@ -1,0 +1,72 @@
+name: Mac7Zip
+
+options:
+  bundleIdPrefix: com.mac7zip
+  deploymentTarget:
+    macOS: "26.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    SWIFT_STRICT_CONCURRENCY: minimal
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    MACOSX_DEPLOYMENT_TARGET: "26.0"
+
+targets:
+  Mac7Zip:
+    type: application
+    platform: macOS
+    sources:
+      - path: Sources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.mac7zip.Mac7Zip
+        PRODUCT_NAME: Mac7Zip
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Mac7Zip
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.utilities
+        INFOPLIST_KEY_NSHumanReadableCopyright: "Copyright © 2026 Mac7Zip contributors."
+        INFOPLIST_KEY_NSPrincipalClass: NSApplication
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        COMBINE_HIDPI_IMAGES: YES
+        ENABLE_HARDENED_RUNTIME: YES
+        LD_RUNPATH_SEARCH_PATHS:
+          - "$(inherited)"
+          - "@executable_path/../Frameworks"
+
+  Mac7ZipTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: Tests/Mac7ZipTests
+    dependencies:
+      - target: Mac7Zip
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.mac7zip.Mac7ZipTests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Mac7Zip.app/Contents/MacOS/Mac7Zip"
+        BUNDLE_LOADER: "$(TEST_HOST)"
+
+schemes:
+  Mac7Zip:
+    build:
+      targets:
+        Mac7Zip: all
+        Mac7ZipTests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      gatherCoverageData: false
+      targets:
+        - Mac7ZipTests
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release
