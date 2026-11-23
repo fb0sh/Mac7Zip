@@ -42,6 +42,7 @@ Long-running archive operations must be queued, observable, cancellable, and rec
 | FR-TM-07 | Publish snapshots to UI via an `@MainActor` adapter (e.g., `TaskCenterAdapter: ObservableObject`). |
 | FR-TM-08 | On cancel/failure, delete staging/temp directories owned by the task. |
 | FR-TM-09 | Task engine imports no SwiftUI/AppKit. |
+| FR-TM-10 | Record optional progress metrics when the engine provides them: processed/total bytes, speed (B/s), files done/total, current item, and compression ratio; render them in the Tasks detail, hiding unknown values. |
 
 ## 6. UX / Interaction Design
 

@@ -87,7 +87,9 @@ docs/
 │   ├── epic-m4-file-management.md
 │   ├── epic-m5-macos-integration.md
 │   └── epic-m6-release-hardening.md
-└── roadmap.md
+├── roadmap.md
+└── reference/
+    └── 7zip/ui-reference.md       (internal design-reference screenshots + notes)
 ```
 
 ## 4. Identifier conventions

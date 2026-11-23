@@ -43,6 +43,8 @@ M2 makes the same file browser able to open and navigate the inside of an archiv
 | FR-AB-07 | Encrypted archives prompt for password before listing (or listing shows encrypted flag and prompts on extract). |
 | FR-AB-08 | File actions that mutate (rename/delete/new folder/copy-in) are disabled in archive locations. |
 | FR-AB-09 | Entries never expose a real `URL`; the archive's own real URL is held separately. |
+| FR-AB-10 | Show archive-specific columns when the engine provides them: Packed Size, CRC, Encrypted flag, Method, and Folder/File counts; hide these for real-file locations. |
+| FR-AB-11 | Offer "Extract here" and "Extract to `<archiveName>/`" convenience targets, matching the 7-Zip operation model. |
 
 ## 6. UX / Interaction Design
 

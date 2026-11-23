@@ -42,6 +42,7 @@ M3 lets users create archives from selected files/folders (or the current direct
 | FR-CW-07 | On success: reveal archive in Finder option + non-blocking confirmation; on failure: actionable error. |
 | FR-CW-08 | Password never logged; not persisted beyond the operation unless user opts in (out of scope). |
 | FR-CW-09 | Cancel cleans temp; no partial final archive left; if replacing, original preserved until success. |
+| FR-CW-10 | Provide a collapsed **Advanced** section (deferred polish to `TKT-M3-06`): update mode, path mode, dictionary/word size, solid block size, CPU threads, split volume size, memory-required estimate, "delete source after", and "encrypt file names". |
 
 ## 6. UX / Interaction Design
 

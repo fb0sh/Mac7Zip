@@ -17,7 +17,7 @@ Make Mac7Zip feel native and integrated: open archives from Finder/Dock, preview
 | TKT-M5-03 | Quick Look preview for archive entries | P2 | Preview selected file from archive (extract-to-temp + QuickLook). |
 | TKT-M5-04 | Completion notifications | P2 | `UNUserNotificationCenter` on task completion/failure. |
 | TKT-M5-05 | About + Licenses screen (7-Zip LGPL/unRAR notices) | P1 | Surface `LICENSE-7ZIP.txt`/`NOTICE.md` (ADR-009 compliance). |
-| TKT-M5-06 | Finder services / share integration | P2 | Services menu "Create archive / Extract"; optional Share extension. |
+| TKT-M5-06 | Finder services / share integration | P2 | Finder Services/context actions: Open archive, Extract files…, Extract here, Extract to `<name>/`, Test, Add to archive…, Add to `<name>.7z`/`.zip`, CRC SHA; email actions deferred. |
 | TKT-M5-07 | Deep links / window restoration | P2 | Restore last location; open specific archive via URL. |
 
 ## Acceptance Criteria (epic-level)
