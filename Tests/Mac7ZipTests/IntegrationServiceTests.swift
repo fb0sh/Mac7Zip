@@ -23,14 +23,19 @@ final class FileOpenInboxTests: XCTestCase {
 
 private actor FakeNotifier: NotificationDispatching {
     var permission: NotificationPermission
+    let grantsOnRequest: NotificationPermission
     var requested = false
     private(set) var posted: [(String, String)] = []
 
-    init(permission: NotificationPermission) { self.permission = permission }
+    init(permission: NotificationPermission, grantsOnRequest: NotificationPermission? = nil) {
+        self.permission = permission
+        self.grantsOnRequest = grantsOnRequest ?? permission
+    }
 
     func authorizationStatus() async -> NotificationPermission { permission }
     func requestAuthorization() async -> NotificationPermission {
         requested = true
+        permission = grantsOnRequest
         return permission
     }
     func post(title: String, body: String) async { posted.append((title, body)) }
@@ -71,7 +76,7 @@ final class NotificationCoordinatorTests: XCTestCase {
     }
 
     func testNotDeterminedRequestsThenPosts() async {
-        let fake = FakeNotifier(permission: .authorized)
+        let fake = FakeNotifier(permission: .notDetermined, grantsOnRequest: .authorized)
         let coordinator = NotificationCoordinator(service: fake)
         await coordinator.notifyTaskFinished(record: record(.succeeded), enabled: true)
         let requested = await fake.didRequest()
