@@ -133,3 +133,27 @@ final class StagingAreaTests: XCTestCase {
         staging.cleanUp()
     }
 }
+
+final class SecurityValidatorContainmentTests: XCTestCase {
+    func testAbsolutePathsAreNeverContained() {
+        let validator = SecurityValidator()
+        let dest = URL(fileURLWithPath: "/tmp/dest", isDirectory: true)
+        XCTAssertFalse(validator.resolvesInsideDestination("/etc/passwd", destination: dest))
+        XCTAssertFalse(validator.resolvesInsideDestination("~/secret", destination: dest))
+        XCTAssertFalse(validator.resolvesInsideDestination("C:/Windows", destination: dest))
+    }
+
+    func testTraversalIsNeverContained() {
+        let validator = SecurityValidator()
+        let dest = URL(fileURLWithPath: "/tmp/dest", isDirectory: true)
+        XCTAssertFalse(validator.resolvesInsideDestination("../escape", destination: dest))
+        XCTAssertFalse(validator.resolvesInsideDestination("a/../../escape", destination: dest))
+    }
+
+    func testNormalRelativePathsAreContained() {
+        let validator = SecurityValidator()
+        let dest = URL(fileURLWithPath: "/tmp/dest", isDirectory: true)
+        XCTAssertTrue(validator.resolvesInsideDestination("a/b.txt", destination: dest))
+        XCTAssertTrue(validator.resolvesInsideDestination("a/../b.txt", destination: dest))
+    }
+}

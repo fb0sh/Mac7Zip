@@ -100,7 +100,13 @@ struct SecurityValidator: Sendable {
     }
 
     /// Resolves an entry path against the destination and verifies containment.
+    ///
+    /// Absolute paths and escaping traversal are rejected up front: relying on
+    /// `appendingPathComponent` alone is unsafe because it treats a leading `/`
+    /// as a *relative* component (so "/etc/passwd" would look contained).
     func resolvesInsideDestination(_ rawPath: String, destination: URL) -> Bool {
+        if pathReason(for: rawPath) != nil { return false }
+
         let candidate = destination
             .appendingPathComponent(rawPath)
             .standardizedFileURL
