@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject private var model: BrowserStore
+    @EnvironmentObject private var settingsStore: SettingsStore
     @StateObject private var tasks = TaskCenterAdapter()
     @StateObject private var favourites = FavouritesStore()
     @StateObject private var panes = DualPaneController()
@@ -55,7 +56,20 @@ struct ContentView: View {
         .navigationSubtitle(subtitle)
         .frame(minWidth: 760, minHeight: 480)
         .task {
-            model.loadInitialContentIfNeeded()
+            // Double-click an archive: honour the Settings choice (Open vs Extract).
+            model.archiveActivationHandler = { url in
+                guard settingsStore.settings.activation == .extract else { return false }
+                model.extractArchiveInline(url, tasks: tasks, settings: settingsStore.settings)
+                return true
+            }
+            // Window restoration (TKT-M5-07): reopen the last folder if enabled.
+            if settingsStore.settings.restoreLastLocation,
+               let restored = RestorationStore().restorableURL(),
+               restored.standardizedFileURL != model.currentDirectory.standardizedFileURL {
+                model.navigate(to: restored)
+            } else {
+                model.loadInitialContentIfNeeded()
+            }
             model.attachTasks(tasks)
             await tasks.start()
         }
@@ -85,6 +99,9 @@ struct ContentView: View {
                     onCancel: { model.extractRequested = false }
                 )
             }
+        }
+        .onChange(of: model.currentDirectory) { _, newValue in
+            if !model.isInsideArchive { RestorationStore().record(newValue) }
         }
         .alert("Archive Test", isPresented: testResultBinding) {
             Button("OK", role: .cancel) { model.testResultMessage = nil }

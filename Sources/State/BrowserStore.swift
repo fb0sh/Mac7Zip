@@ -29,6 +29,10 @@ final class BrowserStore: ObservableObject {
     private let fileOperations: FileOperating
     private let transfers: FileTransferService
     private let archiveProviderFactory: @Sendable (URL) -> FileSystemProvider?
+    /// Optional override for double-clicking an archive (Settings: Open vs Extract).
+    /// Returns true when it handled the URL.
+    var archiveActivationHandler: ((URL) -> Bool)?
+
     /// Set by the UI so transfers can be queued with visible progress (M4-07).
     private weak var tasksBridge: TaskCenterAdapter?
     private var history: [BrowserLocation]
@@ -229,6 +233,7 @@ final class BrowserStore: ObservableObject {
         }
 
         if !isInsideArchive, ArchiveFormat.detect(from: item.url) != nil {
+            if let handler = archiveActivationHandler, handler(item.url) { return }
             openArchive(item.url)
             return
         }
@@ -280,6 +285,32 @@ final class BrowserStore: ObservableObject {
             let id = await tasks.submit(operation)
             _ = id
             lastExtractMessage = "Extracting to \(effective.destination.lastPathComponent)…"
+        }
+    }
+
+    // MARK: - Extract-with-settings (double-click "Extract" behaviour)
+
+    /// Extracts an archive into a sibling `<name>/` folder through `TaskCenter`.
+    func extractArchiveInline(_ archiveURL: URL, tasks: TaskCenterAdapter, settings: AppSettings) {
+        guard let helper = SevenZipLocator.helperURL() else {
+            operationError = "The 7-Zip engine isn’t available."
+            return
+        }
+        let parent = archiveURL.deletingLastPathComponent()
+        var options = ExtractOptions(destination: parent)
+        options.password = nil
+        if settings.extractSubfolderByDefault {
+            options.createSubfolder = archiveURL.deletingPathExtension().lastPathComponent
+        }
+        let engine = SevenZipEngine(executableURL: helper, limits: settings.extractionLimits)
+        let operation = ExtractOperation(
+            engine: engine,
+            archive: archiveURL,
+            destination: parent,
+            options: options
+        )
+        Task {
+            await tasks.submit(operation)
         }
     }
 
