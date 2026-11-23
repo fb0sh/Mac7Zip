@@ -86,7 +86,6 @@ jobs:
             -destination 'platform=macOS,arch=arm64' \
             -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
-            MAC7ZIP_7ZZ="$GITHUB_WORKSPACE/Vendor/7zz/26.06/arm64/7zz" \
             test | tee test.log
 
       - name: Release build (arm64)

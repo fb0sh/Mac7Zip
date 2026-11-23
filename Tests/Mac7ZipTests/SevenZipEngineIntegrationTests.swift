@@ -8,18 +8,35 @@ final class SevenZipEngineIntegrationTests: XCTestCase {
     private var engine: SevenZipEngine!
 
     private static var helperURL: URL? {
-        // 1. Explicit override (CI sets this to the repo's vendored helper).
-        if let env = ProcessInfo.processInfo.environment["MAC7ZIP_7ZZ"],
-           FileManager.default.isExecutableFile(atPath: env) {
-            return URL(fileURLWithPath: env)
+        let relative = "Vendor/7zz/26.06/arm64/7zz"
+        var searched: [String] = []
+
+        // 1. Explicit override (some environments can inject it).
+        if let env = ProcessInfo.processInfo.environment["MAC7ZIP_7ZZ"] {
+            searched.append(env)
+            if FileManager.default.isExecutableFile(atPath: env) { return URL(fileURLWithPath: env) }
         }
-        // 2. Walk up from the working directory looking for the vendored helper.
-        var dir = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-        for _ in 0..<6 {
-            let candidate = dir.appendingPathComponent("Vendor/7zz/26.06/arm64/7zz")
-            if FileManager.default.isExecutableFile(atPath: candidate.path) { return candidate }
+
+        // 2. Walk up from this source file's compile-time path — the most reliable
+        //    anchor, since `xcodebuild test` does not forward shell env vars.
+        var dir = URL(fileURLWithPath: #filePath)
+        for _ in 0..<8 {
             dir = dir.deletingLastPathComponent()
+            let candidate = dir.appendingPathComponent(relative)
+            searched.append(candidate.path)
+            if FileManager.default.isExecutableFile(atPath: candidate.path) { return candidate }
         }
+
+        // 3. Fall back to walking up from the working directory.
+        var cwd = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+        for _ in 0..<6 {
+            let candidate = cwd.appendingPathComponent(relative)
+            searched.append(candidate.path)
+            if FileManager.default.isExecutableFile(atPath: candidate.path) { return candidate }
+            cwd = cwd.deletingLastPathComponent()
+        }
+
+        print("[SevenZipEngineIntegrationTests] helper not found; searched:\n" + searched.joined(separator: "\n"))
         return nil
     }
 
