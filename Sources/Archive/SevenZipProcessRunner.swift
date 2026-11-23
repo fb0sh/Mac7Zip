@@ -23,10 +23,12 @@ struct ProcessResult: Sendable {
 struct SevenZipProcessRunner: Sendable {
     let executableURL: URL
     var graceInterval: TimeInterval = 3
+    var timeout: TimeInterval = 300
 
-    init(executableURL: URL, graceInterval: TimeInterval = 3) {
+    init(executableURL: URL, graceInterval: TimeInterval = 3, timeout: TimeInterval = 300) {
         self.executableURL = executableURL
         self.graceInterval = graceInterval
+        self.timeout = timeout
     }
 
     /// Builds the argv for a call. Password is deliberately never included.
@@ -35,7 +37,7 @@ struct SevenZipProcessRunner: Sendable {
     func run(
         arguments: [String],
         stdinLines: [String] = [],
-        timeout: TimeInterval = 300,
+        timeout: TimeInterval? = nil,
         onLine: (@Sendable (String) -> Void)? = nil
     ) async throws -> ProcessResult {
         let process = Process()
@@ -89,8 +91,9 @@ struct SevenZipProcessRunner: Sendable {
         try? inPipe.fileHandleForWriting.close()
 
         // Watchdog: never let a wedged child hang the caller forever.
-        let watchdog = Task.detached { [graceInterval] in
-            try? await Task.sleep(nanoseconds: UInt64(max(timeout, 1) * 1_000_000_000))
+        let effectiveTimeout = timeout ?? self.timeout
+        let watchdog = Task.detached { [graceInterval, effectiveTimeout] in
+            try? await Task.sleep(nanoseconds: UInt64(max(effectiveTimeout, 1) * 1_000_000_000))
             guard !Task.isCancelled, process.isRunning else { return }
             process.interrupt()
             try? await Task.sleep(nanoseconds: UInt64(graceInterval * 1_000_000_000))
