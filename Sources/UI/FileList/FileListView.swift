@@ -39,6 +39,8 @@ struct FileListView: NSViewRepresentable {
         addColumn(to: tableView, column: .kind, title: "Kind", width: 140)
         addColumn(to: tableView, column: .date, title: "Date Modified", width: 190)
 
+        context.coordinator.applySavedColumnWidths(to: tableView)
+
         let scrollView = NSScrollView()
         scrollView.documentView = tableView
         scrollView.hasVerticalScroller = true
@@ -232,6 +234,30 @@ extension FileListView {
 
         func openSelection() {
             model.openSelected()
+        }
+
+        // MARK: - Column width persistence
+
+        private static let widthsKey = "Mac7Zip.FileList.columnWidths"
+
+        func applySavedColumnWidths(to tableView: NSTableView) {
+            guard let saved = UserDefaults.standard.dictionary(forKey: Self.widthsKey) as? [String: Double] else {
+                return
+            }
+            for column in tableView.tableColumns {
+                if let width = saved[column.identifier.rawValue], width > 0 {
+                    column.width = width
+                }
+            }
+        }
+
+        func tableViewColumnDidResize(_ notification: Notification) {
+            guard let tableView = notification.object as? NSTableView else { return }
+            var widths: [String: Double] = [:]
+            for column in tableView.tableColumns {
+                widths[column.identifier.rawValue] = Double(column.width)
+            }
+            UserDefaults.standard.set(widths, forKey: Self.widthsKey)
         }
     }
 }

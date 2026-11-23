@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ContentView: View {
-    @EnvironmentObject private var model: FileBrowserModel
+    @EnvironmentObject private var model: BrowserStore
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
     @State private var sidebarSelection: SidebarLocation? = .home
 
@@ -12,8 +12,11 @@ struct ContentView: View {
             VStack(spacing: 0) {
                 PathBarView()
                 Divider()
-                FileListView(model: model)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                ZStack {
+                    FileListView(model: model)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    statusOverlay
+                }
                 Divider()
                 StatusBarView()
             }
@@ -30,17 +33,30 @@ struct ContentView: View {
                 model.navigate(to: newValue.url)
             }
         }
-        .alert("Can’t Open Folder", isPresented: errorBinding) {
-            Button("OK", role: .cancel) { model.errorMessage = nil }
-        } message: {
-            Text(model.errorMessage ?? "")
-        }
     }
 
-    private var errorBinding: Binding<Bool> {
-        Binding(
-            get: { model.errorMessage != nil },
-            set: { if !$0 { model.errorMessage = nil } }
-        )
+    @ViewBuilder
+    private var statusOverlay: some View {
+        switch model.loadState {
+        case .loading:
+            if model.items.isEmpty {
+                ProgressView("Loading…").controlSize(.large)
+            }
+        case .empty:
+            ContentUnavailableView("Empty Folder", systemImage: "folder")
+        case .failed(let message):
+            VStack(spacing: 12) {
+                Image(systemName: "exclamationmark.triangle")
+                    .font(.largeTitle)
+                    .foregroundStyle(.secondary)
+                Text(message)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: 420)
+                Button("Retry") { model.reload() }
+            }
+            .padding()
+        case .loaded:
+            EmptyView()
+        }
     }
 }

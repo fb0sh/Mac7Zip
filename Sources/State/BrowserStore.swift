@@ -12,6 +12,7 @@ final class BrowserStore: ObservableObject {
     @Published var selection: Set<FileItem.ID> = []
     @Published var sortDescriptor: FileSortDescriptor = .default
     @Published var errorMessage: String?
+    @Published private(set) var loadState: LoadState = .empty
     @Published private(set) var isLoading = false
     @Published private(set) var canGoBack = false
     @Published private(set) var canGoForward = false
@@ -60,6 +61,7 @@ final class BrowserStore: ObservableObject {
         let requestedLocation = location
         let directory = currentDirectory
         isLoading = true
+        loadState = .loading
         Task {
             do {
                 let contents = try await provider.list(requestedLocation)
@@ -68,11 +70,14 @@ final class BrowserStore: ObservableObject {
                 let validIDs = Set(items.map(\.id))
                 selection = selection.intersection(validIDs)
                 errorMessage = nil
+                loadState = items.isEmpty ? .empty : .loaded
             } catch {
                 guard currentDirectory == directory else { return }
                 items = []
                 selection = []
-                errorMessage = Self.message(for: error, directory: directory)
+                let message = Self.message(for: error, directory: directory)
+                errorMessage = message
+                loadState = .failed(message)
             }
             isLoading = false
         }
