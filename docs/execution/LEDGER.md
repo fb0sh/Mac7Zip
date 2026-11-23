@@ -18,10 +18,10 @@
 | M3 Compression | 8 tickets | **Complete** (8/8) |
 | M4 File-Management Enhancements | 9 tickets (incl. deferred TKT-M2-12) | **Complete** (9/9; drag/favourites/dual-pane UI need a manual desktop check) |
 | M5 macOS Integration | 8 tickets | **Complete** (8/8; several need manual desktop checks) |
-| M6 Performance/Security/Release | 8 tickets | In progress (5 done; M6-06 pending; M6-04/05 external-blocked) |
+| M6 Performance/Security/Release | 8 tickets | 6 done; M6-04/05 external-blocked |
 
 ## Next eligible work
-- **`TKT-M6-06` (#53)** XCUITest expansion (needs a GUI runner; NOT yet implemented). **#51/#52 blocked on Apple Developer ID credentials — concrete external blocker, see Blockers section.**
+- **#51/#52 blocked on Apple Developer ID credentials — concrete external blocker, see Blockers section.** All other M6 tickets done.
 - Manual-on-Mac items (VoiceOver/XCUITest/drag) tracked in `docs/execution/MANUAL-CHECKS.md`.
 
 ## Tickets
@@ -84,7 +84,7 @@
 | TKT-M6-03 — Universal Binary (arm64 + x86_64) | M6 | Implemented/verified (universal arm64+x86_64, both slices incl. 7zz) | #50 | TKT-M2-01. | integration/m1-m6 / PR #62 | [run 45164758320](https://github.com/fb0sh/Mac7Zip/actions/runs/45164758320) — 203 tests; universal lipo verified | — |
 | TKT-M6-04 — Developer ID signing + notarization (`release.yml`) | M6 | Planned | #51 | TKT-M2-01, TKT-M6-03. | — | — | External: Apple Developer credentials unconfirmed |
 | TKT-M6-05 — DMG packaging + GitHub Release automation | M6 | Planned | #52 | TKT-M6-04. | — | — | External: Apple Developer credentials unconfirmed |
-| TKT-M6-06 — XCUITest suite expansion | M6 | Planned | #53 | TKT-M1-10, TKT-M2-05, TKT-M3-02. | — | — | — |
+| TKT-M6-06 — XCUITest suite expansion | M6 | Implemented/verified (UI smoke passes in CI, non-blocking) | #53 | TKT-M1-10, TKT-M2-05, TKT-M3-02. | integration/m1-m6 / PR #62 | [run 45166854726](https://github.com/fb0sh/Mac7Zip/actions/runs/45166854726) — 209 unit + 2 UI smoke | — |
 | TKT-M6-07 — Release docs, changelog & third-party notices | M6 | Implemented/verified (docs + notice presence tests) | #54 | TKT-M2-01, TKT-M5-05. | integration/m1-m6 / PR #62 | [run 45164758320](https://github.com/fb0sh/Mac7Zip/actions/runs/45164758320) — 203 tests; universal lipo verified | — |
 | TKT-M6-08 — Reproducibility & tool-version pinning audit | M6 | Implemented/verified (versions.env + CI pin check) | #55 | TKT-M1-10. | integration/m1-m6 / PR #62 | [run 45164758320](https://github.com/fb0sh/Mac7Zip/actions/runs/45164758320) — 203 tests; universal lipo verified | — |
 
@@ -96,6 +96,7 @@
 - 2026-11-23: **TKT-M1-05** (New Folder/Rename/Move-to-Trash UI via NSAlert + FileOperationsService; menu ⌘⇧N/⌘R/⌘⌫; toolbar trash enabled) and **TKT-M1-02** (IconCache + 10k sort benchmark) implemented & verified (commit cbd98c1); CI run 45132417806 green (38 tests).
 - 2026-11-23: **TKT-M1-08** (context menu: Open/Rename/Trash/New Folder/Reveal, validated by selection & capabilities) and **TKT-M1-10** (CI: swift-format/SwiftLint non-blocking + `lipo` arm64 gate + `otool -L` audit; configs `.swiftlint.yml`/`.swift-format`) verified (commit aa679c9); CI run 45132861591 green — 38 tests, archs: arm64.
 - 2026-11-23: **TKT-M1-09** (host-free test target: core sources compiled into the test bundle, `TEST_HOST` removed) and **TKT-M1-12** (accessibility labels for table + rows) verified (commit 6243d08); CI run 45133371206 green — 38 tests, no app host. **M1 COMPLETE.**
+- 2026-11-23: **TKT-M6-06** — XCUITest smoke target (`Tests/Mac7ZipUITests`) with a dedicated `Mac7ZipUITests` scheme, added as a **non-blocking** CI job (continue-on-error, 20-min timeout, result bundle uploaded). Passed in CI: **2 UI tests, 0 failures** (app launches, window + toolbar exist, screenshot attached). Verified (commit f329560); CI green — **209 unit + 2 UI**.
 - 2026-11-23: **TKT-M6-02** — security suite extended: **symlink-target escape validation** (`ArchiveEntry.linkTarget` parsed from `-l` Symbolic Link field; `SecurityValidator.symlinkTargetReason` rejects absolute/relative escaping link targets) and a **cancellation** test. **Found and fixed a serious bug:** `TaskCenter.cancel` never cancelled the running Swift `Task` — cancellation was a silent no-op for every operation (extract/create/transfer). Now the running task handle is cancelled so `Task.checkCancellation()` fires. Verified (commit 3770506); CI green — **209 tests**.
 - 2026-11-23: **TKT-M6-01 / M6-03 / M6-07 / M6-08** — performance harness extended to 100k entries with recorded baselines (`docs/execution/PERFORMANCE.md`, advisory); **universal build verified in CI** (`lipo` shows `x86_64 arm64`, helper 7zz is a 2-arch universal binary); release docs `CHANGELOG.md`, `THIRD_PARTY_NOTICES.md`, `docs/release/{PRIVACY,RELEASE-NOTES-0.1.0}.md` with presence tests; `versions.env` pins Xcode/XcodeGen/SwiftLint/swift-format/7zz with a CI pin-check step (`docs/execution/TOOLCHAIN.md`). Verified (commit b3338ca); CI green — **203 tests**.
 - 2026-11-23: **TKT-M5-03 / M5-06 / M5-08** — Quick Look second-entry preview via secure temp workspace with guaranteed cleanup (`QuickLookTempWorkspace` tested; ⌘Y / menu routed); Finder Services (`NSServices` in Info.plist + `ServiceActionPlanner` mapping Open/Extract Here/Extract to Folder/Test/Add to Archive, handled by `AppDelegate`); `docs/execution/ACCEPTANCE.md` mapping all AC-MI-1…6 to automated/manual evidence with a coverage test. Verified (commit 2593c53); CI green — **198 tests**. **M5 COMPLETE.**
