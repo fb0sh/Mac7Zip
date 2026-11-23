@@ -35,7 +35,7 @@ struct FileListView: NSViewRepresentable {
         tableView.allowsMultipleSelection = true
         tableView.allowsEmptySelection = true
         tableView.usesAlternatingRowBackgroundColors = true
-        tableView.rowHeight = 24
+        tableView.rowHeight = 22
         tableView.setAccessibilityLabel("File list")
         tableView.setAccessibilityRole(.table)
         tableView.style = .inset
@@ -59,12 +59,17 @@ struct FileListView: NSViewRepresentable {
 
         let menu = NSMenu()
         menu.addItem(withTitle: "Open", action: #selector(Coordinator.menuOpen(_:)), keyEquivalent: "")
+        menu.addItem(withTitle: "Quick Look", action: #selector(Coordinator.menuQuickLook(_:)), keyEquivalent: "")
+        menu.addItem(.separator())
+        for operation in CoreOperation.allCases {
+            let item = NSMenuItem(title: operation.title, action: #selector(Coordinator.menuCoreOperation(_:)), keyEquivalent: "")
+            item.representedObject = operation.rawValue
+            menu.addItem(item)
+        }
         menu.addItem(.separator())
         menu.addItem(withTitle: "Rename…", action: #selector(Coordinator.menuRename(_:)), keyEquivalent: "")
-        menu.addItem(withTitle: "Move to Trash", action: #selector(Coordinator.menuDelete(_:)), keyEquivalent: "")
-        menu.addItem(.separator())
-        menu.addItem(withTitle: "New Folder", action: #selector(Coordinator.menuNewFolder(_:)), keyEquivalent: "")
         menu.addItem(withTitle: "Reveal in Finder", action: #selector(Coordinator.menuReveal(_:)), keyEquivalent: "")
+        menu.addItem(withTitle: "New Folder", action: #selector(Coordinator.menuNewFolder(_:)), keyEquivalent: "")
         for item in menu.items where item.action != nil {
             item.target = context.coordinator
         }
@@ -306,8 +311,8 @@ extension FileListView {
                 NSLayoutConstraint.activate([
                     imageView.leadingAnchor.constraint(equalTo: cell.leadingAnchor, constant: 4),
                     imageView.centerYAnchor.constraint(equalTo: cell.centerYAnchor),
-                    imageView.widthAnchor.constraint(equalToConstant: 18),
-                    imageView.heightAnchor.constraint(equalToConstant: 18),
+                    imageView.widthAnchor.constraint(equalToConstant: 16),
+                    imageView.heightAnchor.constraint(equalToConstant: 16),
                     textField.leadingAnchor.constraint(equalTo: imageView.trailingAnchor, constant: 6),
                     textField.trailingAnchor.constraint(equalTo: cell.trailingAnchor, constant: -4),
                     textField.centerYAnchor.constraint(equalTo: cell.centerYAnchor),
@@ -364,6 +369,24 @@ extension FileListView {
             model.openSelected()
         }
 
+        @objc func menuQuickLook(_ sender: Any?) {
+            NotificationCenter.default.post(name: .mac7zipQuickLook, object: nil)
+        }
+
+        @objc func menuCoreOperation(_ sender: NSMenuItem) {
+            guard let raw = sender.representedObject as? String,
+                  let operation = CoreOperation(rawValue: raw) else { return }
+            switch operation {
+            case .add: model.requestCompression()
+            case .extract: model.requestExtract()
+            case .test: Task { await model.testCurrentArchive() }
+            case .copy: TransferViewActions.copySelection(in: model)
+            case .move: TransferViewActions.moveSelection(in: model)
+            case .delete: FileOperationsViewActions.deleteSelection(in: model)
+            case .info: model.showInfoForSelection()
+            }
+        }
+
         @objc func menuRename(_ sender: Any?) {
             if let item = model.selectedItems.first {
                 FileOperationsViewActions.rename(item, in: model)
@@ -386,8 +409,20 @@ extension FileListView {
 
         func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
             switch menuItem.action {
-            case #selector(menuOpen(_:)), #selector(menuRename(_:)), #selector(menuDelete(_:)), #selector(menuReveal(_:)):
+            case #selector(menuOpen(_:)), #selector(menuRename(_:)), #selector(menuReveal(_:)):
                 return !model.selection.isEmpty
+            case #selector(menuQuickLook(_:)):
+                return model.isInsideArchive && !model.selection.isEmpty
+            case #selector(menuCoreOperation(_:)):
+                guard let raw = menuItem.representedObject as? String,
+                      let operation = CoreOperation(rawValue: raw) else { return false }
+                return CoreOperation.isEnabled(
+                    operation,
+                    isInsideArchive: model.isInsideArchive,
+                    canModify: model.canModify,
+                    hasSelection: !model.selection.isEmpty,
+                    hasItems: !model.items.isEmpty
+                )
             case #selector(menuNewFolder(_:)):
                 return model.canModify
             default:

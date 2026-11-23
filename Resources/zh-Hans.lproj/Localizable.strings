@@ -125,3 +125,12 @@
 "Archive Test" = "压缩包测试";
 "Operation Failed" = "操作失败";
 "Not enough memory" = "内存不足";
+
+/* added */
+"Copy" = "拷贝";
+"Move" = "移动";
+"Delete" = "删除";
+"Reveal in Finder" = "在访达中显示";
+"Open" = "打开";
+"Confirm" = "确认";
+"Folder name" = "文件夹名称";

@@ -54,22 +54,15 @@ struct MainToolbar: ToolbarContent {
         }
 
         ToolbarItemGroup(placement: .primaryAction) {
-            Button {
-                model.requestCompression()
-            } label: {
-                Label("Add", systemImage: "plus")
+            ForEach(CoreOperation.allCases) { operation in
+                Button {
+                    perform(operation)
+                } label: {
+                    Label(operation.title, systemImage: operation.systemImage)
+                }
+                .help(operation.title)
+                .disabled(!isEnabled(operation))
             }
-            .help("Create an archive from the selection")
-            .disabled(model.isInsideArchive)
-
-            Button {
-                model.requestExtract()
-            } label: {
-                Label("Extract", systemImage: "square.and.arrow.up")
-            }
-            .help("Extract the selected items (or the whole archive)")
-            .disabled(!model.isInsideArchive || model.items.isEmpty)
-
         }
 
         ToolbarItem(placement: .primaryAction) {
@@ -116,6 +109,28 @@ struct MainToolbar: ToolbarContent {
                 Image(systemName: "slider.horizontal.3")
             }
             .help("View Options")
+        }
+    }
+
+    private func isEnabled(_ operation: CoreOperation) -> Bool {
+        CoreOperation.isEnabled(
+            operation,
+            isInsideArchive: model.isInsideArchive,
+            canModify: model.canModify,
+            hasSelection: !model.selection.isEmpty,
+            hasItems: !model.items.isEmpty
+        )
+    }
+
+    private func perform(_ operation: CoreOperation) {
+        switch operation {
+        case .add: model.requestCompression()
+        case .extract: model.requestExtract()
+        case .test: Task { await model.testCurrentArchive() }
+        case .copy: TransferViewActions.copySelection(in: model)
+        case .move: TransferViewActions.moveSelection(in: model)
+        case .delete: FileOperationsViewActions.deleteSelection(in: model)
+        case .info: model.showInfoForSelection()
         }
     }
 }

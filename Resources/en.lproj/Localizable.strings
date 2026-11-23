@@ -111,3 +111,12 @@
 "Archive Test" = "Archive Test";
 "Operation Failed" = "Operation Failed";
 "Not enough memory" = "Not enough memory";
+
+/* added */
+"Copy" = "Copy";
+"Move" = "Move";
+"Delete" = "Delete";
+"Reveal in Finder" = "Reveal in Finder";
+"Open" = "Open";
+"Confirm" = "Confirm";
+"Folder name" = "Folder name";
