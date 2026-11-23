@@ -78,6 +78,11 @@ jobs:
             printf 'pw123\n' | "$ZZ" x -p "$m.7z" -o"out_$m" -y >/dev/null 2>&1; echo "EXTRACT_${m}=$?"
             ls "out_$m/src" 2>/dev/null | tr '\n' ',' ; echo " <- files_$m"
           done
+          "$ZZ" t two.7z >/dev/null 2>&1; echo "TEST_two_no_pw=$?"
+          "$ZZ" t -ppw123 two.7z >/dev/null 2>&1; echo "TEST_two_argv_pw=$?"
+          printf 'pw123\n' | "$ZZ" a -t7z -ppw123 argv.7z src >/dev/null 2>&1; echo "CREATE_argv=$?"
+          printf 'pw123\n' | "$ZZ" t -p argv.7z >/dev/null 2>&1; echo "TEST_argv_with_promptpw=$?"
+          "$ZZ" t -ppw123 argv.7z >/dev/null 2>&1; echo "TEST_argv_with_argvpw=$?"
           echo "DIAGDONE"
 
       - name: Compile check (Debug)
