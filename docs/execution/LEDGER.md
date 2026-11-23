@@ -14,15 +14,16 @@
 | Milestone | Scope | State |
 |---|---|---|
 | M1 File Browser Core | 12 tickets | **Complete** (12/12 implemented & verified) |
-| M2 Archive Read & Extract | 15 tickets | Not started |
+| M2 Archive Read & Extract | 15 tickets | In progress (1 implemented) |
 | M3 Compression | 8 tickets | Not started |
 | M4 File-Management Enhancements | 9 tickets (incl. deferred TKT-M2-12) | Not started |
 | M5 macOS Integration | 8 tickets | Not started |
 | M6 Performance/Security/Release | 8 tickets | Not started (M6-04/05 external-blocked) |
 
 ## Next eligible work
-- **`TKT-M2-01` (#12)** — vendor 7zz 26.06 (verified assets) + checksum gate + nested signing config.
-- After M2-01: **`TKT-M2-02` (#13)** engine runner; **`TKT-M2-08` (#19)** TaskCenter (parallelizable).
+- **`TKT-M2-02` (#13)** — SevenZipEngine process runner (concurrent pipes, exit-code mapping, stdin password).
+- **`TKT-M2-08` (#19)** — TaskCenter + Tasks UI (parallelizable with M2-02).
+- After M2-02: **`TKT-M2-03` (#14)** output parsers.
 - Manual-on-Mac items (VoiceOver/XCUITest/drag) tracked in `docs/execution/MANUAL-CHECKS.md`.
 - **`TKT-M2-01` (#12)** — 7zz packaging spike; no blockers; may proceed in parallel.
 
@@ -98,3 +99,4 @@
 - 2026-11-23: **TKT-M1-05** (New Folder/Rename/Move-to-Trash UI via NSAlert + FileOperationsService; menu ⌘⇧N/⌘R/⌘⌫; toolbar trash enabled) and **TKT-M1-02** (IconCache + 10k sort benchmark) implemented & verified (commit cbd98c1); CI run 45132417806 green (38 tests).
 - 2026-11-23: **TKT-M1-08** (context menu: Open/Rename/Trash/New Folder/Reveal, validated by selection & capabilities) and **TKT-M1-10** (CI: swift-format/SwiftLint non-blocking + `lipo` arm64 gate + `otool -L` audit; configs `.swiftlint.yml`/`.swift-format`) verified (commit aa679c9); CI run 45132861591 green — 38 tests, archs: arm64.
 - 2026-11-23: **TKT-M1-09** (host-free test target: core sources compiled into the test bundle, `TEST_HOST` removed) and **TKT-M1-12** (accessibility labels for table + rows) verified (commit 6243d08); CI run 45133371206 green — 38 tests, no app host. **M1 COMPLETE.**
+- 2026-11-23: **TKT-M2-01** — vendored 7-Zip 26.06 arm64+x86_64 into `Vendor/7zz/26.06/` with `License.txt`, `readme.txt`, `SHA256SUMS`, `README.md`; added `scripts/verify-7zz.sh` (CI gate) and `scripts/bundle-7zz.sh`; workflow verifies + bundles + executes `7zz i`. Verified (commit 89178f4, run 45133937932): checksums OK, bundled helper = arm64, runtime prints `7-Zip (z) 26.06 (arm64)`. Nested codesign deferred to TKT-M6-04.
