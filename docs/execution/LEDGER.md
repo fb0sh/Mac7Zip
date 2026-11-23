@@ -16,12 +16,12 @@
 | M1 File Browser Core | 12 tickets | **Complete** (12/12 implemented & verified) |
 | M2 Archive Read & Extract | 15 tickets | **Complete** (14 done; TKT-M2-12 deferred to M4 by design) |
 | M3 Compression | 8 tickets | **Complete** (8/8) |
-| M4 File-Management Enhancements | 9 tickets (incl. deferred TKT-M2-12) | In progress (2 implemented) |
+| M4 File-Management Enhancements | 9 tickets (incl. deferred TKT-M2-12) | In progress (5 implemented) |
 | M5 macOS Integration | 8 tickets | Not started |
 | M6 Performance/Security/Release | 8 tickets | Not started (M6-04/05 external-blocked) |
 
 ## Next eligible work
-- **`TKT-M4-07` (#38)** transfer progress via TaskCenter; **`TKT-M4-03` (#34)** drag-and-drop; **`TKT-M4-05` (#36)** dual-pane.
+- **`TKT-M4-03` (#34)** drag-and-drop; **`TKT-M4-05` (#36)** dual-pane; **`TKT-M4-09` (#40)** drag-out to Finder (deferred from MVP).
 - Manual-on-Mac items (VoiceOver/XCUITest/drag) tracked in `docs/execution/MANUAL-CHECKS.md`.
 
 ## Tickets
@@ -67,9 +67,9 @@
 | TKT-M4-03 — Drag-and-drop for real files (in/out) | M4 | Planned | #34 | TKT-M4-01, TKT-M1-08. | — | — | — |
 | TKT-M4-04 — Favourites management | M4 | Planned | #35 | TKT-M1-01. | — | — | — |
 | TKT-M4-05 — Dual-pane mode (F9-style) | M4 | Planned | #36 | TKT-M1-01, TKT-M4-01. | — | — | — |
-| TKT-M4-06 — Metadata, permissions & symlink handling | M4 | Planned | #37 | TKT-M4-01. | — | — | — |
-| TKT-M4-07 — Operation progress / cancel / completion feedback | M4 | Planned | #38 | TKT-M4-01, TKT-M2-08. | — | — | — |
-| TKT-M4-08 — File-operation integration tests | M4 | Planned | #39 | TKT-M4-01…07. | — | — | — |
+| TKT-M4-06 — Metadata, permissions & symlink handling | M4 | Implemented/verified (integration) | #37 | TKT-M4-01. | integration/m1-m6 / PR #62 | [run 45156083294](https://github.com/fb0sh/Mac7Zip/actions/runs/45156083294) — 151 tests OK | — |
+| TKT-M4-07 — Operation progress / cancel / completion feedback | M4 | Implemented/verified (integration) | #38 | TKT-M4-01, TKT-M2-08. | integration/m1-m6 / PR #62 | [run 45156083294](https://github.com/fb0sh/Mac7Zip/actions/runs/45156083294) — 151 tests OK | — |
+| TKT-M4-08 — File-operation integration tests | M4 | Implemented/verified (integration) | #39 | TKT-M4-01…07. | integration/m1-m6 / PR #62 | [run 45156083294](https://github.com/fb0sh/Mac7Zip/actions/runs/45156083294) — 151 tests OK | — |
 | TKT-M2-12 — Drag-out-to-Finder extraction (deferred enhancement) | M4 | Planned | #23 | TKT-M2-04, TKT-M2-06, TKT-M2-07. | — | — | — |
 | TKT-M5-01 — Archive file associations + Open With + document open | M5 | Planned | #40 | TKT-M2-05. | — | — | — |
 | TKT-M5-02 — Settings window (activation, limits, defaults) | M5 | Planned | #41 | TKT-M2-13. | — | — | — |
@@ -96,6 +96,7 @@
 - 2026-11-23: **TKT-M1-05** (New Folder/Rename/Move-to-Trash UI via NSAlert + FileOperationsService; menu ⌘⇧N/⌘R/⌘⌫; toolbar trash enabled) and **TKT-M1-02** (IconCache + 10k sort benchmark) implemented & verified (commit cbd98c1); CI run 45132417806 green (38 tests).
 - 2026-11-23: **TKT-M1-08** (context menu: Open/Rename/Trash/New Folder/Reveal, validated by selection & capabilities) and **TKT-M1-10** (CI: swift-format/SwiftLint non-blocking + `lipo` arm64 gate + `otool -L` audit; configs `.swiftlint.yml`/`.swift-format`) verified (commit aa679c9); CI run 45132861591 green — 38 tests, archs: arm64.
 - 2026-11-23: **TKT-M1-09** (host-free test target: core sources compiled into the test bundle, `TEST_HOST` removed) and **TKT-M1-12** (accessibility labels for table + rows) verified (commit 6243d08); CI run 45133371206 green — 38 tests, no app host. **M1 COMPLETE.**
+- 2026-11-23: **TKT-M4-06 / M4-07 / M4-08** — `FileMetadataService` (size/kind/dates/owner/group/POSIX permissions read + change, symlink target, folder item counts, typed errors), native **Get Info** panel with permission picker and Finder-tags editor, `FinderTagService` (real `com.apple.metadata:_kMDItemUserTags` xattr round-trip), and transfers routed through `TaskCenter` (`FileTransferOperation` per-item progress + cancellation). Verified (commit d6245f1); CI green — **151 tests**.
 - 2026-11-23: **TKT-M4-01 / M4-02** — `FileTransferService` (recursive copy, same-volume atomic move / cross-volume copy+verify+delete, duplicate, per-item outcomes, symlinks preserved not followed) + conflict policies (replace/skip/keep-both with auto-suffix) + UI (toolbar Copy/Move, ⌥⌘C/⌥⌘M, ⇧⌘D duplicate, destination picker, conflict prompt). Verified (commit 74bc23b); CI green — **141 tests**.
 - 2026-11-23: **TKT-M3-03 / M3-06 / M3-08** — advanced parameters (`AdvancedCompressionOptions`: update mode, path mode, dictionary/word/solid sizes, threads, split volume, delete-source-after, encrypt-file-names) with validation + argv mapping; wired into the dialog's Advanced disclosure. **Encryption UX** stays fail-closed with an explicit explanation. Verified (commit b02a686); CI green — **131 tests**. **M3 COMPLETE.**
 - 2026-11-23: **TKT-M3-02** (native compression sheet: save-to picker, name, 7z/ZIP segmented format, level picker, collapsed Advanced with method + encrypt-file-names, inline validation messages, ⌘⇧A) and **TKT-M3-05** (creation submitted through `TaskCenter` → Tasks popover progress/cancel; completion message) verified (commit 6057b83); CI run 45150812129 green — 122 tests. Layering fix: validation messages moved from the SwiftUI sheet into `CompressionPlanner` so State stays UI-free.
