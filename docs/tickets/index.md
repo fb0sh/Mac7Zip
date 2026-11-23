@@ -40,6 +40,8 @@ All MVP tickets are **Planned** (not started). No feature implementation has beg
 | TKT-M2-09 | Cancellation & cleanup | P0 | Feature | M2-08 |
 | TKT-M2-10 | Test integrity + password prompt flow | P1 | Feature | M2-02, M2-03 |
 | TKT-M2-11 | Integration & security tests + fixtures | P0 | Test | M2-06, M2-07, M2-09 |
+| TKT-M2-12 | Drag-out-to-Finder extraction | P0 | Feature | M2-04, M2-06, M2-07 |
+| TKT-M2-13 | Archive activation preference (Open vs Extract) | P1 | Feature | M2-07, M1-08 |
 
 ## M3 — Compression (MVP)
 

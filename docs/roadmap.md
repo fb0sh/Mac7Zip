@@ -19,7 +19,7 @@ Priority: **stability → browser core → archive read/extract → compression 
 - **Risks:** refactor churn; mitigate with TKT-M1-01 regression tests first.
 
 ### M2 — Archive Read & Extract
-- **Deliverables:** Bundled 7zz (pinned/licensed); engine runner + parsers; read-only archive provider; enter/navigate archives; SecurityValidator; extract all/selected; TaskCenter + progress/cancel; integrity test + password; security/integration tests.
+- **Deliverables:** Bundled 7zz (pinned/licensed); engine runner + parsers; read-only archive provider; enter/navigate archives; SecurityValidator; extract all/selected (with extract-dialog options); **drag-out-to-Finder extraction**; **archive activation preference (Open vs Extract)**; TaskCenter + progress/cancel; integrity test + password; security/integration tests.
 - **Dependencies:** M1 (provider/store), TKT-M2-01 (packaging spike).
 - **Exit criteria:** Open/browse/extract 7z/ZIP (and read TAR/GZIP/BZIP2/XZ/RAR) on `macos-26`; fail-closed security suite passes; 100k-entry list budget met; cancellation leaves no temp/orphans.
 - **Risks:** 7zz arm64 artifact/licensing (ADR-009 UNVERIFIED); progress grammar; notarization-ready helper signing later.
@@ -66,7 +66,7 @@ Everything else (M1 UI polish, M4, M5, docs) is off the critical path and parall
 
 ## MVP definition of done (M1–M3)
 
-Browse real dirs → open/navigate ZIP/7z → extract all/selected → create ZIP/7z → progress/cancel/errors — all green on `macos-26` CI, with fail-closed security for unsafe archives.
+Browse real dirs → open/navigate ZIP/7z → extract all/selected (incl. drag-out to Finder) → create ZIP/7z → progress/cancel/errors — all green on `macos-26` CI, with fail-closed security for unsafe archives. Archive double-click defaults to Open, with an opt-in "Extract to `<name>/`" setting.
 
 ## Recommended first executable ticket
 

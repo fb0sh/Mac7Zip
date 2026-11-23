@@ -49,6 +49,7 @@ The file manager is the primary surface. M1 delivers a polished single-pane brow
 | FR-FM-12 | Open file → default app via `NSWorkspace`; open dir → navigate. |
 | FR-FM-13 | Column widths adjustable and persisted per window. |
 | FR-FM-14 | Keyboard: ↑/↓ selection, Return open, ⌘↑ enclosing, ⌘[ / ⌘] history, ⌘⌫ delete, Return-edit (F2-like rename), ⌘⇧N new folder. |
+| FR-FM-15 | Activating an archive file (double-click/Return) follows the "archive activation" preference: Open/browse (default) or Extract to `<archiveName>/`. |
 
 ## 6. UX / Interaction Design
 
@@ -130,4 +131,4 @@ enum FileError: Error, Equatable {
 ## 15. Related ADRs / Tickets
 
 - ADRs: ADR-001, ADR-002, ADR-003, ADR-006, ADR-007
-- Tickets: `TKT-M1-01` … `TKT-M1-10`; M4: `EPIC-M4`
+- Tickets: `TKT-M1-01` … `TKT-M1-10`; M2: `TKT-M2-13`; M4: `EPIC-M4`

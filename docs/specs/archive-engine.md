@@ -46,6 +46,8 @@ The archive engine isolates all archive work behind `ArchiveEngine`. It launches
 | FR-AE-09 | Passwords never appear in logs/argv visible to `ps` where avoidable; redact `-p...` in diagnostics. |
 | FR-AE-10 | Honor cancellation: SIGINT → grace → SIGTERM → SIGKILL; clean staging temps. |
 | FR-AE-11 | Support UTF-8 filenames (`-sccUTF-8`) and NFC/NFD normalization handling. |
+| FR-AE-12 | Extract supports: destination, "extract to subfolder `<name>/`", path mode (full/relative), eliminate-duplicate-root, overwrite mode (ask/overwrite/skip/rename), password, and restore-file-security-settings. |
+| FR-AE-13 | Provide "Extract here" and "Extract to `<archiveName>/`" convenience targets (used by double-click-extract and drag-out). |
 
 ## 6. UX / Interaction Design
 
@@ -71,7 +73,18 @@ struct ArchiveEntry: Identifiable, Sendable {
 }
 
 struct ArchiveOptions: Sendable { var format: ArchiveFormat = .sevenZip; var password: String?; var level: Int = 5; var method: String? }
-struct ExtractOptions: Sendable { var password: String?; var entries: [String]?; var overwrite: Bool = false }
+struct ExtractOptions: Sendable {
+    var password: String?
+    var entries: [String]?              // nil = all entries
+    var destination: URL
+    var createSubfolder: String?        // e.g. "<archiveName>"; nil = extract directly
+    var pathMode: ExtractPathMode       // .full | .relative
+    var eliminateDuplicateRoot: Bool
+    var overwriteMode: OverwriteMode    // .ask | .overwrite | .skip | .rename
+    var restorePermissions: Bool
+}
+enum ExtractPathMode: Sendable { case full, relative }
+enum OverwriteMode: Sendable { case ask, overwrite, skip, rename }
 
 enum ArchiveError: Error, Equatable {
     case passwordRequired; case wrongPassword; case corrupt(String)
@@ -123,4 +136,4 @@ enum ArchiveError: Error, Equatable {
 ## 15. Related ADRs / Tickets
 
 - ADRs: ADR-004, ADR-005, ADR-008, ADR-009
-- Tickets: `TKT-M2-01` … `TKT-M2-11`
+- Tickets: `TKT-M2-01` … `TKT-M2-13`

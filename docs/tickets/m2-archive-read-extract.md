@@ -127,3 +127,27 @@
 - **Tests:** The tests themselves.
 - **DoD:** CI green; no flaky tests.
 - **Related:** SPEC-AE, SPEC-SEC · ADR-008, ADR-010
+
+## TKT-M2-12 — Drag-out-to-Finder extraction
+
+- **Priority:** P0 · **Type:** Feature · **Status:** Planned
+- **Background:** The owner's most-used workflow is "open archive → drag entries out to a file manager to extract". This must be MVP, not deferred.
+- **Scope:** Drag selected entries (or a folder subtree) from the archive browser to external Finder targets; extraction runs through the secure extraction pipeline; drop destination honored.
+- **Implementation Notes:** Provide `NSFilePromiseProvider`/pasteboard-based drag; feed the selected entry paths to the engine extraction into the drop directory; enforce ADR-008 fail-closed; show task progress.
+- **Dependencies:** TKT-M2-04, TKT-M2-06, TKT-M2-07.
+- **Acceptance Criteria:** AC-AB-6 passes; unsafe entries refuse; cancellation cleans up.
+- **Tests:** Integration drag-simulation where feasible; extraction-pipeline tests.
+- **DoD:** CI green; manual drag on real Mac documented.
+- **Related:** SPEC-AB · ADR-006, ADR-008
+
+## TKT-M2-13 — Archive activation preference (Open vs Extract)
+
+- **Priority:** P1 · **Type:** Feature · **Status:** Planned
+- **Background:** Owner asked for a setting to make double-click extract instead of open; default should stay Open for discoverability.
+- **Scope:** Persisted preference `archiveActivation: .open | .extract` (default `.open`); when `.extract`, double-click/Return on an archive extracts to `<archiveName>/`; minimal settings surface in M2, full Settings window in M5.
+- **Implementation Notes:** Store in `UserDefaults`; route activation through one helper used by the file list; ensure the toggle is keyboard-accessible and discoverable.
+- **Dependencies:** TKT-M2-07 (extraction), TKT-M1-08 (activation handling).
+- **Acceptance Criteria:** AC-AB-7 passes; default remains Open; toggle persists across launches.
+- **Tests:** Preference unit tests; UI smoke for both modes.
+- **DoD:** CI green.
+- **Related:** SPEC-FM (FR-FM-15), SPEC-AB · ADR-006

@@ -20,6 +20,8 @@
 | `04-finder-context-menu-2.webp` | Second Explorer context-menu variant. |
 | `05-add-to-archive-dialog.webp` | "Add to Archive" dialog with format/level/method/advanced/encryption. |
 | `06-progress-dialog.jpg` | Compression progress dialog with metrics. |
+| `07-extract-dialog.webp` | "Extract" (解压) dialog: destination, subfolder, path mode, overwrite mode, password, permissions. |
+| `08-dual-pane-f9.webp` | Dual-pane (F9): archive in left pane, filesystem in right pane, shared toolbar, per-pane path/status. |
 
 ## Observed interaction model
 
@@ -38,6 +40,22 @@ Archive name/path (with Browse) · Format (7z/…) · Update mode · Compression
 ### E. Progress dialog metrics
 Elapsed · Remaining · Files (done/total) · Compression ratio · Total size · Speed · Processed · Packed size · Current item · progress bar.
 
+### F. Extract dialog fields
+Destination (解压到) · "Extract to subfolder `<name>\`" checkbox · Path mode (完整路径 / relative) · "Eliminate duplicate root folder" (排除重复的根文件夹) · Overwrite mode (在覆盖前询问 / overwrite / skip / rename) · Password (+ show) · "Restore file security settings" (恢复文件安全设置).
+
+### G. Dual-pane (F9)
+Two independent panes side-by-side; either pane can show an archive or the filesystem; one shared toolbar; each pane has its own path bar and status bar. Typical use: browse an archive in one pane and **drag entries into the other pane (filesystem) to extract**.
+
+## Primary user workflow (owner-stated)
+
+> "我用得最多的就是双击打开后 拖动到文件管理器；我们可以在设置里设置双击解压。"
+
+Interpretation: the owner's everyday path is **open an archive (double-click) → drag its entries out to a file manager to extract**. Therefore two capabilities matter most:
+1. **Drag-out-to-extract** from the archive browser (to Finder and/or another pane).
+2. A **Settings option to make double-click extract** instead of open (default stays "open/browse" to preserve discovery).
+
+These are treated as first-class requirements (see SPEC-AB, EPIC-M5 settings) rather than incidental.
+
 ## Adopt / Adapt / Defer for Mac7Zip
 
 | 7-Zip element | Decision | Where |
@@ -49,6 +67,10 @@ Elapsed · Remaining · Files (done/total) · Compression ratio · Total size ·
 | Advanced Add-to-Archive fields (dictionary/word/solid/threads/split/memory estimate/delete-source/encrypt-names) | **Adapt**: collapsed "Advanced" section; **defer** full set to P2 | SPEC-CW (FR-CW-10), TKT-M3-06 |
 | Modal progress window | **Adapt**: native Tasks popover + status-bar progress (non-modal) | SPEC-TM (FR-TM-10), TKT-M2-08 |
 | Progress metrics (elapsed/remaining/speed/processed/ratio/current item) | **Adopt** as optional task metrics | SPEC-TM |
+| Extract dialog (destination, subfolder, path mode, exclude duplicate root, overwrite mode, password, restore permissions) | **Adopt** into `ExtractOptions` + extract sheet | SPEC-AE (FR-AE-12/13), SPEC-AB |
+| Dual-pane (F9) | **Adapt** to a native `NavigationSplitView` two-pane mode; **deferred to M4 (confirmed)** | EPIC-M4 |
+| Drag-out-to-extract (archive → Finder) | **Adopt as first-class in MVP (M2)**; in-app dual-pane drag arrives with M4 | SPEC-AB (FR-AB-12), `TKT-M2-12` |
+| Double-click action setting (Open vs Extract) | **Adopt**: default Open, opt-in Extract-to-`<name>/`; minimal preference in M2, full Settings in M5 | SPEC-FM (FR-FM-15), `TKT-M2-13`, `TKT-M5-02` |
 | Windows chrome / skin / fonts | **Reject**: use macOS 26 native look | ADR-001, ADR-002 |
 | Attributes (RA) column, CRC SHA submenu, self-extracting (SFX) | **Defer** to later milestones | EPIC-M4 / EPIC-M5 |
 

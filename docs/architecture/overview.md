@@ -116,6 +116,7 @@ Every ticket names its `Related Spec` and `Related ADR`. Every ADR names the spe
 | Archive virtual filesystem | ADR-006 | SPEC-AB | TKT-M1-01, TKT-M2-04, TKT-M2-05 |
 | Permissions / Sandbox / access | ADR-007 | SPEC-SEC | TKT-M1-07, TKT-M5-02 |
 | Extraction security model | ADR-008 | SPEC-SEC | TKT-M2-06, TKT-M2-07, TKT-M2-11 |
+| Drag-out extraction & archive activation | ADR-006, ADR-001 | SPEC-AB, SPEC-FM | TKT-M2-12, TKT-M2-13 |
 | Engine distribution / license / packaging | ADR-009 | SPEC-REL, SPEC-AE | TKT-M2-01, TKT-M6-04 |
 | CI build / test / release | ADR-010 | SPEC-REL | TKT-M1-10, TKT-M6-02, TKT-M6-03 |
 | Compression workflow | ADR-004, ADR-009 | SPEC-CW | TKT-M3-01 … TKT-M3-07 |

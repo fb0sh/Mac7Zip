@@ -14,7 +14,7 @@ Deliver the professional file-management capabilities deferred from the MVP: cop
 |---|---|---|---|
 | TKT-M4-01 | Copy / Move engine + progress | P1 | Batch async copy/move with conflict handling; reuse `TaskCenter`. |
 | TKT-M4-02 | Conflict resolution UI (replace/skip/keep both, apply-to-all) | P1 | Batch dialog with per-item + apply-all. |
-| TKT-M4-03 | Drag-and-drop into/out of the file list | P1 | `NSFilePromise`/pasteboard; accept external drops; move vs copy via modifier. |
+| TKT-M4-03 | Drag-and-drop into/out of the file list (real files) | P1 | `NSFilePromise`/pasteboard; accept external drops; move vs copy via modifier. (Archive→Finder drag-out is delivered earlier in MVP `TKT-M2-12`; this ticket covers real-file drag and pane-to-pane.) |
 | TKT-M4-04 | Favourites management | P2 | Add/reorder/remove custom sidebar roots; persist in `UserDefaults`. |
 | TKT-M4-05 | Dual-pane mode (7-Zip F9-style) | P2 | Two `BrowserStore`s in a split; independent history/selection; copy between panes. |
 | TKT-M4-06 | Extended metadata & permission display | P2 | Show POSIX perms/owner; symbolic link indicator. |

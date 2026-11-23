@@ -13,7 +13,7 @@ Make Mac7Zip feel native and integrated: open archives from Finder/Dock, preview
 | ID | Title | Pri | Notes |
 |---|---|---|---|
 | TKT-M5-01 | Archive file associations + Open With | P1 | Declare `CFBundleDocumentTypes`/`UTType` for 7z/zip/tar.gz; open archive from Finder. |
-| TKT-M5-02 | Settings window (general, security limits, defaults) | P1 | SwiftUI `Settings` scene; configure extraction limits, default format. |
+| TKT-M5-02 | Settings window (general, security limits, defaults) | P1 | SwiftUI `Settings` scene: extraction limits, default format, **archive activation preference (Open vs Extract, default Open)**, default extract destination. Minimal version may land in M2 (`TKT-M2-13`). |
 | TKT-M5-03 | Quick Look preview for archive entries | P2 | Preview selected file from archive (extract-to-temp + QuickLook). |
 | TKT-M5-04 | Completion notifications | P2 | `UNUserNotificationCenter` on task completion/failure. |
 | TKT-M5-05 | About + Licenses screen (7-Zip LGPL/unRAR notices) | P1 | Surface `LICENSE-7ZIP.txt`/`NOTICE.md` (ADR-009 compliance). |
