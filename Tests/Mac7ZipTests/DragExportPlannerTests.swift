@@ -2,8 +2,8 @@ import XCTest
 @testable import Mac7Zip
 
 final class DragExportPlannerTests: XCTestCase {
-    private func file(_ name: String, dir: Bool = false) -> FileItem {
-        FileItem(
+    private func makeItem(_ name: String, dir: Bool = false) -> Mac7Zip.FileItem {
+        Mac7Zip.FileItem(
             url: URL(fileURLWithPath: "/tmp/\(name)"),
             name: name,
             isDirectory: dir,
@@ -14,7 +14,7 @@ final class DragExportPlannerTests: XCTestCase {
     }
 
     func testRealFilesDragAsFileURLs() {
-        let payload = DragExportPlanner.payload(for: file("a.txt"), isInsideArchive: false)
+        let payload = DragExportPlanner.payload(for: makeItem("a.txt"), isInsideArchive: false)
         guard case .fileURL(let url) = payload else {
             return XCTFail("Expected a file URL payload")
         }
@@ -22,7 +22,7 @@ final class DragExportPlannerTests: XCTestCase {
     }
 
     func testArchiveFilesDragAsPromises() {
-        let payload = DragExportPlanner.payload(for: file("docs/a.txt"), isInsideArchive: true)
+        let payload = DragExportPlanner.payload(for: makeItem("docs/a.txt"), isInsideArchive: true)
         guard case .promise(let entryPath, let fileName) = payload else {
             return XCTFail("Expected a promise payload")
         }
@@ -31,8 +31,8 @@ final class DragExportPlannerTests: XCTestCase {
     }
 
     func testArchiveDirectoriesAreNotDraggable() {
-        let payload = DragExportPlanner.payload(for: file("docs", dir: true), isInsideArchive: true)
-        XCTAssertEqual(payload, .none)
+        let payload = DragExportPlanner.payload(for: makeItem("docs", dir: true), isInsideArchive: true)
+        if case .none = payload {} else { XCTFail("Archive folders shouldn't be draggable") }
     }
 
     func testFileTypeResolution() {
