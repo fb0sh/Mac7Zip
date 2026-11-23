@@ -23,3 +23,10 @@ CI (`macos-26`) 能验证：编译、单元/集成测试、架构、依赖、打
 ## Rule
 
 Never mark an item verified without performing it. CI green is a *different* claim.
+
+## Drag-out to Finder (TKT-M4-09) / drag-in (TKT-M4-03)
+- [ ] Open an archive, select a file, drag to Finder Desktop → file appears and is intact.
+- [ ] Select multiple archive entries, drag to a Finder folder → all appear.
+- [ ] Drag a real file row to Finder → normal move/copy.
+- [ ] Drag from Finder into the file list → copies (or moves with ⌘) into the current folder.
+- [ ] Cancel/drop-outside → no files written, no temp leaks.
