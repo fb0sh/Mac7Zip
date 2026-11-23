@@ -8,11 +8,19 @@ final class SevenZipEngineIntegrationTests: XCTestCase {
     private var engine: SevenZipEngine!
 
     private static var helperURL: URL? {
-        let candidates = [
-            URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-                .appendingPathComponent("Vendor/7zz/26.06/arm64/7zz"),
-        ]
-        return candidates.first { FileManager.default.isExecutableFile(atPath: $0.path) }
+        // 1. Explicit override (CI sets this to the repo's vendored helper).
+        if let env = ProcessInfo.processInfo.environment["MAC7ZIP_7ZZ"],
+           FileManager.default.isExecutableFile(atPath: env) {
+            return URL(fileURLWithPath: env)
+        }
+        // 2. Walk up from the working directory looking for the vendored helper.
+        var dir = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+        for _ in 0..<6 {
+            let candidate = dir.appendingPathComponent("Vendor/7zz/26.06/arm64/7zz")
+            if FileManager.default.isExecutableFile(atPath: candidate.path) { return candidate }
+            dir = dir.deletingLastPathComponent()
+        }
+        return nil
     }
 
     override func setUpWithError() throws {
