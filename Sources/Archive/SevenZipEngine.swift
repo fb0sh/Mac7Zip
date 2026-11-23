@@ -131,19 +131,32 @@ struct SevenZipEngine: ArchiveEngine {
             arguments.insert(contentsOf: passwordArguments, at: arguments.count - sources.count - 1)
         }
 
-        let result = try await runner.run(arguments: arguments)
-
-        defer { try? FileManager.default.removeItem(at: tempDestination) }
-        if let error = ArchiveError.from(exitCode: result.exitCode, diagnostic: result.combinedDiagnostic) {
+        let result: ProcessResult
+        do {
+            result = try await runner.run(arguments: arguments)
+        } catch {
+            try? FileManager.default.removeItem(at: tempDestination)
             throw error
         }
 
-        // Atomically promote the finished archive into place.
-        let fileManager = FileManager.default
-        if fileManager.fileExists(atPath: destination.path) {
-            try fileManager.removeItem(at: destination)
+        if let error = ArchiveError.from(exitCode: result.exitCode, diagnostic: result.combinedDiagnostic) {
+            try? FileManager.default.removeItem(at: tempDestination)
+            throw error
         }
-        try fileManager.moveItem(at: tempDestination, to: destination)
+
+        // Promote the finished archive into place. Cleanup happens only if the
+        // move did not consume the temp file — a `defer` here would delete it
+        // before the move ran.
+        let fileManager = FileManager.default
+        do {
+            if fileManager.fileExists(atPath: destination.path) {
+                try fileManager.removeItem(at: destination)
+            }
+            try fileManager.moveItem(at: tempDestination, to: destination)
+        } catch {
+            try? fileManager.removeItem(at: tempDestination)
+            throw error
+        }
     }
 
     // MARK: - Extract

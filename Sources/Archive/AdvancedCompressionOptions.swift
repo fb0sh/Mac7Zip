@@ -94,9 +94,10 @@ enum AdvancedCompressionValidator {
             problems.append(.invalidSize(field: "Volume size", value: volume))
         }
         if let word = options.wordSize, !word.isEmpty {
-            guard let number = Int(word), (1...273).contains(number) else {
+            if let number = Int(word), (1...273).contains(number) {
+                // valid
+            } else {
                 problems.append(.invalidWordSize(word))
-                return problems
             }
         }
         if let threads = options.threadCount, threads < 1 || threads > 256 {
