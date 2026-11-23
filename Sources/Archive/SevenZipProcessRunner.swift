@@ -34,7 +34,8 @@ struct SevenZipProcessRunner: Sendable {
 
     func run(
         arguments: [String],
-        password: String? = nil,
+        stdinLines: [String] = [],
+        timeout: TimeInterval = 600,
         onLine: (@Sendable (String) -> Void)? = nil
     ) async throws -> ProcessResult {
         let process = Process()
@@ -67,10 +68,11 @@ struct SevenZipProcessRunner: Sendable {
 
         try process.run()
 
-        // Password is written to stdin (interactive prompt). Never argv.
-        if let password {
+        // Interactive prompts (e.g. password) are answered over stdin, never argv.
+        // 7zz asks twice when *creating* an encrypted archive, hence `stdinLines`.
+        if !stdinLines.isEmpty {
             let handle = inPipe.fileHandleForWriting
-            handle.write(Data((password + "\n").utf8))
+            handle.write(Data((stdinLines.joined(separator: "\n") + "\n").utf8))
         }
         try? inPipe.fileHandleForWriting.close()
 
@@ -102,7 +104,7 @@ struct SevenZipProcessRunner: Sendable {
         }
 
         let exitCode = await withTaskCancellationHandler {
-            await termination.value
+            await Self.awaitTermination(termination, process: process, timeout: timeout)
         } onCancel: {
             // Caller cancelled: begin the escalation immediately.
             if process.isRunning { process.interrupt() }
@@ -114,6 +116,39 @@ struct SevenZipProcessRunner: Sendable {
 
         let snapshot = collector.snapshot()
         return ProcessResult(exitCode: exitCode, standardOutput: snapshot.stdout, standardError: snapshot.stderr)
+    }
+
+    /// Waits for the child, but kills it if it exceeds `timeout` so a stuck
+    /// prompt or a wedged 7zz can never hang the caller forever.
+    private static func awaitTermination(
+        _ termination: Task<Int32, Never>,
+        process: Process,
+        timeout: TimeInterval
+    ) async -> Int32 {
+        let deadline = Task.detached {
+            try? await Task.sleep(nanoseconds: UInt64(max(timeout, 1) * 1_000_000_000))
+        }
+        let winner = await withTaskGroup(of: Bool.self) { group -> Bool in
+            group.addTask {
+                _ = await termination.value
+                return true // process finished
+            }
+            group.addTask {
+                await deadline.value
+                return false // timed out
+            }
+            let first = await group.next() ?? false
+            group.cancelAll()
+            return first
+        }
+        if !winner {
+            if process.isRunning { process.terminate() }
+            try? await Task.sleep(nanoseconds: 500_000_000)
+            if process.isRunning { kill(process.processIdentifier, SIGKILL) }
+            _ = await termination.value
+        }
+        deadline.cancel()
+        return process.terminationStatus
     }
 }
 

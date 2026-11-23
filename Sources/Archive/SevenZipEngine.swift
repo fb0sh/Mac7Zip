@@ -72,7 +72,9 @@ struct SevenZipEngine: ArchiveEngine {
         arguments.append(destination.path)
         arguments.append(contentsOf: sources.map(\.path))
 
-        let result = try await runner.run(arguments: arguments, password: options.password)
+        // Creation prompts twice ("Enter password" + "Re-enter password").
+        let stdinLines = options.password.map { [$0, $0] } ?? []
+        let result = try await runner.run(arguments: arguments, stdinLines: stdinLines)
         if let error = ArchiveError.from(exitCode: result.exitCode, diagnostic: result.combinedDiagnostic) {
             throw error
         }
@@ -105,7 +107,7 @@ struct SevenZipEngine: ArchiveEngine {
         arguments.append(archive.path)
         arguments.append("-o\(staging.url.path)")
 
-        let result = try await runner.run(arguments: arguments, password: options.password)
+        let result = try await runner.run(arguments: arguments, stdinLines: options.password.map { [$0] } ?? [])
         if let error = ArchiveError.from(exitCode: result.exitCode, diagnostic: result.combinedDiagnostic) {
             throw error
         }
