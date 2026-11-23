@@ -176,42 +176,42 @@ private final class ExitWaiter: @unchecked Sendable {
 }
 
 /// Thread-safe accumulator for subprocess output.
+///
+/// Stores **raw bytes** and decodes once at snapshot time, so non-UTF-8 (e.g. GBK
+/// Chinese) names and multi-byte characters split across pipe reads are preserved.
 final class OutputCollector: @unchecked Sendable {
     private let lock = NSLock()
-    private var stdout = ""
-    private var stderr = ""
+    private var stdoutData = Data()
+    private var stderrData = Data()
     private let onLine: (@Sendable (String) -> Void)?
-    private var stdoutBuffer = ""
-    private var stderrBuffer = ""
+    private var stdoutLineBuffer = Data()
 
     init(onLine: (@Sendable (String) -> Void)?) {
         self.onLine = onLine
     }
 
     func appendStdout(_ data: Data) {
-        guard let text = String(data: data, encoding: .utf8) else { return }
         lock.lock()
-        stdout += text
-        stdoutBuffer += text
-        let lines = drainLines(&stdoutBuffer)
+        stdoutData.append(data)
+        stdoutLineBuffer.append(data)
+        let lines = Self.drainLines(&stdoutLineBuffer)
         lock.unlock()
-        lines.forEach { onLine?($0) }
+        for line in lines { onLine?(line) }
     }
 
     func appendStderr(_ data: Data) {
-        guard let text = String(data: data, encoding: .utf8) else { return }
         lock.lock()
-        stderr += text
-        stderrBuffer += text
-        _ = drainLines(&stderrBuffer)
+        stderrData.append(data)
         lock.unlock()
     }
 
-    private func drainLines(_ buffer: inout String) -> [String] {
+    /// Splits complete lines (terminated by `\n`) out of the byte buffer.
+    private static func drainLines(_ buffer: inout Data) -> [String] {
         var lines: [String] = []
-        while let range = buffer.range(of: "\n") {
-            lines.append(String(buffer[buffer.startIndex..<range.lowerBound]))
-            buffer = String(buffer[range.upperBound...])
+        while let newline = buffer.firstIndex(of: 0x0A) {
+            let lineData = buffer.subdata(in: buffer.startIndex..<newline)
+            buffer.removeSubrange(buffer.startIndex...newline)
+            lines.append(SubprocessTextDecoder.decode(lineData))
         }
         return lines
     }
@@ -219,6 +219,6 @@ final class OutputCollector: @unchecked Sendable {
     func snapshot() -> (stdout: String, stderr: String) {
         lock.lock()
         defer { lock.unlock() }
-        return (stdout, stderr)
+        return (SubprocessTextDecoder.decode(stdoutData), SubprocessTextDecoder.decode(stderrData))
     }
 }
