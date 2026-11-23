@@ -116,10 +116,34 @@ struct SevenZipProcessRunner: Sendable {
         outPipe.fileHandleForReading.readabilityHandler = nil
         errPipe.fileHandleForReading.readabilityHandler = nil
 
+        // Final drain: bytes written just before exit may not have been delivered
+        // to the readability handlers yet. Dropping them loses trailing output
+        // (e.g. "Everything is Ok"), so read whatever is left.
+        Self.drainRemaining(outPipe.fileHandleForReading, into: collector, isStdout: true)
+        Self.drainRemaining(errPipe.fileHandleForReading, into: collector, isStdout: false)
+
         let snapshot = collector.snapshot()
         return ProcessResult(exitCode: exitCode, standardOutput: snapshot.stdout, standardError: snapshot.stderr)
     }
 }
+
+    /// Reads any buffered bytes left in a pipe after the child exited.
+    private static func drainRemaining(_ handle: FileHandle, into collector: OutputCollector, isStdout: Bool) {
+        while true {
+            let data: Data
+            do {
+                data = try handle.read(upToCount: 65_536) ?? Data()
+            } catch {
+                return
+            }
+            if data.isEmpty { return }
+            if isStdout {
+                collector.appendStdout(data)
+            } else {
+                collector.appendStderr(data)
+            }
+        }
+    }
 
 /// Bridges `Process` termination to an async continuation without blocking.
 private final class ExitWaiter: @unchecked Sendable {
