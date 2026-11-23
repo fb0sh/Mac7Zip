@@ -25,7 +25,6 @@
 - **`TKT-M2-08` (#19)** — TaskCenter + Tasks UI (parallelizable with M2-02).
 - After M2-02: **`TKT-M2-03` (#14)** output parsers.
 - Manual-on-Mac items (VoiceOver/XCUITest/drag) tracked in `docs/execution/MANUAL-CHECKS.md`.
-- **`TKT-M2-02` (#13)** — engine process runner; **`TKT-M2-08` (#19)** — TaskCenter (parallel).
 
 ## Tickets
 | Ticket | Milestone | Status | Issue | Dependencies | Branch/PR | CI | Blockers |
