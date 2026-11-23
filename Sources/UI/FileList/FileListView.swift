@@ -41,6 +41,19 @@ struct FileListView: NSViewRepresentable {
 
         context.coordinator.applySavedColumnWidths(to: tableView)
 
+        let menu = NSMenu()
+        menu.addItem(withTitle: "Open", action: #selector(Coordinator.menuOpen(_:)), keyEquivalent: "")
+        menu.addItem(.separator())
+        menu.addItem(withTitle: "Rename…", action: #selector(Coordinator.menuRename(_:)), keyEquivalent: "")
+        menu.addItem(withTitle: "Move to Trash", action: #selector(Coordinator.menuDelete(_:)), keyEquivalent: "")
+        menu.addItem(.separator())
+        menu.addItem(withTitle: "New Folder", action: #selector(Coordinator.menuNewFolder(_:)), keyEquivalent: "")
+        menu.addItem(withTitle: "Reveal in Finder", action: #selector(Coordinator.menuReveal(_:)), keyEquivalent: "")
+        for item in menu.items where item.action != nil {
+            item.target = context.coordinator
+        }
+        tableView.menu = menu
+
         let scrollView = NSScrollView()
         scrollView.documentView = tableView
         scrollView.hasVerticalScroller = true
@@ -77,7 +90,7 @@ struct FileListView: NSViewRepresentable {
 
 extension FileListView {
     @MainActor
-    final class Coordinator: NSObject, NSTableViewDataSource, NSTableViewDelegate {
+    final class Coordinator: NSObject, NSTableViewDataSource, NSTableViewDelegate, NSMenuItemValidation {
         var model: FileBrowserModel
         weak var tableView: NSTableView?
 
@@ -234,6 +247,43 @@ extension FileListView {
 
         func openSelection() {
             model.openSelected()
+        }
+
+        // MARK: - Context menu
+
+        @objc func menuOpen(_ sender: Any?) {
+            model.openSelected()
+        }
+
+        @objc func menuRename(_ sender: Any?) {
+            if let item = model.selectedItems.first {
+                FileOperationsViewActions.rename(item, in: model)
+            }
+        }
+
+        @objc func menuDelete(_ sender: Any?) {
+            FileOperationsViewActions.deleteSelection(in: model)
+        }
+
+        @objc func menuNewFolder(_ sender: Any?) {
+            FileOperationsViewActions.newFolder(in: model)
+        }
+
+        @objc func menuReveal(_ sender: Any?) {
+            let urls = model.selectedItems.map(\.url)
+            guard !urls.isEmpty else { return }
+            NSWorkspace.shared.activateFileViewerSelecting(urls)
+        }
+
+        func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
+            switch menuItem.action {
+            case #selector(menuOpen(_:)), #selector(menuRename(_:)), #selector(menuDelete(_:)), #selector(menuReveal(_:)):
+                return !model.selection.isEmpty
+            case #selector(menuNewFolder(_:)):
+                return model.canModify
+            default:
+                return true
+            }
         }
 
         // MARK: - Column width persistence

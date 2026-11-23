@@ -101,6 +101,37 @@ jobs:
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
             build | tee build-release.log
 
+      - name: Lint (non-blocking)
+        continue-on-error: true
+        run: |
+          echo "--- swift-format lint (non-blocking) ---"
+          swift format lint --strict --recursive Sources Tests 2>&1 | head -60 || true
+          echo "--- SwiftLint (non-blocking) ---"
+          if command -v swiftlint >/dev/null 2>&1; then
+            swiftlint lint --quiet 2>&1 | head -60 || true
+          else
+            echo "swiftlint not installed; skipping"
+          fi
+
+      - name: Verify architecture and dependencies
+        run: |
+          set -euo pipefail
+          BINARY="build/Build/Products/Release/${APP_NAME}.app/Contents/MacOS/${APP_NAME}"
+          if [ ! -f "$BINARY" ]; then
+            echo "::error::Executable not found at $BINARY"
+            exit 1
+          fi
+          echo "--- lipo -info ---"
+          lipo -info "$BINARY"
+          ARCHS_FOUND="$(lipo -archs "$BINARY")"
+          echo "archs: $ARCHS_FOUND"
+          case "$ARCHS_FOUND" in
+            *arm64*) echo "arm64 present" ;;
+            *) echo "::error::arm64 missing from binary"; exit 1 ;;
+          esac
+          echo "--- otool -L ---"
+          otool -L "$BINARY"
+
       - name: Package .app into ZIP
         run: |
           set -euo pipefail
