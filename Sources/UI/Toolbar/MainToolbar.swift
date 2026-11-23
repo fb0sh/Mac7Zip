@@ -6,16 +6,25 @@ struct MainToolbar: ToolbarContent {
     let model: BrowserStore
     @ObservedObject var tasks: TaskCenterAdapter
     @Binding var columnVisibility: NavigationSplitViewVisibility
+    var isDualPane: Bool = false
+    var onToggleDualPane: (() -> Void)? = nil
+    var onAddFavourite: (() -> Void)? = nil
     @State private var showingTasks = false
 
     init(
         model: BrowserStore,
         tasks: TaskCenterAdapter,
-        columnVisibility: Binding<NavigationSplitViewVisibility>
+        columnVisibility: Binding<NavigationSplitViewVisibility>,
+        isDualPane: Bool = false,
+        onToggleDualPane: (() -> Void)? = nil,
+        onAddFavourite: (() -> Void)? = nil
     ) {
         self.model = model
         self.tasks = tasks
         self._columnVisibility = columnVisibility
+        self.isDualPane = isDualPane
+        self.onToggleDualPane = onToggleDualPane
+        self.onAddFavourite = onAddFavourite
     }
 
     var body: some ToolbarContent {
@@ -105,6 +114,26 @@ struct MainToolbar: ToolbarContent {
             }
             .help("Show information about the selection")
             .disabled(model.isInsideArchive)
+        }
+
+        ToolbarItem(placement: .primaryAction) {
+            Button {
+                onAddFavourite?()
+            } label: {
+                Image(systemName: "star")
+            }
+            .help("Add the current folder to Favourites")
+            .disabled(onAddFavourite == nil)
+        }
+
+        ToolbarItem(placement: .primaryAction) {
+            Button {
+                onToggleDualPane?()
+            } label: {
+                Image(systemName: isDualPane ? "rectangle.split.2x1.fill" : "rectangle.split.2x1")
+            }
+            .help("Toggle dual-pane mode")
+            .disabled(onToggleDualPane == nil)
         }
 
         ToolbarItem(placement: .primaryAction) {

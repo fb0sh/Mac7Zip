@@ -3,27 +3,53 @@ import SwiftUI
 struct ContentView: View {
     @EnvironmentObject private var model: BrowserStore
     @StateObject private var tasks = TaskCenterAdapter()
+    @StateObject private var favourites = FavouritesStore()
+    @StateObject private var panes = DualPaneController()
+    @StateObject private var secondaryModel = BrowserStore()
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
-    @State private var sidebarSelection: SidebarLocation? = .home
 
     var body: some View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
-            SidebarView(selection: $sidebarSelection)
-        } detail: {
-            VStack(spacing: 0) {
-                PathBarView()
-                Divider()
-                ZStack {
-                    FileListView(model: model)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    statusOverlay
+            SidebarView(favourites: favourites) { url in
+                activeModel.navigate(to: url)
+            }
+            .safeAreaInset(edge: .bottom) {
+                Button {
+                    favourites.add(url: activeModel.currentDirectory)
+                } label: {
+                    Label("Add Current Folder", systemImage: "star")
+                        .font(.caption)
                 }
-                Divider()
-                StatusBarView()
+                .buttonStyle(.borderless)
+                .padding(8)
+                .disabled(favourites.isFavourite(activeModel.currentDirectory))
+            }
+        } detail: {
+            if panes.isDualPane {
+                HSplitView {
+                    FilePane(model: model)
+                        .overlay(paneBorder(index: 0))
+                        .onTapGesture { panes.setActive(0) }
+                    FilePane(model: secondaryModel)
+                        .overlay(paneBorder(index: 1))
+                        .onTapGesture { panes.setActive(1) }
+                }
+            } else {
+                FilePane(model: model)
             }
         }
         .toolbar {
-            MainToolbar(model: model, tasks: tasks, columnVisibility: $columnVisibility)
+            MainToolbar(
+                model: model,
+                tasks: tasks,
+                columnVisibility: $columnVisibility,
+                isDualPane: panes.isDualPane,
+                onToggleDualPane: {
+                    panes.toggle()
+                    if panes.isDualPane { secondaryModel.navigate(to: model.currentDirectory) }
+                },
+                onAddFavourite: { favourites.add(url: model.currentDirectory) }
+            )
         }
         .navigationTitle(model.currentDirectory.lastPathComponent.isEmpty ? "Mac7Zip" : model.currentDirectory.lastPathComponent)
         .navigationSubtitle(subtitle)
@@ -58,11 +84,6 @@ struct ContentView: View {
                     },
                     onCancel: { model.extractRequested = false }
                 )
-            }
-        }
-        .onChange(of: sidebarSelection) { _, newValue in
-            if let newValue {
-                model.navigate(to: newValue.url)
             }
         }
         .alert("Archive Test", isPresented: testResultBinding) {
@@ -120,28 +141,12 @@ struct ContentView: View {
         )
     }
 
-    @ViewBuilder
-    private var statusOverlay: some View {
-        switch model.loadState {
-        case .loading:
-            if model.items.isEmpty {
-                ProgressView("Loading…").controlSize(.large)
-            }
-        case .empty:
-            ContentUnavailableView("Empty Folder", systemImage: "folder")
-        case .failed(let message):
-            VStack(spacing: 12) {
-                Image(systemName: "exclamationmark.triangle")
-                    .font(.largeTitle)
-                    .foregroundStyle(.secondary)
-                Text(message)
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: 420)
-                Button("Retry") { model.reload() }
-            }
-            .padding()
-        case .loaded:
-            EmptyView()
-        }
+    private var activeModel: BrowserStore {
+        panes.isDualPane && panes.activePane == 1 ? secondaryModel : model
+    }
+
+    private func paneBorder(index: Int) -> some View {
+        Rectangle()
+            .strokeBorder(panes.isDualPane && panes.activePane == index ? Color.accentColor : Color.clear, lineWidth: 2)
     }
 }

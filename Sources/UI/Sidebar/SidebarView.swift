@@ -1,12 +1,35 @@
 import SwiftUI
 
 struct SidebarView: View {
-    @Binding var selection: SidebarLocation?
+    @ObservedObject var favourites: FavouritesStore
+    var onOpen: (URL) -> Void
 
     var body: some View {
-        List(SidebarLocation.allCases, selection: $selection) { location in
-            Label(location.title, systemImage: location.systemImage)
-                .tag(location)
+        List {
+            Section("Favourites") {
+                ForEach(favourites.favourites) { favourite in
+                    Button {
+                        onOpen(favourite.url)
+                    } label: {
+                        Label(favourite.name, systemImage: "folder")
+                    }
+                    .buttonStyle(.plain)
+                    .contextMenu {
+                        Button("Remove from Favourites") { favourites.remove(favourite) }
+                    }
+                }
+            }
+
+            Section("System") {
+                ForEach(SidebarLocation.allCases) { location in
+                    Button {
+                        onOpen(location.url)
+                    } label: {
+                        Label(location.title, systemImage: location.systemImage)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
         }
         .listStyle(.sidebar)
         .navigationTitle("Mac7Zip")
