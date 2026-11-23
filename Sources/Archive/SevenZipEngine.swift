@@ -18,15 +18,22 @@ struct SevenZipEngine: ArchiveEngine {
         self.validator = validator
     }
 
-    init(executableURL: URL, limits: ExtractionLimits = ExtractionLimits()) {
-        self.runner = SevenZipProcessRunner(executableURL: executableURL)
+    init(executableURL: URL, limits: ExtractionLimits = ExtractionLimits(), timeout: TimeInterval = 300) {
+        self.runner = SevenZipProcessRunner(executableURL: executableURL, timeout: timeout)
         self.validator = SecurityValidator(limits: limits)
     }
 
     // MARK: - List
 
     func listContents(of archive: URL) async throws -> [ArchiveEntry] {
-        let result = try await runner.run(arguments: ["l", "-slt", "-sccUTF-8", archive.path])
+        try await listContents(of: archive, password: nil)
+    }
+
+    func listContents(of archive: URL, password: String?) async throws -> [ArchiveEntry] {
+        var arguments = ["l", "-slt", "-sccUTF-8"]
+        if password != nil { arguments.append("-p") }
+        arguments.append(archive.path)
+        let result = try await runner.run(arguments: arguments, stdinLines: password.map { [$0] } ?? [])
         let diagnostic = result.combinedDiagnostic
 
         if let error = ArchiveError.from(exitCode: result.exitCode, diagnostic: diagnostic) {
@@ -84,7 +91,7 @@ struct SevenZipEngine: ArchiveEngine {
 
     func extract(archive: URL, to destination: URL, options: ExtractOptions) async throws {
         // 1. Validate before writing anything.
-        let entries = try await listContents(of: archive)
+        let entries = try await listContents(of: archive, password: options.password)
         let violations = validator.validate(entries: entries, destination: destination)
         if let first = violations.first {
             throw ArchiveError.unsafeEntry(

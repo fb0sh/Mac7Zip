@@ -47,7 +47,7 @@ final class SevenZipEngineIntegrationTests: XCTestCase {
         workDir = FileManager.default.temporaryDirectory
             .appendingPathComponent("Mac7ZipEngineTests-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: workDir, withIntermediateDirectories: true)
-        engine = SevenZipEngine(executableURL: helper)
+        engine = SevenZipEngine(executableURL: helper, timeout: 30)
     }
 
     override func tearDownWithError() throws {

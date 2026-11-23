@@ -35,7 +35,7 @@ struct SevenZipProcessRunner: Sendable {
     func run(
         arguments: [String],
         stdinLines: [String] = [],
-        timeout: TimeInterval = 600,
+        timeout: TimeInterval = 300,
         onLine: (@Sendable (String) -> Void)? = nil
     ) async throws -> ProcessResult {
         let process = Process()
@@ -66,89 +66,85 @@ struct SevenZipProcessRunner: Sendable {
             collector.appendStderr(data)
         }
 
-        try process.run()
+        // Completion is delivered via the continuation, never by blocking a
+        // cooperative thread with `waitUntilExit()` (that starves the pool).
+        let waiter = ExitWaiter()
+        process.terminationHandler = { finished in
+            waiter.finish(finished.terminationStatus)
+        }
+
+        do {
+            try process.run()
+        } catch {
+            outPipe.fileHandleForReading.readabilityHandler = nil
+            errPipe.fileHandleForReading.readabilityHandler = nil
+            throw error
+        }
 
         // Interactive prompts (e.g. password) are answered over stdin, never argv.
         // 7zz asks twice when *creating* an encrypted archive, hence `stdinLines`.
         if !stdinLines.isEmpty {
-            let handle = inPipe.fileHandleForWriting
-            handle.write(Data((stdinLines.joined(separator: "\n") + "\n").utf8))
+            inPipe.fileHandleForWriting.write(Data((stdinLines.joined(separator: "\n") + "\n").utf8))
         }
         try? inPipe.fileHandleForWriting.close()
 
-        // `waitUntilExit` is not cancellation-aware, but awaiting it from a task
-        // whose parent was cancelled can surface `CancellationError`. The child's
-        // exit status is what matters, so run it detached from the caller's
-        // cancellation state.
-        let termination = Task.detached { () -> Int32 in
-            process.waitUntilExit()
-            return process.terminationStatus
-        }
-
-        // Escalating cancellation: SIGINT -> SIGTERM -> SIGKILL. Runs only when
-        // the caller actually cancels; it never fires on normal completion.
-        let escalator = Task.detached { [graceInterval] in
-            do {
-                try await Task.sleep(nanoseconds: UInt64(graceInterval * 1_000_000_000))
-                guard process.isRunning else { return }
-                process.interrupt() // SIGINT
-                try await Task.sleep(nanoseconds: UInt64(graceInterval * 1_000_000_000))
-                guard process.isRunning else { return }
-                process.terminate() // SIGTERM
-                try await Task.sleep(nanoseconds: UInt64(graceInterval * 1_000_000_000))
-                guard process.isRunning else { return }
-                kill(process.processIdentifier, SIGKILL)
-            } catch {
-                // Cancelled because the process already finished.
-            }
+        // Watchdog: never let a wedged child hang the caller forever.
+        let watchdog = Task.detached { [graceInterval] in
+            try? await Task.sleep(nanoseconds: UInt64(max(timeout, 1) * 1_000_000_000))
+            guard !Task.isCancelled, process.isRunning else { return }
+            process.interrupt()
+            try? await Task.sleep(nanoseconds: UInt64(graceInterval * 1_000_000_000))
+            guard !Task.isCancelled, process.isRunning else { return }
+            process.terminate()
+            try? await Task.sleep(nanoseconds: UInt64(graceInterval * 1_000_000_000))
+            guard !Task.isCancelled, process.isRunning else { return }
+            kill(process.processIdentifier, SIGKILL)
         }
 
         let exitCode = await withTaskCancellationHandler {
-            await Self.awaitTermination(termination, process: process, timeout: timeout)
+            await withCheckedContinuation { continuation in
+                waiter.attach(continuation)
+            }
         } onCancel: {
-            // Caller cancelled: begin the escalation immediately.
             if process.isRunning { process.interrupt() }
         }
 
-        escalator.cancel()
+        watchdog.cancel()
         outPipe.fileHandleForReading.readabilityHandler = nil
         errPipe.fileHandleForReading.readabilityHandler = nil
 
         let snapshot = collector.snapshot()
         return ProcessResult(exitCode: exitCode, standardOutput: snapshot.stdout, standardError: snapshot.stderr)
     }
+}
 
-    /// Waits for the child, but kills it if it exceeds `timeout` so a stuck
-    /// prompt or a wedged 7zz can never hang the caller forever.
-    private static func awaitTermination(
-        _ termination: Task<Int32, Never>,
-        process: Process,
-        timeout: TimeInterval
-    ) async -> Int32 {
-        let deadline = Task.detached {
-            try? await Task.sleep(nanoseconds: UInt64(max(timeout, 1) * 1_000_000_000))
+/// Bridges `Process` termination to an async continuation without blocking.
+private final class ExitWaiter: @unchecked Sendable {
+    private let lock = NSLock()
+    private var continuation: CheckedContinuation<Int32, Never>?
+    private var finishedCode: Int32?
+
+    func attach(_ continuation: CheckedContinuation<Int32, Never>) {
+        lock.lock()
+        if let code = finishedCode {
+            lock.unlock()
+            continuation.resume(returning: code)
+        } else {
+            self.continuation = continuation
+            lock.unlock()
         }
-        let winner = await withTaskGroup(of: Bool.self) { group -> Bool in
-            group.addTask {
-                _ = await termination.value
-                return true // process finished
-            }
-            group.addTask {
-                await deadline.value
-                return false // timed out
-            }
-            let first = await group.next() ?? false
-            group.cancelAll()
-            return first
+    }
+
+    func finish(_ code: Int32) {
+        lock.lock()
+        if let continuation {
+            self.continuation = nil
+            lock.unlock()
+            continuation.resume(returning: code)
+        } else {
+            finishedCode = code
+            lock.unlock()
         }
-        if !winner {
-            if process.isRunning { process.terminate() }
-            try? await Task.sleep(nanoseconds: 500_000_000)
-            if process.isRunning { kill(process.processIdentifier, SIGKILL) }
-            _ = await termination.value
-        }
-        deadline.cancel()
-        return process.terminationStatus
     }
 }
 
