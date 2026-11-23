@@ -83,6 +83,9 @@ jobs:
           printf 'pw123\n' | "$ZZ" a -t7z -ppw123 argv.7z src >/dev/null 2>&1; echo "CREATE_argv=$?"
           printf 'pw123\n' | "$ZZ" t -p argv.7z >/dev/null 2>&1; echo "TEST_argv_with_promptpw=$?"
           "$ZZ" t -ppw123 argv.7z >/dev/null 2>&1; echo "TEST_argv_with_argvpw=$?"
+          printf 'pw123\n' | /usr/bin/script -q /dev/null "$ZZ" t -p two.7z >/dev/null 2>&1; echo "PTY_TEST_good=$?"
+          printf 'bad\n'   | /usr/bin/script -q /dev/null "$ZZ" t -p two.7z >/dev/null 2>&1; echo "PTY_TEST_bad=$?"
+          printf 'pw123\n' | /usr/bin/script -q /dev/null "$ZZ" x -p two.7z -o"out_pty" -y >/dev/null 2>&1; echo "PTY_EXTRACT=$?"
           echo "DIAGDONE"
 
       - name: Compile check (Debug)
