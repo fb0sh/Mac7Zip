@@ -20,6 +20,16 @@ The project is built with **Swift**, **SwiftUI**, and **AppKit**, and is develop
 - Archive actions (Add / Extract / Test / Copy / Move / Delete / Info) are present but **disabled**.
 - Unit tests for file sorting, path utilities, and byte-count formatting.
 
+## Documentation
+
+Engineering design lives in `docs/`:
+
+- [Architecture overview & traceability matrix](docs/architecture/overview.md)
+- [Architecture Decision Records](docs/architecture/adr/) — ADR-001 … ADR-010
+- [Specifications](docs/specs/index.md) — file manager, archive engine, archive browser, compression, task management, security, release
+- [Tickets](docs/tickets/index.md) — M1–M3 implementation-ready, M4–M6 epic-level
+- [Development roadmap](docs/roadmap.md)
+
 ## Tech stack
 
 | Area | Choice |
