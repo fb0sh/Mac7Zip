@@ -70,7 +70,7 @@
 | TKT-M4-06 — Metadata, permissions & symlink handling | M4 | Implemented/verified (integration) | #37 | TKT-M4-01. | integration/m1-m6 / PR #62 | [run 45156083294](https://github.com/fb0sh/Mac7Zip/actions/runs/45156083294) — 151 tests OK | — |
 | TKT-M4-07 — Operation progress / cancel / completion feedback | M4 | Implemented/verified (integration) | #38 | TKT-M4-01, TKT-M2-08. | integration/m1-m6 / PR #62 | [run 45156083294](https://github.com/fb0sh/Mac7Zip/actions/runs/45156083294) — 151 tests OK | — |
 | TKT-M4-08 — File-operation integration tests | M4 | Implemented/verified (integration) | #39 | TKT-M4-01…07. | integration/m1-m6 / PR #62 | [run 45156083294](https://github.com/fb0sh/Mac7Zip/actions/runs/45156083294) — 151 tests OK | — |
-| TKT-M2-12 — Drag-out-to-Finder extraction (deferred enhancement) | M4 | Planned | #23 | TKT-M2-04, TKT-M2-06, TKT-M2-07. | — | — | — |
+| TKT-M2-12 — Drag-out-to-Finder extraction (deferred enhancement) | M4 | Implemented (runtime drag verification pending manual check) | #23 | TKT-M2-04, TKT-M2-06, TKT-M2-07. | integration/m1-m6 / PR #62 | [run 45158335242](https://github.com/fb0sh/Mac7Zip/actions/runs/45158335242) — 155 tests; drag UX = MANUAL-CHECKS | — |
 | TKT-M5-01 — Archive file associations + Open With + document open | M5 | Planned | #40 | TKT-M2-05. | — | — | — |
 | TKT-M5-02 — Settings window (activation, limits, defaults) | M5 | Planned | #41 | TKT-M2-13. | — | — | — |
 | TKT-M5-03 — Quick Look preview for archive entries | M5 | Planned | #42 | TKT-M2-07. | — | — | — |
