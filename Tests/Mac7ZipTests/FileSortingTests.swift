@@ -66,3 +66,30 @@ final class FileSortingTests: XCTestCase {
         XCTAssertEqual(sorted.count, items.count)
     }
 }
+
+final class FileSortingDirectoryFirstTests: XCTestCase {
+    private func item(_ name: String, dir: Bool, size: Int64 = 0) -> FileItem {
+        FileItem(url: URL(fileURLWithPath: "/t/\(name)"), name: name, isDirectory: dir,
+                 size: size, modificationDate: nil, kind: dir ? "Folder" : "File")
+    }
+
+    func testDirectoriesFirstAscending() {
+        let items = [item("a.txt", dir: false), item("zeta", dir: true), item("b.txt", dir: false)]
+        let sorted = FileSorting.sorted(items, by: FileSortDescriptor(field: .name, ascending: true))
+        XCTAssertTrue(sorted.first?.isDirectory ?? false)
+        XCTAssertEqual(sorted.map(\.name), ["zeta", "a.txt", "b.txt"])
+    }
+
+    func testDirectoriesFirstDescending() {
+        let items = [item("zeta", dir: true), item("a.txt", dir: false), item("alpha", dir: true)]
+        let sorted = FileSorting.sorted(items, by: FileSortDescriptor(field: .name, ascending: false))
+        XCTAssertEqual(sorted.prefix(2).map(\.isDirectory), [true, true], "Folders stay first even when descending")
+        XCTAssertEqual(sorted.last?.name, "a.txt")
+    }
+
+    func testDirectoriesFirstBySize() {
+        let items = [item("big.bin", dir: false, size: 999), item("folder", dir: true, size: 0)]
+        let sorted = FileSorting.sorted(items, by: FileSortDescriptor(field: .size, ascending: true))
+        XCTAssertTrue(sorted.first?.isDirectory ?? false)
+    }
+}
