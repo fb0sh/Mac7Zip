@@ -55,13 +55,11 @@ struct PathBarView: View {
             isEditing = false
             return
         }
-        let expanded = (trimmed as NSString).expandingTildeInPath
-        var url = URL(fileURLWithPath: expanded)
-        var isDirectory: ObjCBool = false
-        if FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory), !isDirectory.boolValue {
-            url = url.deletingLastPathComponent()
+        guard let target = model.resolveNavigationTarget(trimmed) else {
+            isEditing = false
+            return
         }
-        model.navigate(to: url)
+        model.navigate(to: target)
         isEditing = false
     }
 }

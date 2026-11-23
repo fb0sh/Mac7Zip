@@ -2,11 +2,11 @@ import AppKit
 import Combine
 import Foundation
 
-/// Owns the browsing state for the main window: current directory, listing,
-/// selection, sort configuration, and navigation history. All mutation happens
-/// on the main actor; disk reads are delegated to `FileSystemService`.
+/// Owns the browsing state for the main window: location, listing, selection,
+/// sort configuration, and navigation history. All mutation happens on the main
+/// actor; disk reads are delegated to a `FileSystemProvider` (which uses `FileAccess`).
 @MainActor
-final class FileBrowserModel: ObservableObject {
+final class BrowserStore: ObservableObject {
     @Published private(set) var currentDirectory: URL
     @Published private(set) var items: [FileItem] = []
     @Published var selection: Set<FileItem.ID> = []
@@ -16,20 +16,29 @@ final class FileBrowserModel: ObservableObject {
     @Published private(set) var canGoBack = false
     @Published private(set) var canGoForward = false
 
-    private let fileSystem: FileSystemService
+    private let provider: FileSystemProvider
+    private let access: FileAccess
     private var history: [URL]
     private var historyIndex: Int
 
     init(
-        startingAt url: URL = FileManager.default.homeDirectoryForCurrentUser,
-        fileSystem: FileSystemService = FileSystemService()
+        startingAt url: URL = FileLocations.home,
+        provider: FileSystemProvider = RealFileSystemProvider(),
+        access: FileAccess = RealFileAccess()
     ) {
         let standardized = url.standardizedFileURL
         self.currentDirectory = standardized
-        self.fileSystem = fileSystem
+        self.provider = provider
+        self.access = access
         self.history = [standardized]
         self.historyIndex = 0
     }
+
+    /// The current browse location (real filesystem today; archive later).
+    var location: BrowserLocation { .real(currentDirectory) }
+
+    /// Capabilities of the active provider (drives UI enable/disable).
+    var capabilities: FileSystemCapabilities { provider.capabilities }
 
     var selectedItems: [FileItem] {
         items.filter { selection.contains($0.id) }
@@ -48,18 +57,19 @@ final class FileBrowserModel: ObservableObject {
     }
 
     func reload() {
+        let requestedLocation = location
         let directory = currentDirectory
         isLoading = true
         Task {
             do {
-                let contents = try await fileSystem.contents(of: directory)
-                guard directory == currentDirectory else { return }
+                let contents = try await provider.list(requestedLocation)
+                guard currentDirectory == directory else { return }
                 items = FileSorting.sorted(contents, by: sortDescriptor)
                 let validIDs = Set(items.map(\.id))
                 selection = selection.intersection(validIDs)
                 errorMessage = nil
             } catch {
-                guard directory == currentDirectory else { return }
+                guard currentDirectory == directory else { return }
                 items = []
                 selection = []
                 errorMessage = Self.message(for: error, directory: directory)
@@ -104,6 +114,15 @@ final class FileBrowserModel: ObservableObject {
         reload()
     }
 
+    /// Resolves a user-entered path to a navigable directory URL. A file path
+    /// resolves to its parent directory; a missing path resolves to nil.
+    func resolveNavigationTarget(_ rawPath: String) -> URL? {
+        let url = access.normalizeUserPath(rawPath)
+        let snapshot = access.snapshot(at: url)
+        guard snapshot.exists else { return nil }
+        return snapshot.isDirectory ? url : url.deletingLastPathComponent()
+    }
+
     // MARK: - Sorting
 
     func setSort(field: FileSortField, ascending: Bool) {
@@ -141,6 +160,12 @@ final class FileBrowserModel: ObservableObject {
     }
 
     private static func message(for error: Error, directory: URL) -> String {
+        if let providerError = error as? FileSystemProviderError {
+            switch providerError {
+            case .unsupportedLocation:
+                return "This location can’t be browsed here."
+            }
+        }
         let nsError = error as NSError
         if nsError.domain == NSCocoaErrorDomain && nsError.code == NSFileReadNoPermissionError {
             return "“\(directory.lastPathComponent)” can’t be opened because you don’t have permission to view it."
@@ -151,3 +176,6 @@ final class FileBrowserModel: ObservableObject {
         return error.localizedDescription
     }
 }
+
+/// Backwards-compatible name used by Phase 0 UI code.
+typealias FileBrowserModel = BrowserStore
