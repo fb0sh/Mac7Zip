@@ -103,7 +103,19 @@ struct ContentView: View {
                 )
             }
         }
-        .onOpenURL { url in FileOpenInbox.shared.enqueue(url) }
+        .onOpenURL { url in
+            if url.scheme == "mac7zip", url.host == "action" {
+                let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+                let action = components?.queryItems?
+                    .first { $0.name == "action" }?.value
+                    .flatMap(ServiceAction.init(rawValue:))
+                let files = components?.queryItems?
+                    .filter { $0.name == "file" }.compactMap { $0.value.map { URL(fileURLWithPath: $0) } } ?? []
+                if let action { _ = ServiceHandlers.handle(action, urls: files) }
+            } else {
+                FileOpenInbox.shared.enqueue(url)
+            }
+        }
         .onReceive(FileOpenInbox.shared.$pendingURL.compactMap { $0 }) { url in
             if ArchiveDocumentTypes.handles(pathExtension: url.pathExtension) {
                 model.openArchive(url)

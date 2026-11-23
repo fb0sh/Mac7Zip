@@ -14,7 +14,11 @@ enum ServiceHandlers {
     }
 
     static func handle(_ action: ServiceAction, pasteboard: NSPasteboard) -> Bool {
-        let plan = ServiceActionPlanner.plan(for: action, urls: urls(from: pasteboard))
+        handle(action, urls: urls(from: pasteboard))
+    }
+
+    static func handle(_ action: ServiceAction, urls: [URL]) -> Bool {
+        let plan = ServiceActionPlanner.plan(for: action, urls: urls)
         switch plan {
         case .browse(let archive):
             FileOpenInbox.shared.enqueue(archive)

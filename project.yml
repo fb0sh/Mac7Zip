@@ -20,6 +20,7 @@ targets:
     platform: macOS
     sources:
       - path: Sources
+      - path: Resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.mac7zip.Mac7Zip
@@ -32,12 +33,17 @@ targets:
         LD_RUNPATH_SEARCH_PATHS:
           - "$(inherited)"
           - "@executable_path/../Frameworks"
+    dependencies:
+      - target: Mac7ZipFinderSync
+        embed: true
     info:
       path: Support/Info.plist
       properties:
         CFBundleDisplayName: Mac7Zip
         CFBundleShortVersionString: "0.1.0"
         CFBundleVersion: "1"
+        CFBundleDevelopmentRegion: en
+        CFBundleLocalizations: [en, zh-Hans]
         LSApplicationCategoryType: public.app-category.utilities
         NSPrincipalClass: NSApplication
         NSHumanReadableCopyright: "Copyright © 2026 Mac7Zip contributors."
@@ -86,6 +92,25 @@ targets:
         CFBundleURLTypes:
           - CFBundleURLName: com.mac7zip.URL
             CFBundleURLSchemes: [mac7zip]
+
+  Mac7ZipFinderSync:
+    type: app-extension
+    platform: macOS
+    sources:
+      - path: Sources/Mac7ZipFinderSync
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.mac7zip.Mac7Zip.FinderSync
+        PRODUCT_NAME: Mac7ZipFinderSync
+        GENERATE_INFOPLIST_FILE: NO
+        SKIP_INSTALL: YES
+    info:
+      path: Support/FinderSync-Info.plist
+      properties:
+        CFBundleDisplayName: Mac7Zip Finder
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.FinderSync
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).FinderSync
 
   Mac7ZipTests:
     type: bundle.unit-test
