@@ -122,7 +122,8 @@ struct SevenZipEngine: ArchiveEngine {
             level: options.compressionLevel,
             method: nil,
             password: nil,
-            encryptFileNames: options.encryptFileNames
+            encryptFileNames: options.encryptFileNames,
+            advanced: options.advanced
         )
         var arguments = CompressionPlanner.arguments(for: request)
         // Insert password switches immediately before the destination path.

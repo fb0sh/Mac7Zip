@@ -67,6 +67,7 @@ struct ArchiveOptions: Sendable {
     var password: String?
     var compressionLevel: Int = 5
     var encryptFileNames: Bool = false
+    var advanced: AdvancedCompressionOptions = AdvancedCompressionOptions()
 }
 
 enum ExtractPathMode: Sendable {

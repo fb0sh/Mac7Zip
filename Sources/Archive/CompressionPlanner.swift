@@ -9,6 +9,7 @@ struct CompressionRequest: Sendable, Equatable {
     var method: String?
     var password: String?
     var encryptFileNames: Bool
+    var advanced: AdvancedCompressionOptions
 
     init(
         sources: [URL],
@@ -17,7 +18,8 @@ struct CompressionRequest: Sendable, Equatable {
         level: Int = 5,
         method: String? = nil,
         password: String? = nil,
-        encryptFileNames: Bool = false
+        encryptFileNames: Bool = false,
+        advanced: AdvancedCompressionOptions = AdvancedCompressionOptions()
     ) {
         self.sources = sources
         self.destination = destination
@@ -26,6 +28,7 @@ struct CompressionRequest: Sendable, Equatable {
         self.method = method
         self.password = password
         self.encryptFileNames = encryptFileNames
+        self.advanced = advanced
     }
 }
 
@@ -42,6 +45,7 @@ enum CompressionPlanner {
         case invalidLevel(Int)
         case encryptFileNamesRequires7z
         case passwordUnavailable
+        case advancedInvalid(String)
     }
 
     /// Formats Mac7Zip can create today (RAR is impossible under the unRAR license).
@@ -65,6 +69,9 @@ enum CompressionPlanner {
         }
         if request.password != nil && !passwordTransportAvailable {
             errors.append(.passwordUnavailable)
+        }
+        for problem in AdvancedCompressionValidator.validate(request.advanced, format: request.format) {
+            errors.append(.advancedInvalid(AdvancedCompressionValidator.describe(problem)))
         }
 
         let destination = request.destination.standardizedFileURL
@@ -108,6 +115,7 @@ enum CompressionPlanner {
         if let password = request.password {
             args.append("-p\(password)")
         }
+        args.append(contentsOf: AdvancedCompressionValidator.arguments(for: request.advanced, format: request.format))
         args.append(request.destination.standardizedFileURL.path)
         args.append(contentsOf: request.sources.map { $0.standardizedFileURL.path })
         return args
@@ -136,6 +144,7 @@ enum CompressionPlanner {
         case .invalidLevel(let level): return "Invalid compression level (\(level))."
         case .encryptFileNamesRequires7z: return "Encrypting file names requires the 7z format."
         case .passwordUnavailable: return "Password protection isn’t available yet."
+        case .advancedInvalid(let detail): return detail
         }
     }
 

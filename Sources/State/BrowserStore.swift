@@ -311,7 +311,8 @@ final class BrowserStore: ObservableObject {
                 format: request.format,
                 password: request.password,
                 compressionLevel: request.level,
-                encryptFileNames: request.encryptFileNames
+                encryptFileNames: request.encryptFileNames,
+                advanced: request.advanced
             )
         )
         compressionRequested = false

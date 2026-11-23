@@ -19,6 +19,13 @@ struct CompressionSheet: View {
     @State private var showAdvanced = false
     @State private var method: String = "LZMA2"
     @State private var encryptFileNames = false
+    @State private var dictionarySize = ""
+    @State private var wordSize = ""
+    @State private var solidBlockSize = ""
+    @State private var threadCount = ""
+    @State private var volumeSize = ""
+    @State private var updateMode: AdvancedCompressionOptions.UpdateMode = .addAndReplace
+    @State private var pathMode: AdvancedCompressionOptions.PathMode = .relative
     @State private var validationMessages: [String] = []
 
     init(
@@ -74,7 +81,27 @@ struct CompressionSheet: View {
                             TextField("Method", text: $method)
                                 .textFieldStyle(.roundedBorder)
                             Toggle("Encrypt file names", isOn: $encryptFileNames)
+                            TextField("Dictionary size (e.g. 32m)", text: $dictionarySize)
+                                .textFieldStyle(.roundedBorder)
+                            TextField("Word size (e.g. 64)", text: $wordSize)
+                                .textFieldStyle(.roundedBorder)
+                            TextField("Solid block size (e.g. 8g)", text: $solidBlockSize)
+                                .textFieldStyle(.roundedBorder)
                         }
+                        Picker("Update mode", selection: $updateMode) {
+                            ForEach(AdvancedCompressionOptions.UpdateMode.allCases, id: \.self) { mode in
+                                Text(mode.displayName).tag(mode)
+                            }
+                        }
+                        Picker("Path mode", selection: $pathMode) {
+                            ForEach(AdvancedCompressionOptions.PathMode.allCases, id: \.self) { mode in
+                                Text(mode.displayName).tag(mode)
+                            }
+                        }
+                        TextField("Threads (optional)", text: $threadCount)
+                            .textFieldStyle(.roundedBorder)
+                        TextField("Split volume size (e.g. 100m)", text: $volumeSize)
+                            .textFieldStyle(.roundedBorder)
                         Text("Password protection isn’t available yet: macOS doesn’t let Mac7Zip read a password without exposing it to other processes.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
@@ -106,7 +133,7 @@ struct CompressionSheet: View {
             }
             .padding()
         }
-        .frame(width: 480, height: showAdvanced ? 460 : 380)
+        .frame(width: 500, height: showAdvanced ? 620 : 380)
     }
 
     private func makeRequest() -> CompressionRequest {
@@ -117,8 +144,21 @@ struct CompressionSheet: View {
             level: level,
             method: format == .sevenZip ? method : nil,
             password: nil,
-            encryptFileNames: format == .sevenZip ? encryptFileNames : false
+            encryptFileNames: format == .sevenZip ? encryptFileNames : false,
+            advanced: advancedOptions()
         )
+    }
+
+    private func advancedOptions() -> AdvancedCompressionOptions {
+        var options = AdvancedCompressionOptions()
+        options.dictionarySize = dictionarySize.isEmpty ? nil : dictionarySize
+        options.wordSize = wordSize.isEmpty ? nil : wordSize
+        options.solidBlockSize = solidBlockSize.isEmpty ? nil : solidBlockSize
+        options.volumeSize = volumeSize.isEmpty ? nil : volumeSize
+        options.threadCount = Int(threadCount)
+        options.updateMode = updateMode
+        options.pathMode = pathMode
+        return options
     }
 
     private func create() {
