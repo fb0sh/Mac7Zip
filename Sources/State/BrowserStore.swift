@@ -13,6 +13,7 @@ final class BrowserStore: ObservableObject {
     @Published var sortDescriptor: FileSortDescriptor = .default
     @Published var errorMessage: String?
     @Published var operationError: String?
+    @Published var testResultMessage: String?
     @Published private(set) var loadState: LoadState = .empty
     @Published private(set) var isLoading = false
     @Published private(set) var canGoBack = false
@@ -225,6 +226,47 @@ final class BrowserStore: ObservableObject {
 
     func openSelected() {
         if let first = selectedItems.first { open(first) }
+    }
+
+    // MARK: - Archive integrity
+
+    /// Runs `7zz t` on the currently open archive. Password-protected archives are
+    /// refused with an explanation rather than silently using an insecure transport.
+    func testCurrentArchive() async {
+        guard let archiveURL else { return }
+        guard let helper = SevenZipLocator.helperURL() else {
+            operationError = "The 7-Zip engine isn’t available."
+            return
+        }
+        do {
+            let engine = SevenZipEngine(executableURL: helper)
+            let result = try await engine.test(archive: archiveURL)
+            testResultMessage = result.passed ? "Archive is OK." : result.message
+        } catch ArchiveError.passwordTransportUnavailable {
+            operationError = "This archive is password-protected. Secure password entry isn’t available yet, so Mac7Zip won’t pass your password in a way other processes can read."
+        } catch {
+            operationError = Self.archiveMessage(error)
+        }
+    }
+
+    private static func archiveMessage(_ error: Error) -> String {
+        guard let archiveError = error as? ArchiveError else { return error.localizedDescription }
+        switch archiveError {
+        case .passwordRequired: return "This archive requires a password."
+        case .wrongPassword: return "The password is incorrect."
+        case .corrupt(let detail): return "The archive appears to be damaged. \(detail)"
+        case .unsupportedFormat(let format): return "Unsupported archive format: \(format)."
+        case .cancelled: return "The operation was cancelled."
+        case .outOfMemory: return "Not enough memory to complete the operation."
+        case .engineNotFound: return "The 7-Zip engine isn’t available."
+        case .passwordTransportUnavailable: return "Secure password entry isn’t available yet."
+        case .notImplemented: return "This feature isn’t implemented yet."
+        case .unsafeEntry(let paths, let reason):
+            let list = paths.isEmpty ? "" : " (\(paths.prefix(3).joined(separator: ", ")))"
+            return "Extraction refused for safety: \(reason)\(list)."
+        case .engineFailure(_, let diagnostic):
+            return diagnostic.isEmpty ? "The archive engine failed." : diagnostic
+        }
     }
 
     // MARK: - File operations

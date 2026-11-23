@@ -33,6 +33,11 @@ struct ContentView: View {
                 model.navigate(to: newValue.url)
             }
         }
+        .alert("Archive Test", isPresented: testResultBinding) {
+            Button("OK", role: .cancel) { model.testResultMessage = nil }
+        } message: {
+            Text(model.testResultMessage ?? "")
+        }
         .alert("Operation Failed", isPresented: operationErrorBinding) {
             Button("OK", role: .cancel) { model.operationError = nil }
         } message: {
@@ -46,6 +51,13 @@ struct ContentView: View {
             return internalPath.isEmpty ? name : "\(name) › \(internalPath)"
         }
         return model.currentDirectory.path
+    }
+
+    private var testResultBinding: Binding<Bool> {
+        Binding(
+            get: { model.testResultMessage != nil },
+            set: { if !$0 { model.testResultMessage = nil } }
+        )
     }
 
     private var operationErrorBinding: Binding<Bool> {

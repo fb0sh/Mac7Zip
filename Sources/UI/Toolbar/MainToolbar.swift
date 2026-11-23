@@ -53,11 +53,13 @@ struct MainToolbar: ToolbarContent {
             .help("Extract — not available yet")
             .disabled(true)
 
-            Button {} label: {
+            Button {
+                Task { await model.testCurrentArchive() }
+            } label: {
                 Label("Test", systemImage: "checkmark.seal")
             }
-            .help("Test Archive — not available yet")
-            .disabled(true)
+            .help("Test the open archive")
+            .disabled(!model.isInsideArchive)
         }
 
         ToolbarItemGroup(placement: .primaryAction) {

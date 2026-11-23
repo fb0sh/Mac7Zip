@@ -138,3 +138,28 @@ final class ArchiveFileSystemProviderTests: XCTestCase {
         XCTAssertTrue(items.allSatisfy { $0.url.path.hasPrefix(archive.path) })
     }
 }
+
+final class ArchiveMetadataMappingTests: XCTestCase {
+    func testFileEntriesCarryArchiveMetadata() {
+        let entries = [
+            ArchiveEntry(path: "a.txt", size: 12, packedSize: 28, isDirectory: false,
+                         modificationDate: nil, crc: "ABCD1234", isEncrypted: true, method: "AES-256"),
+        ]
+        let items = ArchiveFileSystemProvider.directoryListing(
+            entries: entries,
+            prefix: "",
+            archiveURL: URL(fileURLWithPath: "/tmp/a.7z")
+        )
+        let item = try? XCTUnwrap(items.first)
+        XCTAssertEqual(item?.archiveMetadata?.packedSize, 28)
+        XCTAssertEqual(item?.archiveMetadata?.crc, "ABCD1234")
+        XCTAssertEqual(item?.archiveMetadata?.isEncrypted, true)
+        XCTAssertEqual(item?.archiveMetadata?.method, "AES-256")
+    }
+
+    func testRealFileItemsHaveNoArchiveMetadata() {
+        let item = FileItem(url: URL(fileURLWithPath: "/tmp/x.txt"), name: "x.txt",
+                            isDirectory: false, size: 1, modificationDate: nil, kind: "Document")
+        XCTAssertNil(item.archiveMetadata)
+    }
+}

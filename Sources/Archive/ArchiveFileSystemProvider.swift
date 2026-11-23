@@ -76,7 +76,13 @@ final class ArchiveFileSystemProvider: FileSystemProvider {
                         isDirectory: false,
                         size: entry.size,
                         modificationDate: entry.modificationDate,
-                        kind: entry.method.flatMap { $0.isEmpty ? nil : $0 } ?? "File"
+                        kind: entry.method.flatMap { $0.isEmpty ? nil : $0 } ?? "File",
+                        archiveMetadata: ArchiveEntryMetadata(
+                            packedSize: entry.packedSize,
+                            crc: entry.crc,
+                            isEncrypted: entry.isEncrypted,
+                            method: entry.method
+                        )
                     )
                 )
             } else {

@@ -4,8 +4,15 @@ import SwiftUI
 enum FileListColumn: String, CaseIterable {
     case name
     case size
+    case packedSize
     case kind
     case date
+    case crc
+    case encrypted
+    case method
+
+    /// Columns that only make sense while browsing inside an archive.
+    static let archiveOnly: Set<FileListColumn> = [.packedSize, .crc, .encrypted, .method]
 }
 
 /// AppKit-backed file table. `NSTableView` is used directly (rather than a
@@ -38,8 +45,12 @@ struct FileListView: NSViewRepresentable {
 
         addColumn(to: tableView, column: .name, title: "Name", width: 320)
         addColumn(to: tableView, column: .size, title: "Size", width: 100, alignment: .right)
+        addColumn(to: tableView, column: .packedSize, title: "Packed Size", width: 100, alignment: .right)
         addColumn(to: tableView, column: .kind, title: "Kind", width: 140)
-        addColumn(to: tableView, column: .date, title: "Date Modified", width: 190)
+        addColumn(to: tableView, column: .date, title: "Date Modified", width: 170)
+        addColumn(to: tableView, column: .crc, title: "CRC", width: 90)
+        addColumn(to: tableView, column: .encrypted, title: "Encrypted", width: 80)
+        addColumn(to: tableView, column: .method, title: "Method", width: 120)
 
         context.coordinator.applySavedColumnWidths(to: tableView)
 
@@ -114,6 +125,11 @@ extension FileListView {
 
         func synchronize() {
             guard let tableView else { return }
+            let archiveMode = model.isInsideArchive
+            for column in tableView.tableColumns {
+                guard let id = FileListColumn(rawValue: column.identifier.rawValue) else { continue }
+                column.isHidden = FileListColumn.archiveOnly.contains(id) && !archiveMode
+            }
             let items = model.items
 
             if items.map(\.id) != lastItemIDs {
@@ -164,6 +180,19 @@ extension FileListView {
                 cell.textField?.stringValue = item.kind
             case .date:
                 cell.textField?.stringValue = item.modificationDate.map { dateFormatter.string(from: $0) } ?? "--"
+            case .packedSize:
+                if let meta = item.archiveMetadata {
+                    cell.textField?.stringValue = item.isDirectory ? "--" : FileSizeFormatter.string(fromByteCount: meta.packedSize)
+                } else {
+                    cell.textField?.stringValue = "--"
+                }
+            case .crc:
+                cell.textField?.stringValue = item.archiveMetadata?.crc ?? "--"
+            case .encrypted:
+                let encrypted = item.archiveMetadata?.isEncrypted ?? false
+                cell.textField?.stringValue = encrypted ? "Yes" : "No"
+            case .method:
+                cell.textField?.stringValue = item.archiveMetadata?.method ?? "--"
             case .none:
                 break
             }
@@ -212,7 +241,7 @@ extension FileListView {
                     textField.centerYAnchor.constraint(equalTo: cell.centerYAnchor),
                 ])
             } else {
-                textField.alignment = column == .size ? .right : .left
+                textField.alignment = (column == .size || column == .packedSize) ? .right : .left
                 NSLayoutConstraint.activate([
                     textField.leadingAnchor.constraint(equalTo: cell.leadingAnchor, constant: 4),
                     textField.trailingAnchor.constraint(equalTo: cell.trailingAnchor, constant: -4),
