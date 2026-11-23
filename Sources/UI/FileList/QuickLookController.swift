@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import Foundation
 import Quartz
 
@@ -26,7 +27,7 @@ struct QuickLookTempWorkspace {
 /// Presents a Quick Look preview of a single archive entry by extracting it to a
 /// private temp folder, then deletes that folder on dismiss.
 @MainActor
-final class QuickLookController: NSObject, QLPreviewPanelDataSource, QLPreviewPanelDelegate {
+final class QuickLookController: NSObject, ObservableObject, QLPreviewPanelDataSource, QLPreviewPanelDelegate {
     private var workspace = QuickLookTempWorkspace()
     private var previewURL: URL?
 
