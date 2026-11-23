@@ -18,7 +18,7 @@
 | M3 Compression | 8 tickets | **Complete** (8/8) |
 | M4 File-Management Enhancements | 9 tickets (incl. deferred TKT-M2-12) | **Complete** (9/9; drag/favourites/dual-pane UI need a manual desktop check) |
 | M5 macOS Integration | 8 tickets | **Complete** (8/8; several need manual desktop checks) |
-| M6 Performance/Security/Release | 8 tickets | Not started (M6-04/05 external-blocked) |
+| M6 Performance/Security/Release | 8 tickets | In progress (4 done; M6-04/05 external-blocked) |
 
 ## Next eligible work
 - **`TKT-M6-02` (#49)** extend security suite (special-file/cancel); **`TKT-M6-06` (#53)** XCUITest expansion. **#51/#52 blocked on Developer ID credentials.**
