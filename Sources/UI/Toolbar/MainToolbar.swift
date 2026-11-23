@@ -3,11 +3,18 @@ import SwiftUI
 /// Native macOS toolbar. Navigation and archive actions are grouped; every
 /// archive/editing action that is not implemented in Phase 0 is disabled.
 struct MainToolbar: ToolbarContent {
-    let model: FileBrowserModel
+    let model: BrowserStore
+    @ObservedObject var tasks: TaskCenterAdapter
     @Binding var columnVisibility: NavigationSplitViewVisibility
+    @State private var showingTasks = false
 
-    init(model: FileBrowserModel, columnVisibility: Binding<NavigationSplitViewVisibility>) {
+    init(
+        model: BrowserStore,
+        tasks: TaskCenterAdapter,
+        columnVisibility: Binding<NavigationSplitViewVisibility>
+    ) {
         self.model = model
+        self.tasks = tasks
         self._columnVisibility = columnVisibility
     }
 
