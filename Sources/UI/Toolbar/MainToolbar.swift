@@ -48,11 +48,13 @@ struct MainToolbar: ToolbarContent {
         }
 
         ToolbarItemGroup(placement: .primaryAction) {
-            Button {} label: {
+            Button {
+                model.requestCompression()
+            } label: {
                 Label("Add", systemImage: "plus")
             }
-            .help("Add to Archive — not available yet")
-            .disabled(true)
+            .help("Create an archive from the selection")
+            .disabled(model.isInsideArchive)
 
             Button {
                 model.requestExtract()

@@ -15,6 +15,8 @@ final class BrowserStore: ObservableObject {
     @Published var operationError: String?
     @Published var testResultMessage: String?
     @Published var extractRequested = false
+    @Published var compressionRequested = false
+    @Published var lastOperationMessage: String?
     @Published private(set) var lastExtractMessage: String?
     @Published private(set) var loadState: LoadState = .empty
     @Published private(set) var isLoading = false
@@ -267,6 +269,55 @@ final class BrowserStore: ObservableObject {
             let id = await tasks.submit(operation)
             _ = id
             lastExtractMessage = "Extracting to \(effective.destination.lastPathComponent)…"
+        }
+    }
+
+    // MARK: - Compression
+
+    /// Sources for a new archive: the selection, or the whole current folder.
+    var compressionSources: [URL] {
+        let selected = selectedItems.map(\.url)
+        return selected.isEmpty ? [currentDirectory] : selected
+    }
+
+    func requestCompression() {
+        guard !isInsideArchive else {
+            operationError = "You can’t create an archive from inside another archive."
+            return
+        }
+        compressionRequested = true
+    }
+
+    /// Runs creation through `TaskCenter` so it appears in the Tasks popover and
+    /// is cancellable, with completion feedback.
+    func performCompression(request: CompressionRequest, tasks: TaskCenterAdapter) {
+        guard let helper = SevenZipLocator.helperURL() else {
+            operationError = "The 7-Zip engine isn’t available."
+            compressionRequested = false
+            return
+        }
+        let errors = CompressionPlanner.validate(request)
+        guard errors.isEmpty else {
+            operationError = errors.map(CompressionSheet.describe).joined(separator: "\n")
+            compressionRequested = false
+            return
+        }
+        let engine = SevenZipEngine(executableURL: helper)
+        let operation = CreateArchiveOperation(
+            engine: engine,
+            destination: request.destination,
+            sources: request.sources,
+            options: ArchiveOptions(
+                format: request.format,
+                password: request.password,
+                compressionLevel: request.level,
+                encryptFileNames: request.encryptFileNames
+            )
+        )
+        compressionRequested = false
+        Task {
+            await tasks.submit(operation)
+            lastOperationMessage = "Creating \(request.destination.lastPathComponent)…"
         }
     }
 

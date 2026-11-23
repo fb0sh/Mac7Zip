@@ -32,6 +32,16 @@ struct ContentView: View {
             model.loadInitialContentIfNeeded()
             await tasks.start()
         }
+        .sheet(isPresented: compressionSheetBinding) {
+            CompressionSheet(
+                sources: model.compressionSources,
+                defaultDirectory: model.currentDirectory,
+                onCreate: { request in
+                    model.performCompression(request: request, tasks: tasks)
+                },
+                onCancel: { model.compressionRequested = false }
+            )
+        }
         .sheet(isPresented: extractSheetBinding) {
             if let archiveURL = model.archiveURL {
                 ExtractOptionsSheet(
@@ -67,6 +77,13 @@ struct ContentView: View {
             return internalPath.isEmpty ? name : "\(name) › \(internalPath)"
         }
         return model.currentDirectory.path
+    }
+
+    private var compressionSheetBinding: Binding<Bool> {
+        Binding(
+            get: { model.compressionRequested },
+            set: { if !$0 { model.compressionRequested = false } }
+        )
     }
 
     private var extractSheetBinding: Binding<Bool> {

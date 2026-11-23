@@ -40,8 +40,9 @@ struct Mac7ZipCommands: Commands {
         }
 
         CommandMenu("Tools") {
-            Button("Add to Archive…") {}
-                .disabled(true)
+            Button("Add to Archive…") { model.requestCompression() }
+                .keyboardShortcut("a", modifiers: [.command, .shift])
+                .disabled(model.isInsideArchive)
             Button("Extract…") {}
                 .disabled(true)
             Button("Test Archive…") {}
