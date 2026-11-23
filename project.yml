@@ -105,6 +105,19 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.mac7zip.Mac7ZipTests
         GENERATE_INFOPLIST_FILE: YES
 
+  Mac7ZipUITests:
+    type: bundle.ui-testing
+    platform: macOS
+    sources:
+      - path: Tests/Mac7ZipUITests
+    dependencies:
+      - target: Mac7Zip
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.mac7zip.Mac7ZipUITests
+        GENERATE_INFOPLIST_FILE: YES
+
+
 schemes:
   Mac7Zip:
     build:
@@ -124,3 +137,13 @@ schemes:
       config: Debug
     archive:
       config: Release
+
+  Mac7ZipUITests:
+    build:
+      targets:
+        Mac7Zip: all
+        Mac7ZipUITests: [test]
+    test:
+      config: Debug
+      targets:
+        - Mac7ZipUITests

@@ -101,6 +101,22 @@ jobs:
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
             test | tee test.log
 
+      - name: UI smoke tests (non-blocking, TKT-M6-06)
+        continue-on-error: true
+        timeout-minutes: 20
+        run: |
+          set +e
+          xcodebuild \
+            -project "$PROJECT" \
+            -scheme Mac7ZipUITests \
+            -configuration Debug \
+            -destination 'platform=macOS' \
+            -derivedDataPath build-ui \
+            -resultBundlePath build-ui/Smoke.xcresult \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            test 2>&1 | tee build-uitest.log
+          echo "UI exit: ${PIPESTATUS[0]} (non-blocking)"
+
       - name: Release build (universal arm64 + x86_64)
         run: |
           set -o pipefail
@@ -178,6 +194,17 @@ jobs:
           path: ${{ env.APP_NAME }}-universal.zip
           if-no-files-found: error
           retention-days: 14
+
+      - name: Upload UI test artifacts (if any)
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: uitest-artifacts
+          path: |
+            build-ui/Smoke.xcresult
+            build-uitest.log
+          if-no-files-found: ignore
 
       - name: Upload logs on failure
         if: failure()
