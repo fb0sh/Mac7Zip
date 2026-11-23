@@ -125,7 +125,6 @@ struct SevenZipProcessRunner: Sendable {
         let snapshot = collector.snapshot()
         return ProcessResult(exitCode: exitCode, standardOutput: snapshot.stdout, standardError: snapshot.stderr)
     }
-}
 
     /// Reads any buffered bytes left in a pipe after the child exited.
     private static func drainRemaining(_ handle: FileHandle, into collector: OutputCollector, isStdout: Bool) {
@@ -144,6 +143,7 @@ struct SevenZipProcessRunner: Sendable {
             }
         }
     }
+}
 
 /// Bridges `Process` termination to an async continuation without blocking.
 private final class ExitWaiter: @unchecked Sendable {
