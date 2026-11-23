@@ -14,14 +14,15 @@
 | Milestone | Scope | State |
 |---|---|---|
 | M1 File Browser Core | 12 tickets | **Complete** (12/12 implemented & verified) |
-| M2 Archive Read & Extract | 15 tickets | In progress (11 implemented) |
+| M2 Archive Read & Extract | 15 tickets | In progress (13 implemented) |
 | M3 Compression | 8 tickets | Not started |
 | M4 File-Management Enhancements | 9 tickets (incl. deferred TKT-M2-12) | Not started |
 | M5 macOS Integration | 8 tickets | Not started |
 | M6 Performance/Security/Release | 8 tickets | Not started (M6-04/05 external-blocked) |
 
 ## Next eligible work
-- **`TKT-M2-11` (#22)** security fixtures/negative-path integration; **`TKT-M2-15` (#59)** extract options sheet; **`TKT-M2-16` (#60)** rich task metrics UI.
+- **`TKT-M2-11` (#22)** security fixtures/negative-path integration — last M2 ticket.
+- Then **M3** compression: **`TKT-M3-01` (#25)** create-archive core.
 - Manual-on-Mac items (VoiceOver/XCUITest/drag) tracked in `docs/execution/MANUAL-CHECKS.md`.
 
 ## Tickets
@@ -52,8 +53,8 @@
 | TKT-M2-11 — Integration & security tests + fixtures | M2 | Planned | #22 | TKT-M2-06, TKT-M2-07, TKT-M2-09. | — | — | — |
 | TKT-M2-13 — Archive activation preference (Open vs Extract) | M2 | Planned | #24 | TKT-M2-07 (extraction), TKT-M1-08 (activation handling). | — | — | — |
 | TKT-M2-14 — Archive-specific columns in archive browser | M2 | Implemented/verified (integration) | #58 | TKT-M2-03, TKT-M2-05. | integration/m1-m6 / PR #62 | [run 45145185598](https://github.com/fb0sh/Mac7Zip/actions/runs/45145185598) — 92 tests OK | — |
-| TKT-M2-15 — Extract options sheet | M2 | Planned | #59 | TKT-M2-05, TKT-M2-06, TKT-M2-07. | — | — | — |
-| TKT-M2-16 — Rich task progress metrics | M2 | Planned | #60 | TKT-M2-08. | — | — | — |
+| TKT-M2-15 — Extract options sheet | M2 | Implemented/verified (integration) | #59 | TKT-M2-05, TKT-M2-06, TKT-M2-07. | integration/m1-m6 / PR #62 | [run 45146202056](https://github.com/fb0sh/Mac7Zip/actions/runs/45146202056) — 92 tests OK | — |
+| TKT-M2-16 — Rich task progress metrics | M2 | Implemented/verified (integration) | #60 | TKT-M2-08. | integration/m1-m6 / PR #62 | [run 45146202056](https://github.com/fb0sh/Mac7Zip/actions/runs/45146202056) — 92 tests OK | — |
 | TKT-M3-01 — Create-archive core command + option mapping | M3 | Planned | #25 | TKT-M2-02. | — | — | — |
 | TKT-M3-02 — Compression dialog (SwiftUI form) + validation | M3 | Planned | #26 | TKT-M3-01. | — | — | — |
 | TKT-M3-03 — Password/encryption + secure handling | M3 | Planned | #27 | TKT-M3-01. | — | — | — |
@@ -96,6 +97,7 @@
 - 2026-11-23: **TKT-M1-05** (New Folder/Rename/Move-to-Trash UI via NSAlert + FileOperationsService; menu ⌘⇧N/⌘R/⌘⌫; toolbar trash enabled) and **TKT-M1-02** (IconCache + 10k sort benchmark) implemented & verified (commit cbd98c1); CI run 45132417806 green (38 tests).
 - 2026-11-23: **TKT-M1-08** (context menu: Open/Rename/Trash/New Folder/Reveal, validated by selection & capabilities) and **TKT-M1-10** (CI: swift-format/SwiftLint non-blocking + `lipo` arm64 gate + `otool -L` audit; configs `.swiftlint.yml`/`.swift-format`) verified (commit aa679c9); CI run 45132861591 green — 38 tests, archs: arm64.
 - 2026-11-23: **TKT-M1-09** (host-free test target: core sources compiled into the test bundle, `TEST_HOST` removed) and **TKT-M1-12** (accessibility labels for table + rows) verified (commit 6243d08); CI run 45133371206 green — 38 tests, no app host. **M1 COMPLETE.**
+- 2026-11-23: **TKT-M2-16** (`TaskCenterAdapter` @MainActor bridge + Tasks popover with per-task progress, cancel, honest metric display) and **TKT-M2-15** (native extract options sheet: destination, subfolder, path mode, duplicate-root, overwrite mode, restore permissions; password shown as unavailable with explanation; extraction runs through TaskCenter) verified (commit dce4c74); CI run 45146202056 green — 92 tests.
 - 2026-11-23: **TKT-M2-14** (archive-only columns: Packed Size / CRC / Encrypted / Method, hidden outside archives; `FileItem.archiveMetadata`) and **TKT-M2-10** (`testCurrentArchive` via `7zz t`, Test toolbar enabled only inside archives, integrity result alert, and explicit fail-closed password messaging) verified (commit c89907c); CI green — 92 tests.
 - 2026-11-23: **TKT-M2-04** (`ArchiveFileSystemProvider`: read-only capabilities, per-archive listing cache, path filtering, synthesised folders, no real URLs for entries) and **TKT-M2-05** (BrowserStore archive locations: open archive by double-click, navigate internal paths, go-up leaves archive at root, read-only capability gating; archive-aware breadcrumbs + subtitle) verified (commit 9533ae1); CI run 45144446019 green — 90 tests.
 - 2026-11-23: **SECURITY CORRECTION (empirically verified)**: 7-Zip 26.06's `-p` prompt is console-bound — piped stdin **and** `script(1)` PTYs are ignored. Password operations now **fail closed** (`.passwordTransportUnavailable`) by default; `PasswordTransport.argvExplicit` is an explicitly documented, `ps`-visible opt-in. ADR-005 and SPEC-AE corrected.
