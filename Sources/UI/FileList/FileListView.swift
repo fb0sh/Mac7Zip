@@ -142,7 +142,7 @@ extension FileListView {
             switch column {
             case .name:
                 cell.textField?.stringValue = item.name
-                cell.imageView?.image = NSWorkspace.shared.icon(forFile: item.url.path)
+                cell.imageView?.image = IconCache.shared.icon(for: item)
             case .size:
                 cell.textField?.stringValue = item.isDirectory ? "--" : FileSizeFormatter.string(fromByteCount: item.size)
             case .kind:

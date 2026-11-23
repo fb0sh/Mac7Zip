@@ -73,11 +73,13 @@ struct MainToolbar: ToolbarContent {
             .help("Move — not available yet")
             .disabled(true)
 
-            Button {} label: {
+            Button {
+                FileOperationsViewActions.deleteSelection(in: model)
+            } label: {
                 Image(systemName: "trash")
             }
-            .help("Delete — not available yet")
-            .disabled(true)
+            .help("Move to Trash")
+            .disabled(model.selection.isEmpty)
 
             Button {} label: {
                 Image(systemName: "info.circle")

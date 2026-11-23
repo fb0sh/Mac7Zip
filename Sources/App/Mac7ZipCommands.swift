@@ -6,8 +6,25 @@ struct Mac7ZipCommands: Commands {
     let model: FileBrowserModel
 
     var body: some Commands {
-        // The app manages a single browser window; remove the template "New" item.
-        CommandGroup(replacing: .newItem) {}
+        // Replace the template "New" item with native file-operation commands.
+        CommandGroup(replacing: .newItem) {
+            Button("New Folder") {
+                FileOperationsViewActions.newFolder(in: model)
+            }
+            .keyboardShortcut("N", modifiers: [.command, .shift])
+
+            Button("Rename…") {
+                if let item = model.selectedItems.first {
+                    FileOperationsViewActions.rename(item, in: model)
+                }
+            }
+            .keyboardShortcut("R", modifiers: .command)
+
+            Button("Move to Trash") {
+                FileOperationsViewActions.deleteSelection(in: model)
+            }
+            .keyboardShortcut(.delete, modifiers: .command)
+        }
 
         CommandMenu("Go") {
             Button("Back") { model.goBack() }

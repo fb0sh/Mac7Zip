@@ -12,6 +12,7 @@ final class BrowserStore: ObservableObject {
     @Published var selection: Set<FileItem.ID> = []
     @Published var sortDescriptor: FileSortDescriptor = .default
     @Published var errorMessage: String?
+    @Published var operationError: String?
     @Published private(set) var loadState: LoadState = .empty
     @Published private(set) var isLoading = false
     @Published private(set) var canGoBack = false
@@ -19,18 +20,21 @@ final class BrowserStore: ObservableObject {
 
     private let provider: FileSystemProvider
     private let access: FileAccess
+    private let fileOperations: FileOperating
     private var history: [URL]
     private var historyIndex: Int
 
     init(
         startingAt url: URL = FileLocations.home,
         provider: FileSystemProvider = RealFileSystemProvider(),
-        access: FileAccess = RealFileAccess()
+        access: FileAccess = RealFileAccess(),
+        fileOperations: FileOperating = FileOperationsService()
     ) {
         let standardized = url.standardizedFileURL
         self.currentDirectory = standardized
         self.provider = provider
         self.access = access
+        self.fileOperations = fileOperations
         self.history = [standardized]
         self.historyIndex = 0
     }
@@ -157,11 +161,60 @@ final class BrowserStore: ObservableObject {
         }
     }
 
+    // MARK: - File operations
+
+    var canModify: Bool { capabilities.contains(.createDirectory) }
+
+    func newFolder(named name: String) async {
+        do {
+            _ = try await fileOperations.createFolder(named: name, in: currentDirectory)
+            reload()
+        } catch {
+            operationError = Self.operationMessage(error)
+        }
+    }
+
+    func rename(_ item: FileItem, to newName: String) async {
+        do {
+            _ = try await fileOperations.rename(item.url, to: newName)
+            reload()
+        } catch {
+            operationError = Self.operationMessage(error)
+        }
+    }
+
+    func deleteSelected() async {
+        let targets = selectedItems
+        guard !targets.isEmpty else { return }
+        do {
+            for item in targets {
+                try await fileOperations.moveToTrash(item.url)
+            }
+            reload()
+        } catch {
+            operationError = Self.operationMessage(error)
+        }
+    }
+
     // MARK: - Helpers
 
     private func refreshNavigationFlags() {
         canGoBack = historyIndex > 0
         canGoForward = historyIndex < history.count - 1
+    }
+
+    private static func operationMessage(_ error: Error) -> String {
+        guard let fileError = error as? FileError else {
+            return error.localizedDescription
+        }
+        switch fileError {
+        case .accessDenied(let path): return "You don’t have permission to modify “\(path)”."
+        case .notFound(let name): return "“\(name)” no longer exists."
+        case .alreadyExists(let name): return "“\(name)” already exists."
+        case .invalidName(let name): return "“\(name)” is not a valid name."
+        case .operationFailed(let message): return message
+        case .cancelled: return "The operation was cancelled."
+        }
     }
 
     private static func message(for error: Error, directory: URL) -> String {

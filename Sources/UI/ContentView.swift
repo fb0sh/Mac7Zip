@@ -33,6 +33,18 @@ struct ContentView: View {
                 model.navigate(to: newValue.url)
             }
         }
+        .alert("Operation Failed", isPresented: operationErrorBinding) {
+            Button("OK", role: .cancel) { model.operationError = nil }
+        } message: {
+            Text(model.operationError ?? "")
+        }
+    }
+
+    private var operationErrorBinding: Binding<Bool> {
+        Binding(
+            get: { model.operationError != nil },
+            set: { if !$0 { model.operationError = nil } }
+        )
     }
 
     @ViewBuilder
