@@ -50,6 +50,12 @@ struct SecurityValidator: Sendable {
                 continue
             }
 
+            if let linkTarget = entry.linkTarget,
+               let reason = symlinkTargetReason(entryPath: entry.path, linkTarget: linkTarget) {
+                violations.append(SecurityViolation(path: entry.path, reason: reason))
+                continue
+            }
+
             // Special files are identified via attributes in listings; the parser
             // marks folders via `isDirectory`, so anything with a device/FIFO-like
             // name pattern is refused here as a belt-and-braces check.
@@ -113,6 +119,19 @@ struct SecurityValidator: Sendable {
         let root = destination.standardizedFileURL.path
         let resolved = candidate.path
         return resolved == root || resolved.hasPrefix(root.hasSuffix("/") ? root : root + "/")
+    }
+
+    /// Refuses a symlink whose target escapes the destination root.
+    func symlinkTargetReason(entryPath: String, linkTarget: String) -> SecurityViolation.Reason? {
+        let target = linkTarget.replacingOccurrences(of: "\\", with: "/")
+        if target.hasPrefix("/") || target.hasPrefix("~") { return .symlinkEscape }
+        if target.count >= 2, target[target.index(target.startIndex, offsetBy: 1)] == ":" { return .symlinkEscape }
+
+        // Resolve relative to the entry's containing directory, then check depth.
+        let parent = (entryPath as NSString).deletingLastPathComponent
+        let combined = parent.isEmpty ? target : parent + "/" + target
+        if pathReason(for: combined) == .traversal { return .symlinkEscape }
+        return nil
     }
 
     private func isSpecialFile(_ path: String) -> Bool {

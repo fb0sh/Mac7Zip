@@ -114,6 +114,8 @@ struct ArchiveEntry: Identifiable, Hashable, Sendable {
     let crc: String?
     let isEncrypted: Bool
     let method: String?
+    /// Target of a symbolic link entry, when the listing reports one.
+    var linkTarget: String? = nil
 }
 
 struct ArchiveTestResult: Sendable {

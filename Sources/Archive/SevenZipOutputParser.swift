@@ -30,6 +30,8 @@ enum SevenZipOutputParser {
             let method = current["Method"].flatMap { $0.isEmpty ? nil : $0 }
             let crc = current["CRC"].flatMap { $0.isEmpty ? nil : $0 }
             let modified = current["Modified"].flatMap { parseDate($0) }
+            let linkTarget = current["Symbolic Link"].flatMap { $0.isEmpty ? nil : $0 }
+                ?? (attributes.contains("l") ? (current["Target"] ?? nil) : nil)
 
             entries.append(
                 ArchiveEntry(
@@ -40,7 +42,8 @@ enum SevenZipOutputParser {
                     modificationDate: modified,
                     crc: crc,
                     isEncrypted: encrypted,
-                    method: method
+                    method: method,
+                    linkTarget: linkTarget
                 )
             )
             current = [:]
