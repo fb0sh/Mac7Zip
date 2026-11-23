@@ -26,6 +26,8 @@ struct FileListView: NSViewRepresentable {
         tableView.allowsEmptySelection = true
         tableView.usesAlternatingRowBackgroundColors = true
         tableView.rowHeight = 24
+        tableView.setAccessibilityLabel("File list")
+        tableView.setAccessibilityRole(.table)
         tableView.style = .inset
         tableView.columnAutoresizingStyle = .lastColumnOnlyAutoresizingStyle
         tableView.target = context.coordinator
@@ -164,6 +166,12 @@ extension FileListView {
                 cell.textField?.stringValue = item.modificationDate.map { dateFormatter.string(from: $0) } ?? "--"
             case .none:
                 break
+            }
+
+            // Accessibility: expose a meaningful description per row.
+            if column == .name {
+                let sizeText = item.isDirectory ? "folder" : FileSizeFormatter.string(fromByteCount: item.size)
+                cell.setAccessibilityLabel("\(item.name), \(sizeText), \(item.kind)")
             }
             return cell
         }

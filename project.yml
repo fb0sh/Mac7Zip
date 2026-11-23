@@ -42,14 +42,16 @@ targets:
     platform: macOS
     sources:
       - path: Tests/Mac7ZipTests
-    dependencies:
-      - target: Mac7Zip
+      # Core sources are compiled into the test bundle so tests run host-free
+      # (no app launch, no TEST_HOST) while staying in the same module.
+      - path: Sources/Models
+      - path: Sources/FileSystem
+      - path: Sources/Archive
+      - path: Sources/State
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.mac7zip.Mac7ZipTests
         GENERATE_INFOPLIST_FILE: YES
-        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Mac7Zip.app/Contents/MacOS/Mac7Zip"
-        BUNDLE_LOADER: "$(TEST_HOST)"
 
 schemes:
   Mac7Zip:
