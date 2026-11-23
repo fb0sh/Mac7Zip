@@ -16,12 +16,12 @@
 | M1 File Browser Core | 12 tickets | **Complete** (12/12 implemented & verified) |
 | M2 Archive Read & Extract | 15 tickets | **Complete** (14 done; TKT-M2-12 deferred to M4 by design) |
 | M3 Compression | 8 tickets | **Complete** (8/8) |
-| M4 File-Management Enhancements | 9 tickets (incl. deferred TKT-M2-12) | Not started |
+| M4 File-Management Enhancements | 9 tickets (incl. deferred TKT-M2-12) | In progress (2 implemented) |
 | M5 macOS Integration | 8 tickets | Not started |
 | M6 Performance/Security/Release | 8 tickets | Not started (M6-04/05 external-blocked) |
 
 ## Next eligible work
-- **M4** file-management enhancements begins: **`TKT-M4-01` (#32)** copy/move engine, **`TKT-M4-02` (#33)** conflict UI.
+- **`TKT-M4-07` (#38)** transfer progress via TaskCenter; **`TKT-M4-03` (#34)** drag-and-drop; **`TKT-M4-05` (#36)** dual-pane.
 - Manual-on-Mac items (VoiceOver/XCUITest/drag) tracked in `docs/execution/MANUAL-CHECKS.md`.
 
 ## Tickets
@@ -62,8 +62,8 @@
 | TKT-M3-06 — Advanced options (multi-volume, method, threads) | M3 | Implemented/verified (integration) | #30 | TKT-M3-01. | integration/m1-m6 / PR #62 | [run 45152428268](https://github.com/fb0sh/Mac7Zip/actions/runs/45152428268) — 131 tests OK | — |
 | TKT-M3-07 — Round-trip integration tests | M3 | Implemented/verified (integration) | #31 | TKT-M3-01…05. | integration/m1-m6 / PR #62 | [run 45148951056](https://github.com/fb0sh/Mac7Zip/actions/runs/45148951056) — 122 tests OK | — |
 | TKT-M3-08 — Advanced compression options (full parameter set) | M3 | Implemented/verified (integration) | #61 | TKT-M3-01, TKT-M3-03. | integration/m1-m6 / PR #62 | [run 45152428268](https://github.com/fb0sh/Mac7Zip/actions/runs/45152428268) — 131 tests OK | — |
-| TKT-M4-01 — Copy / Move / Duplicate core engine | M4 | Planned | #32 | TKT-M1-01, TKT-M1-06, TKT-M2-08 (TaskCenter). | — | — | — |
-| TKT-M4-02 — Conflict resolution engine + batch UI | M4 | Planned | #33 | TKT-M4-01. | — | — | — |
+| TKT-M4-01 — Copy / Move / Duplicate core engine | M4 | Implemented/verified (integration) | #32 | TKT-M1-01, TKT-M1-06, TKT-M2-08 (TaskCenter). | integration/m1-m6 / PR #62 | [run 45154392056](https://github.com/fb0sh/Mac7Zip/actions/runs/45154392056) — 141 tests OK | — |
+| TKT-M4-02 — Conflict resolution engine + batch UI | M4 | Implemented/verified (integration) | #33 | TKT-M4-01. | integration/m1-m6 / PR #62 | [run 45154392056](https://github.com/fb0sh/Mac7Zip/actions/runs/45154392056) — 141 tests OK | — |
 | TKT-M4-03 — Drag-and-drop for real files (in/out) | M4 | Planned | #34 | TKT-M4-01, TKT-M1-08. | — | — | — |
 | TKT-M4-04 — Favourites management | M4 | Planned | #35 | TKT-M1-01. | — | — | — |
 | TKT-M4-05 — Dual-pane mode (F9-style) | M4 | Planned | #36 | TKT-M1-01, TKT-M4-01. | — | — | — |
@@ -96,6 +96,7 @@
 - 2026-11-23: **TKT-M1-05** (New Folder/Rename/Move-to-Trash UI via NSAlert + FileOperationsService; menu ⌘⇧N/⌘R/⌘⌫; toolbar trash enabled) and **TKT-M1-02** (IconCache + 10k sort benchmark) implemented & verified (commit cbd98c1); CI run 45132417806 green (38 tests).
 - 2026-11-23: **TKT-M1-08** (context menu: Open/Rename/Trash/New Folder/Reveal, validated by selection & capabilities) and **TKT-M1-10** (CI: swift-format/SwiftLint non-blocking + `lipo` arm64 gate + `otool -L` audit; configs `.swiftlint.yml`/`.swift-format`) verified (commit aa679c9); CI run 45132861591 green — 38 tests, archs: arm64.
 - 2026-11-23: **TKT-M1-09** (host-free test target: core sources compiled into the test bundle, `TEST_HOST` removed) and **TKT-M1-12** (accessibility labels for table + rows) verified (commit 6243d08); CI run 45133371206 green — 38 tests, no app host. **M1 COMPLETE.**
+- 2026-11-23: **TKT-M4-01 / M4-02** — `FileTransferService` (recursive copy, same-volume atomic move / cross-volume copy+verify+delete, duplicate, per-item outcomes, symlinks preserved not followed) + conflict policies (replace/skip/keep-both with auto-suffix) + UI (toolbar Copy/Move, ⌥⌘C/⌥⌘M, ⇧⌘D duplicate, destination picker, conflict prompt). Verified (commit 74bc23b); CI green — **141 tests**.
 - 2026-11-23: **TKT-M3-03 / M3-06 / M3-08** — advanced parameters (`AdvancedCompressionOptions`: update mode, path mode, dictionary/word/solid sizes, threads, split volume, delete-source-after, encrypt-file-names) with validation + argv mapping; wired into the dialog's Advanced disclosure. **Encryption UX** stays fail-closed with an explicit explanation. Verified (commit b02a686); CI green — **131 tests**. **M3 COMPLETE.**
 - 2026-11-23: **TKT-M3-02** (native compression sheet: save-to picker, name, 7z/ZIP segmented format, level picker, collapsed Advanced with method + encrypt-file-names, inline validation messages, ⌘⇧A) and **TKT-M3-05** (creation submitted through `TaskCenter` → Tasks popover progress/cancel; completion message) verified (commit 6057b83); CI run 45150812129 green — 122 tests. Layering fix: validation messages moved from the SwiftUI sheet into `CompressionPlanner` so State stays UI-free.
 - 2026-11-23: **TKT-M3-01 / M3-04 / M3-07** — `CompressionPlanner` (validation: no-sources, format matrix, level, destination writable/not-a-directory, archive-inside-source, encrypt-names-requires-7z, password policy; argv mapping; conflict policies replace/skip/keep-both; unique-name suffixing) + engine create pipeline writing to a `.partial` temp file and promoting atomically (no partial archives, existing file preserved until success) + creation integration tests (zip round-trip, refused format leaves nothing, overwrite replaces, password fails closed). Verified (commit d28054d); CI green — **122 tests**.
