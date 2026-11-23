@@ -42,6 +42,8 @@ targets:
     platform: macOS
     sources:
       - path: Tests/Mac7ZipTests
+      - path: Tests/Mac7ZipTests/Fixtures
+        buildPhase: resources
       # Core sources are compiled into the test bundle so tests run host-free
       # (no app launch, no TEST_HOST) while staying in the same module.
       - path: Sources/Models

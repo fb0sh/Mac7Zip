@@ -101,32 +101,6 @@ jobs:
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
             build | tee build-release.log
 
-      - name: CAPTURE 7zz output (temporary)
-        run: |
-          set -euo pipefail
-          WORK="$GITHUB_WORKSPACE/tmp/fx"
-          rm -rf "$WORK"; mkdir -p "$WORK/src/sub"
-          echo "hello world" > "$WORK/src/a.txt"
-          echo "second" > "$WORK/src/b.txt"
-          echo "deep" > "$WORK/src/sub/c.txt"
-          ZZ="$GITHUB_WORKSPACE/Vendor/7zz/26.06/arm64/7zz"
-          chmod +x "$ZZ"
-          cd "$WORK"
-          "$ZZ" a -t7z sample.7z src >/dev/null
-          echo "@@@SLT_START@@@"
-          "$ZZ" l -slt sample.7z
-          echo "@@@SLT_END@@@"
-          echo "@@@TEST_START@@@"
-          "$ZZ" t sample.7z || true
-          echo "@@@TEST_END@@@"
-          echo "@@@PROGRESS_START@@@"
-          "$ZZ" a -bsp1 -bso1 -bse2 prog.7z src 2>&1 | tr '\r' '\n' | head -40 || true
-          echo "@@@PROGRESS_END@@@"
-          echo "@@@BADARCHIVE_START@@@"
-          echo "not an archive" > bad.7z
-          "$ZZ" l bad.7z 2>&1 || true
-          echo "@@@BADARCHIVE_END@@@"
-
       - name: Verify vendored 7zz
         run: ./scripts/verify-7zz.sh
 

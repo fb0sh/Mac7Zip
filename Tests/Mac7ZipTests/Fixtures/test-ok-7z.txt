@@ -1,0 +1,22 @@
+7-Zip (z) 26.06 (arm64) : Copyright (c) 1999-2026 Igor Pavlov : 2026-11-06
+ 64-bit arm_v:8.5-A locale=en_US.UTF-8 Threads:3 OPEN_MAX:10240, ASM
+
+Scanning the drive for archives:
+1 file, 228 bytes (1 KiB)
+
+Testing archive: sample.7z
+--
+Path = sample.7z
+Type = 7z
+Physical Size = 228
+Headers Size = 200
+Method = LZMA2:12
+Solid = +
+Blocks = 1
+
+Everything is Ok
+
+Folders: 2
+Files: 3
+Size:       24
+Compressed: 228
