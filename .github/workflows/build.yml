@@ -64,6 +64,25 @@ jobs:
           xcodegen generate --spec project.yml
           ls -la
 
+      - name: DIAG 7zz password prompts (temporary)
+        run: |
+          set -uo pipefail
+          W="$GITHUB_WORKSPACE/tmp/diag"; rm -rf "$W"; mkdir -p "$W/src"
+          echo hi > "$W/src/a.txt"; cd "$W"
+          ZZ="$GITHUB_WORKSPACE/Vendor/7zz/26.06/arm64/7zz"
+          echo "@@@ONE_CREATE@@@"
+          printf 'pw123\n' | "$ZZ" a -t7z -p one.7z src; echo "exit=$?"
+          echo "@@@TWO_CREATE@@@"
+          printf 'pw123\npw123\n' | "$ZZ" a -t7z -p two.7z src; echo "exit=$?"
+          echo "@@@LIST_ONE@@@"
+          printf 'pw123\n' | "$ZZ" l -slt -p one.7z 2>&1 | tail -5; echo "exit=$?"
+          echo "@@@EXTRACT_ONE@@@"
+          printf 'pw123\n' | "$ZZ" x -p one.7z -oout1 -y 2>&1 | tail -8; echo "exit=$?"
+          echo "@@@EXTRACT_TWO@@@"
+          printf 'pw123\n' | "$ZZ" x -p two.7z -oout2 -y 2>&1 | tail -8; echo "exit=$?"
+          echo "@@@LIST_NO_PW@@@"
+          "$ZZ" l two.7z 2>&1 | tail -5; echo "exit=$?"
+
       - name: Compile check (Debug)
         run: |
           set -o pipefail
@@ -100,25 +119,6 @@ jobs:
             ARCHS=arm64 ONLY_ACTIVE_ARCH=NO \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
             build | tee build-release.log
-
-      - name: DIAG 7zz password prompts (temporary)
-        run: |
-          set -uo pipefail
-          W="$GITHUB_WORKSPACE/tmp/diag"; rm -rf "$W"; mkdir -p "$W/src"
-          echo hi > "$W/src/a.txt"; cd "$W"
-          ZZ="$GITHUB_WORKSPACE/Vendor/7zz/26.06/arm64/7zz"
-          echo "@@@ONE_CREATE@@@"
-          printf 'pw123\n' | "$ZZ" a -t7z -p one.7z src; echo "exit=$?"
-          echo "@@@TWO_CREATE@@@"
-          printf 'pw123\npw123\n' | "$ZZ" a -t7z -p two.7z src; echo "exit=$?"
-          echo "@@@LIST_ONE@@@"
-          printf 'pw123\n' | "$ZZ" l -slt -p one.7z 2>&1 | tail -5; echo "exit=$?"
-          echo "@@@EXTRACT_ONE@@@"
-          printf 'pw123\n' | "$ZZ" x -p one.7z -oout1 -y 2>&1 | tail -8; echo "exit=$?"
-          echo "@@@EXTRACT_TWO@@@"
-          printf 'pw123\n' | "$ZZ" x -p two.7z -oout2 -y 2>&1 | tail -8; echo "exit=$?"
-          echo "@@@LIST_NO_PW@@@"
-          "$ZZ" l two.7z 2>&1 | tail -5; echo "exit=$?"
 
       - name: Verify vendored 7zz
         run: ./scripts/verify-7zz.sh
