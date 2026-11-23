@@ -13,4 +13,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             ?? urls.first else { return }
         Task { @MainActor in FileOpenInbox.shared.enqueue(archive) }
     }
+
+    // MARK: - Finder Services
+
+    @objc func openArchiveService(_ pboard: NSPasteboard, userData: String, error: AutoreleasingUnsafeMutablePointer<NSString?>) {
+        Task { @MainActor in _ = ServiceHandlers.handle(.openArchive, pasteboard: pboard) }
+    }
+
+    @objc func extractHereService(_ pboard: NSPasteboard, userData: String, error: AutoreleasingUnsafeMutablePointer<NSString?>) {
+        Task { @MainActor in _ = ServiceHandlers.handle(.extractHere, pasteboard: pboard) }
+    }
+
+    @objc func extractToFolderService(_ pboard: NSPasteboard, userData: String, error: AutoreleasingUnsafeMutablePointer<NSString?>) {
+        Task { @MainActor in _ = ServiceHandlers.handle(.extractToFolder, pasteboard: pboard) }
+    }
+
+    @objc func testArchiveService(_ pboard: NSPasteboard, userData: String, error: AutoreleasingUnsafeMutablePointer<NSString?>) {
+        Task { @MainActor in _ = ServiceHandlers.handle(.testArchive, pasteboard: pboard) }
+    }
+
+    @objc func addToArchiveService(_ pboard: NSPasteboard, userData: String, error: AutoreleasingUnsafeMutablePointer<NSString?>) {
+        Task { @MainActor in _ = ServiceHandlers.handle(.addToArchive, pasteboard: pboard) }
+    }
 }

@@ -5,6 +5,7 @@ struct ContentView: View {
     @EnvironmentObject private var settingsStore: SettingsStore
     @StateObject private var tasks = TaskCenterAdapter()
     @StateObject private var notifications = NotificationCoordinator()
+    @StateObject private var quickLook = QuickLookController()
     @State private var notifiedTaskIDs: Set<UUID> = []
     @StateObject private var favourites = FavouritesStore()
     @StateObject private var panes = DualPaneController()
@@ -116,6 +117,9 @@ struct ContentView: View {
                 Task { await notifications.notifyTaskFinished(record: record, enabled: enabled) }
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .mac7zipQuickLook)) { _ in
+            Task { await previewSelection() }
+        }
         .onChange(of: model.currentDirectory) { _, newValue in
             if !model.isInsideArchive { RestorationStore().record(newValue) }
         }
@@ -172,6 +176,20 @@ struct ContentView: View {
             get: { model.operationError != nil },
             set: { if !$0 { model.operationError = nil } }
         )
+    }
+
+    private func previewSelection() async {
+        guard let archiveURL = model.archiveURL,
+              let helper = SevenZipLocator.helperURL(),
+              let item = model.selectedItems.first,
+              !item.isDirectory else { return }
+        do {
+            let engine = SevenZipEngine(executableURL: helper)
+            _ = try await quickLook.prepare(entryPath: item.name, archiveURL: archiveURL, engine: engine)
+            quickLook.present()
+        } catch {
+            model.operationError = error.localizedDescription
+        }
     }
 
     private var activeModel: BrowserStore {

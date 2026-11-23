@@ -67,6 +67,22 @@ targets:
             UTTypeConformsTo: [public.data, public.archive]
             UTTypeTagSpecification:
               public.filename-extension: [tgz]
+        NSServices:
+          - NSMenuItem: {default: Open Archive}
+            NSMessage: openArchiveService
+            NSSendFileTypes: [public.data]
+          - NSMenuItem: {default: Extract Here}
+            NSMessage: extractHereService
+            NSSendFileTypes: [public.data]
+          - NSMenuItem: {default: Extract to Folder}
+            NSMessage: extractToFolderService
+            NSSendFileTypes: [public.data]
+          - NSMenuItem: {default: Test Archive}
+            NSMessage: testArchiveService
+            NSSendFileTypes: [public.data]
+          - NSMenuItem: {default: Add to Archive}
+            NSMessage: addToArchiveService
+            NSSendFileTypes: [public.data]
         CFBundleURLTypes:
           - CFBundleURLName: com.mac7zip.URL
             CFBundleURLSchemes: [mac7zip]

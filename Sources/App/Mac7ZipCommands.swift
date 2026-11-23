@@ -38,6 +38,13 @@ struct Mac7ZipCommands: Commands {
                 .disabled(model.selection.isEmpty)
         }
 
+        CommandGroup(after: .pasteboard) {
+            Button("Quick Look") {
+                NotificationCenter.default.post(name: .mac7zipQuickLook, object: nil)
+            }
+            .keyboardShortcut("y", modifiers: [.command])
+        }
+
         CommandMenu("Go") {
             Button("Back") { model.goBack() }
                 .keyboardShortcut("[", modifiers: .command)
