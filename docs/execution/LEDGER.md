@@ -13,7 +13,7 @@
 ## Milestone status
 | Milestone | Scope | State |
 |---|---|---|
-| M1 File Browser Core | 12 tickets | In progress (10 implemented) |
+| M1 File Browser Core | 12 tickets | **Complete** (12/12 implemented & verified) |
 | M2 Archive Read & Extract | 15 tickets | Not started |
 | M3 Compression | 8 tickets | Not started |
 | M4 File-Management Enhancements | 9 tickets (incl. deferred TKT-M2-12) | Not started |
@@ -21,8 +21,9 @@
 | M6 Performance/Security/Release | 8 tickets | Not started (M6-04/05 external-blocked) |
 
 ## Next eligible work
-- **`TKT-M1-09` (#10)** (host-free test target + coverage) and **`TKT-M1-12` (#57)** (accessibility) — both unblocked; they close M1.
-- **`TKT-M2-01` (#12)** — 7zz packaging spike; no blockers (parallel track).
+- **`TKT-M2-01` (#12)** — vendor 7zz 26.06 (verified assets) + checksum gate + nested signing config.
+- After M2-01: **`TKT-M2-02` (#13)** engine runner; **`TKT-M2-08` (#19)** TaskCenter (parallelizable).
+- Manual-on-Mac items (VoiceOver/XCUITest/drag) tracked in `docs/execution/MANUAL-CHECKS.md`.
 - **`TKT-M2-01` (#12)** — 7zz packaging spike; no blockers; may proceed in parallel.
 
 ## Tickets
@@ -36,10 +37,10 @@
 | TKT-M1-06 — FileOperationsService scaffold + typed errors | M1 | Implemented/verified (integration) | #7 | TKT-M1-01. | integration/m1-m6 / PR #62 | [run 45131436860](https://github.com/fb0sh/Mac7Zip/actions/runs/45131436860) — 37 tests OK | — |
 | TKT-M1-07 — Load states + access-denied/TCC UX | M1 | Implemented/verified (integration) | #8 | TKT-M1-01. | integration/m1-m6 / PR #62 | [run 45131858152](https://github.com/fb0sh/Mac7Zip/actions/runs/45131858152) — 37 tests OK | — |
 | TKT-M1-08 — Keyboard shortcuts & context menus | M1 | Implemented/verified (integration) | #9 | TKT-M1-03, TKT-M1-04, TKT-M1-05. | integration/m1-m6 / PR #62 | [run 45132861591](https://github.com/fb0sh/Mac7Zip/actions/runs/45132861591) — 38 tests OK | — |
-| TKT-M1-09 — Tests: FS core, ops, performance | M1 | Planned | #10 | TKT-M1-01…07. | — | — | — |
+| TKT-M1-09 — Tests: FS core, ops, performance | M1 | Implemented/verified (integration) | #10 | TKT-M1-01…07. | integration/m1-m6 / PR #62 | [run 45133371206](https://github.com/fb0sh/Mac7Zip/actions/runs/45133371206) — host-free, 38 tests OK | — |
 | TKT-M1-10 — CI hardening: lint, arch/dependency check, XCUITest spike | M1 | Implemented/verified (integration) | #11 | TKT-M1-01. | integration/m1-m6 / PR #62 | [run 45132861591](https://github.com/fb0sh/Mac7Zip/actions/runs/45132861591) — lint + `lipo` arm64 + `otool -L` OK | XCUITest spike still pending (see note) |
 | TKT-M1-11 — Column widths adjustable & persisted | M1 | Implemented/verified (integration) | #56 | TKT-M1-01. | integration/m1-m6 / PR #62 | [run 45131858152](https://github.com/fb0sh/Mac7Zip/actions/runs/45131858152) — 37 tests OK | — |
-| TKT-M1-12 — Accessibility pass (VoiceOver + full keyboard) | M1 | Planned | #57 | TKT-M1-04, TKT-M1-08. | — | — | — |
+| TKT-M1-12 — Accessibility pass (VoiceOver + full keyboard) | M1 | Implemented (integration); VoiceOver sign-off = manual | #57 | TKT-M1-04, TKT-M1-08. | integration/m1-m6 / PR #62 | [run 45133371206](https://github.com/fb0sh/Mac7Zip/actions/runs/45133371206) | Needs real-Mac VoiceOver check |
 | TKT-M2-01 — Vendor 7zz (pinned, checksum, license, nested signing) | M2 | Planned | #12 | None (blocking for M2). | — | — | — |
 | TKT-M2-02 — SevenZipEngine process runner | M2 | Planned | #13 | TKT-M2-01. | — | — | — |
 | TKT-M2-03 — Output adapter & parsers (+ golden fixtures) | M2 | Planned | #14 | TKT-M2-02. | — | — | — |
@@ -96,3 +97,4 @@
 - 2026-11-23: **TKT-M1-07** (LoadState: loading/empty/failed + Retry) and **TKT-M1-11** (persisted column widths) implemented & verified (commit fbba2bc); CI run 45131858152 green (37 tests).
 - 2026-11-23: **TKT-M1-05** (New Folder/Rename/Move-to-Trash UI via NSAlert + FileOperationsService; menu ⌘⇧N/⌘R/⌘⌫; toolbar trash enabled) and **TKT-M1-02** (IconCache + 10k sort benchmark) implemented & verified (commit cbd98c1); CI run 45132417806 green (38 tests).
 - 2026-11-23: **TKT-M1-08** (context menu: Open/Rename/Trash/New Folder/Reveal, validated by selection & capabilities) and **TKT-M1-10** (CI: swift-format/SwiftLint non-blocking + `lipo` arm64 gate + `otool -L` audit; configs `.swiftlint.yml`/`.swift-format`) verified (commit aa679c9); CI run 45132861591 green — 38 tests, archs: arm64.
+- 2026-11-23: **TKT-M1-09** (host-free test target: core sources compiled into the test bundle, `TEST_HOST` removed) and **TKT-M1-12** (accessibility labels for table + rows) verified (commit 6243d08); CI run 45133371206 green — 38 tests, no app host. **M1 COMPLETE.**
