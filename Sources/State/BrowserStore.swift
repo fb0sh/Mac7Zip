@@ -298,7 +298,7 @@ final class BrowserStore: ObservableObject {
         }
         let errors = CompressionPlanner.validate(request)
         guard errors.isEmpty else {
-            operationError = errors.map(CompressionSheet.describe).joined(separator: "\n")
+            operationError = errors.map(CompressionPlanner.describe).joined(separator: "\n")
             compressionRequested = false
             return
         }

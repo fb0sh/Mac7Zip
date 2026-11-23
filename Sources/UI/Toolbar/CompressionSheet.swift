@@ -145,15 +145,6 @@ struct CompressionSheet: View {
 
     /// Human-readable validation messages.
     static func describe(_ error: CompressionPlanner.ValidationError) -> String {
-        switch error {
-        case .noSources: return "Select at least one file or folder."
-        case .unsupportedFormat(let format): return "Mac7Zip can’t create \(format) archives."
-        case .destinationNotWritable(let folder): return "“\(folder)” isn’t writable."
-        case .destinationIsDirectory(let name): return "“\(name)” is a folder."
-        case .archiveInsideSource(let name): return "The archive can’t be created inside “\(name)”."
-        case .invalidLevel(let level): return "Invalid compression level (\(level))."
-        case .encryptFileNamesRequires7z: return "Encrypting file names requires the 7z format."
-        case .passwordUnavailable: return "Password protection isn’t available yet."
-        }
+        CompressionPlanner.describe(error)
     }
 }
