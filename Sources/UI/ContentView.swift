@@ -33,6 +33,11 @@ struct ContentView: View {
             model.attachTasks(tasks)
             await tasks.start()
         }
+        .sheet(isPresented: infoSheetBinding) {
+            if let url = model.infoRequestedURL {
+                InfoSheet(url: url) { model.infoRequestedURL = nil }
+            }
+        }
         .sheet(isPresented: compressionSheetBinding) {
             CompressionSheet(
                 sources: model.compressionSources,
@@ -78,6 +83,13 @@ struct ContentView: View {
             return internalPath.isEmpty ? name : "\(name) › \(internalPath)"
         }
         return model.currentDirectory.path
+    }
+
+    private var infoSheetBinding: Binding<Bool> {
+        Binding(
+            get: { model.infoRequestedURL != nil },
+            set: { if !$0 { model.infoRequestedURL = nil } }
+        )
     }
 
     private var compressionSheetBinding: Binding<Bool> {

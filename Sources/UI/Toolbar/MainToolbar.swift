@@ -98,11 +98,13 @@ struct MainToolbar: ToolbarContent {
             .help("Move to Trash")
             .disabled(model.selection.isEmpty)
 
-            Button {} label: {
+            Button {
+                model.showInfoForSelection()
+            } label: {
                 Image(systemName: "info.circle")
             }
-            .help("Info — not available yet")
-            .disabled(true)
+            .help("Show information about the selection")
+            .disabled(model.isInsideArchive)
         }
 
         ToolbarItem(placement: .primaryAction) {

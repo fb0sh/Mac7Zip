@@ -16,6 +16,7 @@ final class BrowserStore: ObservableObject {
     @Published var testResultMessage: String?
     @Published var extractRequested = false
     @Published var compressionRequested = false
+    @Published var infoRequestedURL: URL?
     @Published var lastOperationMessage: String?
     @Published private(set) var lastExtractMessage: String?
     @Published private(set) var loadState: LoadState = .empty
@@ -280,6 +281,13 @@ final class BrowserStore: ObservableObject {
             _ = id
             lastExtractMessage = "Extracting to \(effective.destination.lastPathComponent)…"
         }
+    }
+
+    // MARK: - Info
+
+    func showInfoForSelection() {
+        if let first = selectedItems.first { infoRequestedURL = first.url }
+        else if !isInsideArchive { infoRequestedURL = currentDirectory }
     }
 
     // MARK: - Copy / Move / Duplicate
