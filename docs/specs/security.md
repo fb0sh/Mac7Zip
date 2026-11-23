@@ -45,6 +45,11 @@ Two threat surfaces: (a) **filesystem access** (permissions, TCC, path handling)
 | FR-SEC-09 | On violation: abort, delete staging, return offending paths; destination unchanged. |
 | FR-SEC-10 | Redact `-p…` and password args from logs/diagnostics; never persist passwords in task history. |
 | FR-SEC-11 | Treat TOCTOU explicitly: staging + validate-before-move; never follow attacker symlinks during move. |
+| FR-SEC-12 | Stage all extraction output in a private staging dir; commit per-item into the destination; a multi-file extraction is **not** atomic as a whole (only per-item same-volume rename is atomic). |
+| FR-SEC-13 | On pre-commit failure/cancel/violation: delete staging, leave destination unchanged. On mid-commit failure: leave only fully committed items and report a structured partial result; never leave partially-written files. |
+| FR-SEC-14 | Monitor actual bytes written and destination free space independently of 7zz's percentage; abort on low disk or configured limits. |
+| FR-SEC-15 | Cancellation guarantees subprocess termination and staging deletion (defer); re-validate paths immediately before each commit (TOCTOU). |
+| FR-SEC-16 | Password transport: `-p` with no value + password over stdin (interactive prompt); never `-p<password>` in argv; no silent insecure fallback; `-si` is data-stream, not password. |
 
 ## 6. UX / Interaction Design
 
@@ -100,6 +105,9 @@ protocol SecurityValidating: Sendable {
   3. Passwords never appear in logs, diagnostics, or task history.
   4. Denied permissions produce a clear error, never a crash.
   5. Temp/staging dirs are removed on success, failure, and cancellation.
+  6. Extraction is **not** whole-operation atomic; only per-item same-volume commit is atomic, and partial results are reported honestly.
+  7. The bundled `7zz` is **not a sandbox**; containment is via staging + validation, not OS isolation.
+  8. Passwords are transported via the stdin interactive prompt, never process arguments.
 
 ## 12. Acceptance Criteria
 

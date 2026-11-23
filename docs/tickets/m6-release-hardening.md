@@ -12,7 +12,7 @@
 - **Scope:** Hit SPEC performance budgets at 100k entries; Instruments memory audit; fix hotspots (icon cache, snapshot deltas, list parse streaming).
 - **Implementation Notes:** Benchmark harness extended; ratio-based CI assertions; record baselines.
 - **Dependencies:** TKT-M1-02, TKT-M2-03.
-- **Acceptance Criteria:** 100k directory first render < 1.5 s; archive list < 3 s; memory < 150 MB.
+- **Acceptance Criteria:** 100k directory first render / archive list / memory benchmarks **recorded and tracked** (advisory vs correctness gates; runner variance tolerated).
 - **Tests:** Performance harness in CI.
 - **DoD:** CI green; baselines recorded.
 - **Related:** SPEC-FM, SPEC-AE · ADR-002, ADR-004

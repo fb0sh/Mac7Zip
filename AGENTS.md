@@ -2,7 +2,7 @@
 
 ### Issue tracker
 
-Issues and specs live as GitHub issues, managed with the `gh` CLI. See `docs/agents/issue-tracker.md`.
+Architecture & requirements are authoritative in Markdown ADRs (`docs/architecture/adr/`) and Specs (`docs/specs/`); approved implementation scope lives in Markdown tickets (`docs/tickets/`). GitHub Issues track execution, ownership, CI evidence, and completion, with a stable mapping in `docs/tickets/github-issues.md`. Batch implementation of the current ticket set is authorized. See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
@@ -10,7 +10,7 @@ Five canonical triage labels — needs-triage, needs-info, ready-for-agent, read
 
 ### Domain docs
 
-Single-context: `GLOSSARY.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+Single-context: `docs/specs/` and `docs/architecture/adr/`; a root `GLOSSARY.md` when present. See `docs/agents/domain.md`.
 
 <!-- keeprules:start -->
 ## KEEPLEAN

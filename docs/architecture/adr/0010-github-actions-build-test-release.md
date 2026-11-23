@@ -27,6 +27,7 @@ Development happens on Windows/Linux; GitHub Actions is the primary macOS build/
 **`build.yml`** (every push/PR/dispatch, no secrets):
 - Select + assert Xcode 26.x; install XcodeGen; generate project.
 - `swift-format lint` and `SwiftLint` as **non-blocking** (pinned versions, explicit config).
+- Correctness/security tests are **hard gates**; performance benchmarks are **advisory/informational** initially (runner variance), promotable to gates once a stable baseline exists.
 - Debug compile; **host-free unit tests**; archive **integration tests** (round-trip, corruption, wrong password, cancel, traversal).
 - Release build; **`lipo -info` arch check** (arm64); `otool -L` dependency audit.
 - Package + upload unsigned `.app` ZIP artifact (existing behavior).

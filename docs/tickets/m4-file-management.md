@@ -94,3 +94,15 @@
 - **Tests:** The tests themselves.
 - **DoD:** CI green; no flaky.
 - **Related:** SPEC-FO · ADR-010
+
+## TKT-M2-12 — Drag-out-to-Finder extraction (deferred enhancement)
+
+- **Milestone:** M4 · **Priority:** P2 · **Type:** Feature · **Status:** Planned
+- **Background:** Owner's high-frequency workflow ("open archive → drag entries out to a file manager"). Deferred from the MVP critical path by planning correction (2026-11-23) to keep MVP focused; retained in full implementation scope.
+- **Scope:** Drag selected entries (or a folder subtree) from the archive browser to external Finder targets; extraction runs through the secure pipeline; drop destination honored.
+- **Implementation Notes:** `NSFilePromiseProvider`/pasteboard-based drag; feed selected paths to engine extraction into the drop directory; enforce ADR-008 fail-closed; show task progress.
+- **Dependencies:** TKT-M2-04, TKT-M2-06, TKT-M2-07.
+- **Acceptance Criteria:** AC-AB-6 passes; unsafe entries refuse; cancellation cleans up.
+- **Tests:** Integration drag-simulation where feasible; extraction-pipeline tests.
+- **DoD:** CI green; manual drag on real Mac documented.
+- **Related:** SPEC-AB (FR-AB-12) · ADR-006, ADR-008

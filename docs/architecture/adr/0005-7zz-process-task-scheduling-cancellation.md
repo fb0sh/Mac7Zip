@@ -32,6 +32,7 @@ Archive operations are long-running, CPU/IO heavy, and must be cancellable, obse
 - **Progress**: run with `-bsp1` and `-bs{o|e|p}1` so progress goes to a parsed stream; parse percentage tokens; if absent, report indeterminate. Exact line grammar is a **Proposed** detail validated by fixtures in `TKT-M2-03`.
 - **Cancellation (graceful → forced):** send `SIGINT` (`process.interrupt()`); await exit up to a grace window (default 3 s); if still running, `terminate()` (SIGTERM) then `SIGKILL` after a final window; always reap the process and delete its staging/temp dirs. User-stop maps to exit code 255 → state `cancelled`.
 - **Error mapping:** exit 0→success; 1→warning (surface but non-fatal); 2→fatal; 7→command-line/programming error; 8→out-of-memory; 255→cancelled; signal termination→cancelled/failed by context.
+- **Password transport (verified from bundled 7-Zip 26.06 manual):** pass **`-p` with no value** and write the password to the child's **stdin** (7zz prompts interactively); **never** use `-p<password>` in argv (visible to `ps`). `-si` means *data from stdin*, not password — do not conflate. If an interactive stdin prompt cannot be established, **fail the operation** rather than silently falling back to an argv password. Document residual limitations (helper has the plaintext in memory/stdin).
 - **No secrets in logs:** passwords passed via stdin or a protected argument as decided in ADR-008; command lines logged with `-p` redacted.
 
 ## Rationale

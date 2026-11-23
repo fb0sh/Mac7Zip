@@ -46,7 +46,7 @@ M2 makes the same file browser able to open and navigate the inside of an archiv
 | FR-AB-09 | Entries never expose a real `URL`; the archive's own real URL is held separately. |
 | FR-AB-10 | Show archive-specific columns when the engine provides them: Packed Size, CRC, Encrypted flag, Method, and Folder/File counts; hide these for real-file locations. |
 | FR-AB-11 | Offer "Extract here" and "Extract to `<archiveName>/`" convenience targets, matching the 7-Zip operation model. |
-| FR-AB-12 | Support **drag-out-to-extract**: dragging one or more selected entries (or a folder subtree) from the archive browser to Finder extracts them to the drop destination. This is a first-class MVP capability. |
+| FR-AB-12 | Support **drag-out-to-extract**: dragging one or more selected entries (or a folder subtree) from the archive browser to Finder extracts them to the drop destination. Deferred to **M4** as a first-class enhancement (retained in full scope; not on the MVP critical path). |
 | FR-AB-13 | When the archive activation preference is "Extract", double-clicking an archive in the file list extracts it to `<archiveName>/` instead of entering it (default remains "Open"). |
 
 ## 6. UX / Interaction Design
@@ -98,7 +98,7 @@ func directoryListing(prefix: String) -> [FileEntry]
 - **AC-AB-3** — Given archive root, When "Enclosing Folder" is used, Then the browser returns to the real directory containing the archive.
 - **AC-AB-4** — Given 2 selected entries in an archive, When "Extract Selected", Then exactly those are extracted.
 - **AC-AB-5** — Given an archive location, Then Rename/Delete/New Folder are disabled.
-- **AC-AB-6** — Given 2 selected entries, When dragged to Finder, Then both are extracted to the drop destination and the source archive is unchanged.
+- **AC-AB-6** — Given 2 selected entries, When dragged to Finder (M4), Then both are extracted to the drop destination and the source archive is unchanged.
 - **AC-AB-7** — Given the activation preference is "Extract", When an archive is double-clicked in the file list, Then it extracts to `<archiveName>/` and does not enter browse mode.
 
 ## 13. Test Strategy

@@ -78,7 +78,7 @@
 - **Priority:** P0 · **Type:** Feature · **Status:** Planned
 - **Scope:** Extract all/selected via `TaskCenter`; staging dir; atomic move; progress; on violation abort + cleanup.
 - **Implementation Notes:** `7zz x ... -o<staging>`; validate before; monitor limits during; move on success.
-- **Dependencies:** TKT-M2-02, TKT-M2-06, TKT-M2-08.
+- **Dependencies:** TKT-M2-02, TKT-M2-06, TKT-M2-08, TKT-M2-09.
 - **Acceptance Criteria:** AC-AE-2; AC-SEC-1/2; cancelled/failed leaves no destination changes.
 - **Tests:** Integration round-trip; security fixtures.
 - **DoD:** CI green.
@@ -127,18 +127,6 @@
 - **Tests:** The tests themselves.
 - **DoD:** CI green; no flaky tests.
 - **Related:** SPEC-AE, SPEC-SEC · ADR-008, ADR-010
-
-## TKT-M2-12 — Drag-out-to-Finder extraction
-
-- **Priority:** P0 · **Type:** Feature · **Status:** Planned
-- **Background:** The owner's most-used workflow is "open archive → drag entries out to a file manager to extract". This must be MVP, not deferred.
-- **Scope:** Drag selected entries (or a folder subtree) from the archive browser to external Finder targets; extraction runs through the secure extraction pipeline; drop destination honored.
-- **Implementation Notes:** Provide `NSFilePromiseProvider`/pasteboard-based drag; feed the selected entry paths to the engine extraction into the drop directory; enforce ADR-008 fail-closed; show task progress.
-- **Dependencies:** TKT-M2-04, TKT-M2-06, TKT-M2-07.
-- **Acceptance Criteria:** AC-AB-6 passes; unsafe entries refuse; cancellation cleans up.
-- **Tests:** Integration drag-simulation where feasible; extraction-pipeline tests.
-- **DoD:** CI green; manual drag on real Mac documented.
-- **Related:** SPEC-AB · ADR-006, ADR-008
 
 ## TKT-M2-13 — Archive activation preference (Open vs Extract)
 

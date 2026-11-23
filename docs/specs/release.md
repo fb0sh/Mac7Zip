@@ -73,6 +73,7 @@ GitHub Actions workflow contracts (job names, required secrets, environment). A 
 - `build.yml` debug+test **< 10 min** on `macos-26` (excluding queue).
 - `release.yml` end-to-end (incl. notarization wait) **< 30 min** typical.
 - Artifact upload from existing `ditto` zip (proven in Phase 0).
+- **Gating policy:** correctness and security tests are **hard gates**; the performance budgets above are **advisory/informational** until a stable baseline is recorded (shared-runner variance), after which they may be promoted to gates.
 
 ## 11. Security Requirements
 

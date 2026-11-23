@@ -25,7 +25,7 @@
 - **Scope:** Snapshot data source, identity-based reload, `IconCache`, and a benchmark harness for 10k entries.
 - **Implementation Notes:** Cache icons by (isDirectory, extension); expose `[FileEntry]` snapshots from store; measure time-to-first-render.
 - **Dependencies:** TKT-M1-01.
-- **Acceptance Criteria:** 10k load+render < 500 ms; re-sort < 100 ms; no per-row icon calls.
+- **Acceptance Criteria:** 10k load+render and re-sort benchmarks **recorded** (advisory until baseline stable); no per-row icon calls (correctness gate).
 - **Tests:** Performance harness; icon cache unit tests.
 - **DoD:** Benchmarks recorded in CI artifact/log.
 - **Related:** SPEC-FM · ADR-002

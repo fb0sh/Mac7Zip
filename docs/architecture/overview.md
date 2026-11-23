@@ -90,6 +90,8 @@ docs/
 │   ├── m5-macos-integration.md
 │   └── m6-release-hardening.md
 ├── roadmap.md
+├── execution/
+│   └── LEDGER.md                (resumable implementation ledger)
 └── reference/
     └── 7zip/ui-reference.md       (internal design-reference screenshots + notes)
 ```
@@ -140,3 +142,10 @@ Unresolved technical details are recorded as explicit **Assumptions/Risks** in t
 2. Requirement changes edit the owning Spec and update Acceptance Criteria.
 3. Work items live in `docs/tickets/`; GitHub Issues may mirror them but the markdown is authoritative.
 4. Any change updates the traceability matrix here and the ticket index in the same PR.
+
+## 8. Documentation authority & execution
+
+- **ADRs / Specs (Markdown)** are authoritative for architecture and requirements.
+- **Markdown tickets** (`docs/tickets/`) are authoritative for approved scope and acceptance criteria.
+- **GitHub Issues** track execution: ownership, branch/PR, CI evidence, and completion; the stable ticket↔issue mapping lives in [`../tickets/github-issues.md`](../tickets/github-issues.md).
+- Batch implementation of the current M1–M6 ticket set is authorized; an issue closes only after its acceptance criteria are verifiably met and CI evidence exists.

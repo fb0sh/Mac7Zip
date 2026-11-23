@@ -1,6 +1,14 @@
 # Issue tracker: GitHub
 
-Issues and specs for this repo live as GitHub issues. Use the `gh` CLI for all operations.
+## Documentation & execution authority
+
+- **Architecture & requirements** are authoritative in Markdown ADRs (`docs/architecture/adr/`) and Specs (`docs/specs/`).
+- **Approved implementation scope & acceptance criteria** are authoritative in Markdown tickets (`docs/tickets/`).
+- **Execution tracking** (ownership, branch/PR, CI evidence, completion) lives in GitHub Issues.
+- Maintain the stable mapping in `docs/tickets/github-issues.md`.
+- Batch implementation of the current M1–M6 ticket set is explicitly authorized; an issue may be closed only after verifiable completion.
+
+GitHub Issues are the execution tracker; use the `gh` CLI for all operations.
 
 ## Conventions
 

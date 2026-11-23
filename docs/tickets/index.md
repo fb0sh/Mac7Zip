@@ -37,12 +37,11 @@ All MVP tickets are **Planned** (not started). No feature implementation has beg
 | TKT-M2-04 | ArchiveFileSystemProvider (read-only) | P0 | Feature | M1-01, M2-03 |
 | TKT-M2-05 | Enter/navigate archive in browser | P0 | Feature | M2-04 |
 | TKT-M2-06 | SecurityValidator (pre-flight + limits) | P0 | Feature | M2-03 |
-| TKT-M2-07 | Extract all/selected pipeline + UI | P0 | Feature | M2-02, M2-06, M2-08 |
+| TKT-M2-07 | Extract all/selected pipeline + UI | P0 | Feature | M2-02, M2-06, M2-08, M2-09 |
 | TKT-M2-08 | TaskCenter + Tasks popover/progress | P0 | Feature | M2-02 |
 | TKT-M2-09 | Cancellation & cleanup | P0 | Feature | M2-08 |
 | TKT-M2-10 | Test integrity + password prompt flow | P1 | Feature | M2-02, M2-03 |
 | TKT-M2-11 | Integration & security tests + fixtures | P0 | Test | M2-06, M2-07, M2-09 |
-| TKT-M2-12 | Drag-out-to-Finder extraction | P0 | Feature | M2-04, M2-06, M2-07 |
 | TKT-M2-13 | Archive activation preference (Open vs Extract) | P1 | Feature | M2-07, M1-08 |
 | TKT-M2-14 | Archive-specific columns in archive browser | P1 | Feature | M2-03, M2-05 |
 | TKT-M2-15 | Extract options sheet | P1 | Feature | M2-05, M2-06, M2-07 |
@@ -73,6 +72,7 @@ All MVP tickets are **Planned** (not started). No feature implementation has beg
 | TKT-M4-06 | Metadata, permissions & symlink handling | P2 | Feature | M4-01 |
 | TKT-M4-07 | Operation progress / cancel / completion | P1 | Feature | M4-01, M2-08 |
 | TKT-M4-08 | File-operation integration tests | P1 | Test | M4-01…07 |
+| TKT-M2-12 | Drag-out-to-Finder extraction (deferred enhancement) | P2 | Feature | M4-01, M2-07 |
 
 ## M5 — macOS Integration
 

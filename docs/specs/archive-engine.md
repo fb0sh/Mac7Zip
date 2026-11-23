@@ -43,7 +43,7 @@ The archive engine isolates all archive work behind `ArchiveEngine`. It launches
 | FR-AE-06 | Map exit codes: 0=ok, 1=warning, 2=fatal, 7=cli, 8=oom, 255=cancelled. |
 | FR-AE-07 | Emit progress (0–100%) parsed from `-bsp1`, or `nil` when indeterminate. |
 | FR-AE-08 | Pre-flight + post-extraction security enforcement per ADR-008 (fail-closed). |
-| FR-AE-09 | Passwords never appear in logs/argv visible to `ps` where avoidable; redact `-p...` in diagnostics. |
+| FR-AE-09 | Password transport: use interactive `-p` (no value) with the password written to **stdin** (verified in bundled 26.06 manual); never `-p<password>` in argv; `-si` is data-stream, not password; no silent insecure fallback; redact in diagnostics. |
 | FR-AE-10 | Honor cancellation: SIGINT → grace → SIGTERM → SIGKILL; clean staging temps. |
 | FR-AE-11 | Support UTF-8 filenames (`-sccUTF-8`) and NFC/NFD normalization handling. |
 | FR-AE-12 | Extract supports: destination, "extract to subfolder `<name>/`", path mode (full/relative), eliminate-duplicate-root, overwrite mode (ask/overwrite/skip/rename), password, and restore-file-security-settings. |

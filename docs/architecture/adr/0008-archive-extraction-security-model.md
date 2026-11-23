@@ -35,6 +35,20 @@ Archives are untrusted input. Classic attacks: path traversal (`../../etc/...`),
 - **On any violation**: abort, delete staging contents, return `.unsafeEntry(paths:[...], reason:)`; never leave partial unsafe output in the destination.
 - Limits are configurable with conservative defaults; unlimited is never the default.
 
+### Staging, commit and atomicity semantics (honest guarantees)
+
+- All extraction writes go **only** into a private **staging directory** under the app's temporary area (same volume as the destination where possible).
+- On success, each staged item is **committed** into the final destination. **A multi-file extraction is NOT atomic as a whole.** Per-item commit is atomic when same-volume rename is possible; cross-volume commits are copy-verify-then-remove and are not atomic.
+- On any unsafe entry, limit breach, cancellation, or error **before commit**, the staging directory is deleted and the destination is left **unchanged**.
+- If failure occurs **during commit**, only fully committed items remain in the destination; the operation reports a structured **partial result** (committed / not committed / offending). We never leave partially-written files at the final path (write to temp name, then rename).
+
+### Resource and TOCTOU controls
+
+- **Disk consumption is monitored independently of 7zz's percentage output**: sample actual bytes written in staging and free space on the destination volume; abort on low disk or limit breach.
+- **Cancellation** terminates the subprocess (SIGINT→SIGTERM→SIGKILL) and **guarantees staging deletion via `defer`**; no orphan subprocesses.
+- **TOCTOU**: validate entries against the destination root before extraction, and **re-validate immediately before each commit**; never follow attacker-controlled symlinks during commit; reject links resolving outside root.
+- **Security boundary (honest):** the bundled `7zz` is a **non-sandboxed helper subprocess**, not an OS security sandbox. 7zz parses untrusted archive data in its own process; we contain *filesystem writes* via staging+validation, but make **no claim of OS-level isolation**. A future sandboxed build is documented in SPEC-SEC's appendix.
+
 ## Rationale
 
 Fail-closed is the only safe default for a tool that will open archives from the internet. Staging + atomic move prevents partial/escaped outputs and dramatically reduces TOCTOU exposure.
