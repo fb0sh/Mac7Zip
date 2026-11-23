@@ -2,8 +2,8 @@ import XCTest
 @testable import Mac7Zip
 
 final class DragExportPlannerTests: XCTestCase {
-    private func makeItem(_ name: String, dir: Bool = false) -> Mac7Zip.FileItem {
-        Mac7Zip.FileItem(
+    private func makeItem(_ name: String, dir: Bool = false) -> FileItem {
+        FileItem(
             url: URL(fileURLWithPath: "/tmp/\(name)"),
             name: name,
             isDirectory: dir,
