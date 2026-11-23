@@ -25,7 +25,7 @@
 - **`TKT-M2-08` (#19)** — TaskCenter + Tasks UI (parallelizable with M2-02).
 - After M2-02: **`TKT-M2-03` (#14)** output parsers.
 - Manual-on-Mac items (VoiceOver/XCUITest/drag) tracked in `docs/execution/MANUAL-CHECKS.md`.
-- **`TKT-M2-01` (#12)** — 7zz packaging spike; no blockers; may proceed in parallel.
+- **`TKT-M2-02` (#13)** — engine process runner; **`TKT-M2-08` (#19)** — TaskCenter (parallel).
 
 ## Tickets
 | Ticket | Milestone | Status | Issue | Dependencies | Branch/PR | CI | Blockers |
@@ -42,7 +42,7 @@
 | TKT-M1-10 — CI hardening: lint, arch/dependency check, XCUITest spike | M1 | Implemented/verified (integration) | #11 | TKT-M1-01. | integration/m1-m6 / PR #62 | [run 45132861591](https://github.com/fb0sh/Mac7Zip/actions/runs/45132861591) — lint + `lipo` arm64 + `otool -L` OK | XCUITest spike still pending (see note) |
 | TKT-M1-11 — Column widths adjustable & persisted | M1 | Implemented/verified (integration) | #56 | TKT-M1-01. | integration/m1-m6 / PR #62 | [run 45131858152](https://github.com/fb0sh/Mac7Zip/actions/runs/45131858152) — 37 tests OK | — |
 | TKT-M1-12 — Accessibility pass (VoiceOver + full keyboard) | M1 | Implemented (integration); VoiceOver sign-off = manual | #57 | TKT-M1-04, TKT-M1-08. | integration/m1-m6 / PR #62 | [run 45133371206](https://github.com/fb0sh/Mac7Zip/actions/runs/45133371206) | Needs real-Mac VoiceOver check |
-| TKT-M2-01 — Vendor 7zz (pinned, checksum, license, nested signing) | M2 | Planned | #12 | None (blocking for M2). | — | — | — |
+| TKT-M2-01 — Vendor 7zz (pinned, checksum, license, nested signing) | M2 | Implemented/verified (integration) | #12 | None (blocking for M2). | integration/m1-m6 / PR #62 | [run 45133937932](https://github.com/fb0sh/Mac7Zip/actions/runs/45133937932) — checksums OK, `7zz i` → 26.06 (arm64) | Nested signing → TKT-M6-04 |
 | TKT-M2-02 — SevenZipEngine process runner | M2 | Planned | #13 | TKT-M2-01. | — | — | — |
 | TKT-M2-03 — Output adapter & parsers (+ golden fixtures) | M2 | Planned | #14 | TKT-M2-02. | — | — | — |
 | TKT-M2-04 — ArchiveFileSystemProvider (read-only) | M2 | Planned | #15 | TKT-M1-01, TKT-M2-03. | — | — | — |
