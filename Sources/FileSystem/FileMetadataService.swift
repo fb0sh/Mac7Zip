@@ -59,9 +59,9 @@ struct FileMetadataService: Sendable {
     func metadata(for url: URL) throws -> FileMetadata {
         let keys: Set<URLResourceKey> = [
             .nameKey, .fileSizeKey, .isDirectoryKey, .isSymbolicLinkKey,
-            .creationDateKey, .contentModificationDateKey, .ownerNameKey,
-            .groupNameKey, .isReadableKey, .isWritableKey, .isExecutableKey,
-            .localizedTypeDescriptionKey, .totalFileAllocatedSizeKey,
+            .creationDateKey, .contentModificationDateKey,
+            .isReadableKey, .isWritableKey, .isExecutableKey,
+            .localizedTypeDescriptionKey,
         ]
         let values: URLResourceValues
         do {
@@ -95,8 +95,8 @@ struct FileMetadataService: Sendable {
             linkTarget: (try? fileManager.destinationOfSymbolicLink(atPath: url.path)),
             creationDate: values.creationDate,
             modificationDate: values.contentModificationDate,
-            ownerName: values.ownerName,
-            groupName: values.groupName,
+            ownerName: attributes?[.ownerAccountName] as? String,
+            groupName: attributes?[.groupOwnerAccountName] as? String,
             posixPermissions: posix,
             isReadable: values.isReadable ?? false,
             isWritable: values.isWritable ?? false,
