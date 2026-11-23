@@ -36,3 +36,9 @@ Never mark an item verified without performing it. CI green is a *different* cla
 - [ ] Right-click a favourite → Remove; reopening the app shows the updated list.
 - [ ] Toggle dual-pane: two independent panes; navigation in one doesn't affect the other.
 - [ ] Active-pane highlight follows clicks; toggling off returns to a single pane.
+
+## Settings & double-click (TKT-M5-02) / restoration (M5-07)
+- [ ] Settings ▸ Archives: switching to "Extract" makes double-clicking an archive create a sibling `<name>/` folder.
+- [ ] Switching back to "Open" makes double-click browse the archive.
+- [ ] Limits tab persists values and rejects 0; reset restores defaults.
+- [ ] Relaunch restores the last browsed folder when enabled; disabled starts at Home.
