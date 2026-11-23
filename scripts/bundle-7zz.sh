@@ -36,6 +36,9 @@ esac
 chmod 755 "$HELPERS/7zz"
 cp "$VENDOR/License.txt" "$RESOURCES/7zz-LICENSE.txt"
 cp "$VENDOR/readme.txt" "$RESOURCES/7zz-README.txt"
+if [ -f "$ROOT/Support/NOTICE.md" ]; then
+  cp "$ROOT/Support/NOTICE.md" "$RESOURCES/NOTICE.md"
+fi
 
 echo "--- Bundled helper ---"
 file "$HELPERS/7zz"

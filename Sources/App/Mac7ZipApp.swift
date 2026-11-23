@@ -2,6 +2,7 @@ import SwiftUI
 
 @main
 struct Mac7ZipApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var model = FileBrowserModel()
     @StateObject private var settings = SettingsStore()
 

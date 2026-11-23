@@ -13,6 +13,8 @@ struct SettingsView: View {
                 .tabItem { Label("Limits", systemImage: "gauge") }
             generalTab
                 .tabItem { Label("General", systemImage: "gearshape") }
+            AboutView()
+                .tabItem { Label("About", systemImage: "info.circle") }
         }
         .frame(width: 480, height: 320)
         .padding()

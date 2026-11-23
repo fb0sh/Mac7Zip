@@ -4,6 +4,8 @@ struct ContentView: View {
     @EnvironmentObject private var model: BrowserStore
     @EnvironmentObject private var settingsStore: SettingsStore
     @StateObject private var tasks = TaskCenterAdapter()
+    @StateObject private var notifications = NotificationCoordinator()
+    @State private var notifiedTaskIDs: Set<UUID> = []
     @StateObject private var favourites = FavouritesStore()
     @StateObject private var panes = DualPaneController()
     @StateObject private var secondaryModel = BrowserStore()
@@ -98,6 +100,20 @@ struct ContentView: View {
                     },
                     onCancel: { model.extractRequested = false }
                 )
+            }
+        }
+        .onOpenURL { url in FileOpenInbox.shared.enqueue(url) }
+        .onReceive(FileOpenInbox.shared.$pendingURL.compactMap { $0 }) { url in
+            if ArchiveDocumentTypes.handles(pathExtension: url.pathExtension) {
+                model.openArchive(url)
+            }
+        }
+        .onChange(of: tasks.records) { _, records in
+            let enabled = settingsStore.settings.sendCompletionNotifications
+            guard enabled else { return }
+            for record in records where record.state.isTerminal && !notifiedTaskIDs.contains(record.id) {
+                notifiedTaskIDs.insert(record.id)
+                Task { await notifications.notifyTaskFinished(record: record, enabled: enabled) }
             }
         }
         .onChange(of: model.currentDirectory) { _, newValue in
