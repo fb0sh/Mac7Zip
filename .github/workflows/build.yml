@@ -66,7 +66,7 @@ jobs:
 
       - name: DIAG 7zz password prompts (temporary)
         run: |
-          set -uo pipefail
+          set +e
           W="$GITHUB_WORKSPACE/tmp/diag"; rm -rf "$W"; mkdir -p "$W/src"
           echo hi > "$W/src/a.txt"; cd "$W"
           ZZ="$GITHUB_WORKSPACE/Vendor/7zz/26.06/arm64/7zz"
