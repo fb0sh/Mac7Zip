@@ -13,7 +13,7 @@
 ## Milestone status
 | Milestone | Scope | State |
 |---|---|---|
-| M1 File Browser Core | 12 tickets | In progress |
+| M1 File Browser Core | 12 tickets | In progress (1 implemented) |
 | M2 Archive Read & Extract | 15 tickets | Not started |
 | M3 Compression | 8 tickets | Not started |
 | M4 File-Management Enhancements | 9 tickets (incl. deferred TKT-M2-12) | Not started |
@@ -21,12 +21,13 @@
 | M6 Performance/Security/Release | 8 tickets | Not started (M6-04/05 external-blocked) |
 
 ## Next eligible work
-- **`TKT-M1-01` (#2)** — first ticket; unblocks M1 UI/state and M2 provider work. `TKT-M2-01` (7zz packaging spike, #12) has no blockers and may proceed in parallel.
+- **`TKT-M1-02` (#3), `TKT-M1-03` (#4), `TKT-M1-04` (#5), `TKT-M1-06` (#7), `TKT-M1-07` (#8), `TKT-M1-11` (#56)** — now unblocked by TKT-M1-01 (all `TKT-M1-01` dependents).
+- **`TKT-M2-01` (#12)** — 7zz packaging spike; no blockers; may proceed in parallel.
 
 ## Tickets
 | Ticket | Milestone | Status | Issue | Dependencies | Branch/PR | CI | Blockers |
 |---|---|---|---|---|---|---|---|
-| TKT-M1-01 — Foundation refactor: FileSystemProvider + BrowserStore + FileAccess | M1 | In Progress (next) | #2 | None. | — | — | — |
+| TKT-M1-01 — Foundation refactor: FileSystemProvider + BrowserStore + FileAccess | M1 | Implemented/verified (integration) | #2 | None. | integration/m1-m6 / PR #62 | [run 45130961718](https://github.com/fb0sh/Mac7Zip/actions/runs/45130961718) — 25 tests, build+release OK | — |
 | TKT-M1-02 — File-list performance: snapshot, icon cache, benchmark | M1 | Planned | #3 | TKT-M1-01. | — | — | — |
 | TKT-M1-03 — Navigation & history on BrowserLocation | M1 | Planned | #4 | TKT-M1-01. | — | — | — |
 | TKT-M1-04 — Selection, sorting, status totals | M1 | Planned | #5 | TKT-M1-01. | — | — | — |
@@ -89,3 +90,4 @@
 
 ## Change log
 - 2026-11-23: Ledger created; planning corrections applied (authority policy, ADR-009 26.06 pinned+verified, ADR-008/SPEC-SEC extraction safety, 7zz password transport, drag-out deferred to M4, cancellation dependency, perf-vs-correctness gates).
+- 2026-11-23: **TKT-M1-01 implemented & verified** on `integration/m1-m6` (commit 17ce2a0, PR #62); CI run 45130961718 green (25 tests, build+release). Host-free test-target migration tracked in TKT-M1-09.
