@@ -13,7 +13,7 @@
 ## Milestone status
 | Milestone | Scope | State |
 |---|---|---|
-| M1 File Browser Core | 12 tickets | In progress (6 implemented) |
+| M1 File Browser Core | 12 tickets | In progress (8 implemented) |
 | M2 Archive Read & Extract | 15 tickets | Not started |
 | M3 Compression | 8 tickets | Not started |
 | M4 File-Management Enhancements | 9 tickets (incl. deferred TKT-M2-12) | Not started |
@@ -21,17 +21,18 @@
 | M6 Performance/Security/Release | 8 tickets | Not started (M6-04/05 external-blocked) |
 
 ## Next eligible work
-- **`TKT-M1-02` (#3)**, **`TKT-M1-05` (#6)**, **`TKT-M1-10` (#11)** — unblocked now.
+- **`TKT-M1-08` (#9)** (shortcuts/context menu — now unblocked by M1-03/04/05), **`TKT-M1-10` (#11)** (CI hardening).
+- After M1-08: **`TKT-M1-09` (#10)**, **`TKT-M1-12` (#57)**.
 - **`TKT-M2-01` (#12)** — 7zz packaging spike; no blockers; may proceed in parallel.
 
 ## Tickets
 | Ticket | Milestone | Status | Issue | Dependencies | Branch/PR | CI | Blockers |
 |---|---|---|---|---|---|---|---|
 | TKT-M1-01 — Foundation refactor: FileSystemProvider + BrowserStore + FileAccess | M1 | Implemented/verified (integration) | #2 | None. | integration/m1-m6 / PR #62 | [run 45130961718](https://github.com/fb0sh/Mac7Zip/actions/runs/45130961718) — 25 tests, build+release OK | — |
-| TKT-M1-02 — File-list performance: snapshot, icon cache, benchmark | M1 | Planned | #3 | TKT-M1-01. | — | — | — |
+| TKT-M1-02 — File-list performance: snapshot, icon cache, benchmark | M1 | Implemented/verified (integration) | #3 | TKT-M1-01. | integration/m1-m6 / PR #62 | [run 45132417806](https://github.com/fb0sh/Mac7Zip/actions/runs/45132417806) — 38 tests OK | — |
 | TKT-M1-03 — Navigation & history on BrowserLocation | M1 | Implemented/verified (integration) | #4 | TKT-M1-01. | integration/m1-m6 / PR #62 | [run 45131436860](https://github.com/fb0sh/Mac7Zip/actions/runs/45131436860) — 37 tests OK | — |
 | TKT-M1-04 — Selection, sorting, status totals | M1 | Implemented/verified (integration) | #5 | TKT-M1-01. | integration/m1-m6 / PR #62 | [run 45131436860](https://github.com/fb0sh/Mac7Zip/actions/runs/45131436860) — 37 tests OK | — |
-| TKT-M1-05 — New Folder / Rename / Delete (Trash) | M1 | Planned | #6 | TKT-M1-01, TKT-M1-06. | — | — | — |
+| TKT-M1-05 — New Folder / Rename / Delete (Trash) | M1 | Implemented/verified (integration) | #6 | TKT-M1-01, TKT-M1-06. | integration/m1-m6 / PR #62 | [run 45132417806](https://github.com/fb0sh/Mac7Zip/actions/runs/45132417806) — 38 tests OK | — |
 | TKT-M1-06 — FileOperationsService scaffold + typed errors | M1 | Implemented/verified (integration) | #7 | TKT-M1-01. | integration/m1-m6 / PR #62 | [run 45131436860](https://github.com/fb0sh/Mac7Zip/actions/runs/45131436860) — 37 tests OK | — |
 | TKT-M1-07 — Load states + access-denied/TCC UX | M1 | Implemented/verified (integration) | #8 | TKT-M1-01. | integration/m1-m6 / PR #62 | [run 45131858152](https://github.com/fb0sh/Mac7Zip/actions/runs/45131858152) — 37 tests OK | — |
 | TKT-M1-08 — Keyboard shortcuts & context menus | M1 | Planned | #9 | TKT-M1-03, TKT-M1-04, TKT-M1-05. | — | — | — |
@@ -93,3 +94,4 @@
 - 2026-11-23: **TKT-M1-01 implemented & verified** on `integration/m1-m6` (commit 17ce2a0, PR #62); CI run 45130961718 green (25 tests, build+release). Host-free test-target migration tracked in TKT-M1-09.
 - 2026-11-23: **TKT-M1-06** (FileOperationsService + typed FileError) and **TKT-M1-03/M1-04** (BrowserStore navigation/history/sort/selection tests) implemented & verified (commit e19fdfc); CI run 45131436860 green (37 tests).
 - 2026-11-23: **TKT-M1-07** (LoadState: loading/empty/failed + Retry) and **TKT-M1-11** (persisted column widths) implemented & verified (commit fbba2bc); CI run 45131858152 green (37 tests).
+- 2026-11-23: **TKT-M1-05** (New Folder/Rename/Move-to-Trash UI via NSAlert + FileOperationsService; menu ⌘⇧N/⌘R/⌘⌫; toolbar trash enabled) and **TKT-M1-02** (IconCache + 10k sort benchmark) implemented & verified (commit cbd98c1); CI run 45132417806 green (38 tests).
