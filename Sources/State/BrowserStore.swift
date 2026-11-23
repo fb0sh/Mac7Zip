@@ -26,6 +26,7 @@ final class BrowserStore: ObservableObject {
     private var provider: FileSystemProvider
     private let access: FileAccess
     private let fileOperations: FileOperating
+    private let transfers: FileTransferService
     private let archiveProviderFactory: @Sendable (URL) -> FileSystemProvider?
     private var history: [BrowserLocation]
     private var historyIndex: Int
@@ -35,6 +36,7 @@ final class BrowserStore: ObservableObject {
         provider: FileSystemProvider = RealFileSystemProvider(),
         access: FileAccess = RealFileAccess(),
         fileOperations: FileOperating = FileOperationsService(),
+        transfers: FileTransferService = FileTransferService(),
         archiveProviderFactory: @escaping @Sendable (URL) -> FileSystemProvider? = BrowserStore.makeArchiveProvider
     ) {
         let standardized = url.standardizedFileURL
@@ -43,6 +45,7 @@ final class BrowserStore: ObservableObject {
         self.provider = provider
         self.access = access
         self.fileOperations = fileOperations
+        self.transfers = transfers
         self.archiveProviderFactory = archiveProviderFactory
         self.history = [.real(standardized)]
         self.historyIndex = 0
@@ -269,6 +272,44 @@ final class BrowserStore: ObservableObject {
             let id = await tasks.submit(operation)
             _ = id
             lastExtractMessage = "Extracting to \(effective.destination.lastPathComponent)…"
+        }
+    }
+
+    // MARK: - Copy / Move / Duplicate
+
+    /// Performs a transfer into `destinationDirectory`, then refreshes and reports
+    /// a structured summary (partial failures are surfaced, never hidden).
+    func transfer(
+        kind: FileTransferRequest.Kind,
+        to destinationDirectory: URL,
+        policy: ConflictPolicy
+    ) async {
+        guard canModify else { return }
+        let sources = selectedItems.map(\.url)
+        guard !sources.isEmpty else { return }
+
+        let request = FileTransferRequest(
+            kind: kind,
+            sources: sources,
+            destinationDirectory: destinationDirectory,
+            conflictPolicy: policy
+        )
+        do {
+            let outcomes = try await transfers.perform(request)
+            let failures = outcomes.compactMap { outcome -> String? in
+                if case .failed(let message) = outcome.status { return message }
+                return nil
+            }
+            let done = outcomes.count { if case .failed = $0.status { return false }; return $0.status != .skipped }
+            let skipped = outcomes.count { $0.status == .skipped }
+            var summary = "\(done) item(s) \(kind == .move ? "moved" : kind == .duplicate ? "duplicated" : "copied")."
+            if skipped > 0 { summary += " \(skipped) skipped." }
+            if !failures.isEmpty { summary += "\n" + failures.prefix(3).joined(separator: "\n") }
+            lastOperationMessage = summary
+            selection = []
+            reload()
+        } catch {
+            operationError = error.localizedDescription
         }
     }
 

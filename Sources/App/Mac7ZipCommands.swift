@@ -26,6 +26,18 @@ struct Mac7ZipCommands: Commands {
             .keyboardShortcut(.delete, modifiers: .command)
         }
 
+        CommandGroup(after: .pasteboard) {
+            Button("Copy to Folder…") { TransferViewActions.copySelection(in: model) }
+                .keyboardShortcut("c", modifiers: [.command, .option])
+                .disabled(model.selection.isEmpty || !model.canModify)
+            Button("Move to Folder…") { TransferViewActions.moveSelection(in: model) }
+                .keyboardShortcut("m", modifiers: [.command, .option])
+                .disabled(model.selection.isEmpty || !model.canModify)
+            Button("Duplicate") { TransferViewActions.duplicateSelection(in: model) }
+                .keyboardShortcut("d", modifiers: [.command, .shift])
+                .disabled(model.selection.isEmpty)
+        }
+
         CommandMenu("Go") {
             Button("Back") { model.goBack() }
                 .keyboardShortcut("[", modifiers: .command)

@@ -74,17 +74,21 @@ struct MainToolbar: ToolbarContent {
         }
 
         ToolbarItemGroup(placement: .primaryAction) {
-            Button {} label: {
+            Button {
+                TransferViewActions.copySelection(in: model)
+            } label: {
                 Image(systemName: "doc.on.doc")
             }
-            .help("Copy — not available yet")
-            .disabled(true)
+            .help("Copy selected items to another folder")
+            .disabled(model.selection.isEmpty || !model.canModify)
 
-            Button {} label: {
+            Button {
+                TransferViewActions.moveSelection(in: model)
+            } label: {
                 Image(systemName: "folder")
             }
-            .help("Move — not available yet")
-            .disabled(true)
+            .help("Move selected items to another folder")
+            .disabled(model.selection.isEmpty || !model.canModify)
 
             Button {
                 FileOperationsViewActions.deleteSelection(in: model)
