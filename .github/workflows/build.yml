@@ -101,6 +101,9 @@ jobs:
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
             build | tee build-release.log
 
+      - name: Verify vendored 7zz
+        run: ./scripts/verify-7zz.sh
+
       - name: Lint (non-blocking)
         continue-on-error: true
         run: |
@@ -141,6 +144,10 @@ jobs:
             find build -maxdepth 6 -name "*.app" -print || true
             exit 1
           fi
+          echo "--- bundling 7zz helper ---"
+          ./scripts/bundle-7zz.sh "$APP_PATH" arm64
+          "$APP_PATH/Contents/Helpers/7zz" i | head -12
+
           /usr/bin/ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "${APP_NAME}-arm64.zip"
           ls -lh "${APP_NAME}-arm64.zip"
           echo "--- archive contents (top) ---"
