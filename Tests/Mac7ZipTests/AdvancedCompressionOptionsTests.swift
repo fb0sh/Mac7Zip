@@ -2,9 +2,10 @@ import XCTest
 @testable import Mac7Zip
 
 final class AdvancedCompressionOptionsTests: XCTestCase {
-    func testEmptyOptionsProduceOnlyPathMode() {
+    func testEmptyOptionsProduceNoSwitches() {
+        // Relative paths are 7zz's default, so nothing is emitted.
         let args = AdvancedCompressionValidator.arguments(for: AdvancedCompressionOptions(), format: .sevenZip)
-        XCTAssertEqual(args, ["-spr0"])
+        XCTAssertTrue(args.isEmpty)
     }
 
     func testSevenZipAdvancedSwitches() {
@@ -46,9 +47,9 @@ final class AdvancedCompressionOptionsTests: XCTestCase {
     func testPathModeMapping() {
         var options = AdvancedCompressionOptions()
         options.pathMode = .relative
-        XCTAssertTrue(AdvancedCompressionValidator.arguments(for: options, format: .sevenZip).contains("-spr0"))
+        XCTAssertFalse(AdvancedCompressionValidator.arguments(for: options, format: .sevenZip).contains("-spf"))
         options.pathMode = .full
-        XCTAssertTrue(AdvancedCompressionValidator.arguments(for: options, format: .sevenZip).contains("-spr1"))
+        XCTAssertTrue(AdvancedCompressionValidator.arguments(for: options, format: .sevenZip).contains("-spf"))
     }
 
     func testSizeValidation() {

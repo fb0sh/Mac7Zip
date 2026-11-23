@@ -56,7 +56,9 @@ struct AdvancedCompressionOptions: Sendable, Equatable {
             }
         }
 
-        var switchValue: String { self == .relative ? "r0" : "r1" }
+        /// 7zz switch: relative paths are the default (no switch); full paths use
+        /// `-spf` (verified in the bundled 26.06 manual, switches/spf.htm).
+        var switchValue: String? { self == .relative ? nil : "-spf" }
     }
 }
 
@@ -128,7 +130,9 @@ enum AdvancedCompressionValidator {
         if let update = options.updateMode.switchValue {
             args.append("-up\(update)")
         }
-        args.append("-sp\(options.pathMode.switchValue)")
+        if let pathSwitch = options.pathMode.switchValue {
+            args.append(pathSwitch)
+        }
 
         if format == .sevenZip {
             if let dictionary = options.dictionarySize, !dictionary.isEmpty {
