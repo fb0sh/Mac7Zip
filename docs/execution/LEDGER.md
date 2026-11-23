@@ -15,13 +15,13 @@
 |---|---|---|
 | M1 File Browser Core | 12 tickets | **Complete** (12/12 implemented & verified) |
 | M2 Archive Read & Extract | 15 tickets | **Complete** (14 done; TKT-M2-12 deferred to M4 by design) |
-| M3 Compression | 8 tickets | In progress (6 implemented) |
+| M3 Compression | 8 tickets | **Complete** (8/8) |
 | M4 File-Management Enhancements | 9 tickets (incl. deferred TKT-M2-12) | Not started |
 | M5 macOS Integration | 8 tickets | Not started |
 | M6 Performance/Security/Release | 8 tickets | Not started (M6-04/05 external-blocked) |
 
 ## Next eligible work
-- **`TKT-M3-03` (#27)** encryption UX (fail-closed); **`TKT-M3-06`/`M3-08` (#30/#61)** advanced parameters (P2).
+- **M4** file-management enhancements begins: **`TKT-M4-01` (#32)** copy/move engine, **`TKT-M4-02` (#33)** conflict UI.
 - Manual-on-Mac items (VoiceOver/XCUITest/drag) tracked in `docs/execution/MANUAL-CHECKS.md`.
 
 ## Tickets
@@ -56,12 +56,12 @@
 | TKT-M2-16 — Rich task progress metrics | M2 | Implemented/verified (integration) | #60 | TKT-M2-08. | integration/m1-m6 / PR #62 | [run 45146202056](https://github.com/fb0sh/Mac7Zip/actions/runs/45146202056) — 92 tests OK | — |
 | TKT-M3-01 — Create-archive core command + option mapping | M3 | Implemented/verified (integration) | #25 | TKT-M2-02. | integration/m1-m6 / PR #62 | [run 45148951056](https://github.com/fb0sh/Mac7Zip/actions/runs/45148951056) — 122 tests OK | — |
 | TKT-M3-02 — Compression dialog (SwiftUI form) + validation | M3 | Implemented/verified (integration) | #26 | TKT-M3-01. | integration/m1-m6 / PR #62 | [run 45150812129](https://github.com/fb0sh/Mac7Zip/actions/runs/45150812129) — 122 tests OK | — |
-| TKT-M3-03 — Password/encryption + secure handling | M3 | Planned | #27 | TKT-M3-01. | — | — | — |
+| TKT-M3-03 — Password/encryption + secure handling | M3 | Implemented/verified (integration) | #27 | TKT-M3-01. | integration/m1-m6 / PR #62 | [run 45152428268](https://github.com/fb0sh/Mac7Zip/actions/runs/45152428268) — 131 tests OK | — |
 | TKT-M3-04 — Target conflict + destination validation | M3 | Implemented/verified (integration) | #28 | TKT-M3-01. | integration/m1-m6 / PR #62 | [run 45148951056](https://github.com/fb0sh/Mac7Zip/actions/runs/45148951056) — 122 tests OK | — |
 | TKT-M3-05 — Compression progress/cancel + completion feedback | M3 | Implemented/verified (integration) | #29 | TKT-M3-01, TKT-M2-08. | integration/m1-m6 / PR #62 | [run 45150812129](https://github.com/fb0sh/Mac7Zip/actions/runs/45150812129) — 122 tests OK | — |
-| TKT-M3-06 — Advanced options (multi-volume, method, threads) | M3 | Planned | #30 | TKT-M3-01. | — | — | — |
+| TKT-M3-06 — Advanced options (multi-volume, method, threads) | M3 | Implemented/verified (integration) | #30 | TKT-M3-01. | integration/m1-m6 / PR #62 | [run 45152428268](https://github.com/fb0sh/Mac7Zip/actions/runs/45152428268) — 131 tests OK | — |
 | TKT-M3-07 — Round-trip integration tests | M3 | Implemented/verified (integration) | #31 | TKT-M3-01…05. | integration/m1-m6 / PR #62 | [run 45148951056](https://github.com/fb0sh/Mac7Zip/actions/runs/45148951056) — 122 tests OK | — |
-| TKT-M3-08 — Advanced compression options (full parameter set) | M3 | Planned | #61 | TKT-M3-01, TKT-M3-03. | — | — | — |
+| TKT-M3-08 — Advanced compression options (full parameter set) | M3 | Implemented/verified (integration) | #61 | TKT-M3-01, TKT-M3-03. | integration/m1-m6 / PR #62 | [run 45152428268](https://github.com/fb0sh/Mac7Zip/actions/runs/45152428268) — 131 tests OK | — |
 | TKT-M4-01 — Copy / Move / Duplicate core engine | M4 | Planned | #32 | TKT-M1-01, TKT-M1-06, TKT-M2-08 (TaskCenter). | — | — | — |
 | TKT-M4-02 — Conflict resolution engine + batch UI | M4 | Planned | #33 | TKT-M4-01. | — | — | — |
 | TKT-M4-03 — Drag-and-drop for real files (in/out) | M4 | Planned | #34 | TKT-M4-01, TKT-M1-08. | — | — | — |
@@ -96,6 +96,7 @@
 - 2026-11-23: **TKT-M1-05** (New Folder/Rename/Move-to-Trash UI via NSAlert + FileOperationsService; menu ⌘⇧N/⌘R/⌘⌫; toolbar trash enabled) and **TKT-M1-02** (IconCache + 10k sort benchmark) implemented & verified (commit cbd98c1); CI run 45132417806 green (38 tests).
 - 2026-11-23: **TKT-M1-08** (context menu: Open/Rename/Trash/New Folder/Reveal, validated by selection & capabilities) and **TKT-M1-10** (CI: swift-format/SwiftLint non-blocking + `lipo` arm64 gate + `otool -L` audit; configs `.swiftlint.yml`/`.swift-format`) verified (commit aa679c9); CI run 45132861591 green — 38 tests, archs: arm64.
 - 2026-11-23: **TKT-M1-09** (host-free test target: core sources compiled into the test bundle, `TEST_HOST` removed) and **TKT-M1-12** (accessibility labels for table + rows) verified (commit 6243d08); CI run 45133371206 green — 38 tests, no app host. **M1 COMPLETE.**
+- 2026-11-23: **TKT-M3-03 / M3-06 / M3-08** — advanced parameters (`AdvancedCompressionOptions`: update mode, path mode, dictionary/word/solid sizes, threads, split volume, delete-source-after, encrypt-file-names) with validation + argv mapping; wired into the dialog's Advanced disclosure. **Encryption UX** stays fail-closed with an explicit explanation. Verified (commit b02a686); CI green — **131 tests**. **M3 COMPLETE.**
 - 2026-11-23: **TKT-M3-02** (native compression sheet: save-to picker, name, 7z/ZIP segmented format, level picker, collapsed Advanced with method + encrypt-file-names, inline validation messages, ⌘⇧A) and **TKT-M3-05** (creation submitted through `TaskCenter` → Tasks popover progress/cancel; completion message) verified (commit 6057b83); CI run 45150812129 green — 122 tests. Layering fix: validation messages moved from the SwiftUI sheet into `CompressionPlanner` so State stays UI-free.
 - 2026-11-23: **TKT-M3-01 / M3-04 / M3-07** — `CompressionPlanner` (validation: no-sources, format matrix, level, destination writable/not-a-directory, archive-inside-source, encrypt-names-requires-7z, password policy; argv mapping; conflict policies replace/skip/keep-both; unique-name suffixing) + engine create pipeline writing to a `.partial` temp file and promoting atomically (no partial archives, existing file preserved until success) + creation integration tests (zip round-trip, refused format leaves nothing, overwrite replaces, password fails closed). Verified (commit d28054d); CI green — **122 tests**.
 - 2026-11-23: **TKT-M2-11** — security/negative-path integration suite (traversal, absolute path, symlink escape, ratio bomb, corrupt/empty archives, refusal leaves destination empty, no staging leaks, successful extraction stays inside destination). **Found and fixed two real bugs:** (1) `resolvesInsideDestination` treated `/etc/passwd` as contained (absolute path passed to `appendingPathComponent`); (2) pipe handlers were cleared at exit, dropping trailing 7zz output (e.g. "Everything is Ok") → added a final drain. Verified (commit 4ef202d); CI green — **104 tests**. **M2 COMPLETE.**
