@@ -17,7 +17,7 @@ The file manager is the primary surface. M1 delivers a polished single-pane brow
 
 ## 3. Non-goals (M1)
 
-- Copy, move, duplicate, drag-and-drop, favourites, dual-pane, tabs (M4).
+- Copy, move, duplicate, drag-and-drop, favourites, dual-pane, tabs (M4 — see SPEC-FO).
 - Archive browsing (M2), compression (M3).
 - Search / filter, tags, extended metadata editing.
 - Network volumes/SMB optimizations beyond default behavior.

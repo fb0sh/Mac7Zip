@@ -6,7 +6,9 @@
 
 | Spec | Title | Milestone(s) | Upstream ADRs |
 |---|---|---|---|
-| [SPEC-FM](file-manager.md) | File Manager (browsing, navigation, selection, basic file ops) | M1 (MVP), M4 (enhancements) | ADR-001, ADR-002, ADR-003, ADR-007 |
+| [SPEC-FM](file-manager.md) | File Manager (browsing, navigation, selection, basic file ops) | M1 (MVP) | ADR-001, ADR-002, ADR-003, ADR-007 |
+| [SPEC-FO](file-operations.md) | File Operations (copy/move/conflict/drag-drop/favourites/dual-pane) | M4 | ADR-003, ADR-007 |
+| [SPEC-MI](macos-integration.md) | macOS Integration (associations, Quick Look, notifications, settings, licenses, services) | M5 | ADR-001, ADR-007, ADR-009, ADR-010 |
 | [SPEC-AE](archive-engine.md) | Archive Engine (7zz adapter, formats, extraction, test) | M2 (MVP) | ADR-004, ADR-005, ADR-008, ADR-009 |
 | [SPEC-AB](archive-browser.md) | Archive Browser (virtual FS browsing inside archives) | M2 (MVP read-only), M5 | ADR-006, ADR-003 |
 | [SPEC-CW](compression.md) | Compression Workflow (create ZIP/7z) | M3 (MVP) | ADR-004, ADR-005, ADR-009 |

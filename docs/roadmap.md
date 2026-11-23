@@ -34,19 +34,19 @@ Priority: **stability → browser core → archive read/extract → compression 
 ### M4 — File-Management Enhancements (post-MVP)
 - **Deliverables:** copy/move, conflict UI, drag-drop, favourites, optional dual-pane, metadata, tests.
 - **Dependencies:** M1 services; M2 TaskCenter.
-- **Exit criteria:** EPIC-M4 ACs pass.
+- **Exit criteria:** `TKT-M4-01 … TKT-M4-08` complete; SPEC-FO acceptance criteria pass.
 - **Risks:** network-volume/permissions edge cases; dual-pane complexity.
 
 ### M5 — macOS Integration
 - **Deliverables:** file associations/Open With, settings, Quick Look, notifications, About/Licenses, Finder services.
 - **Dependencies:** M1–M3; SPEC-AB/REL.
-- **Exit criteria:** EPIC-M5 ACs pass (some require real-Mac manual verification).
+- **Exit criteria:** `TKT-M5-01 … TKT-M5-08` complete; SPEC-MI acceptance criteria pass (some require real-Mac manual verification).
 - **Risks:** Info.plist/UTType correctness; Quick Look temp safety.
 
 ### M6 — Performance, Security & Release Hardening
 - **Deliverables:** perf/memory tuning; malicious-archive suite; Universal; signing+notarization; DMG; GitHub Releases automation; expanded UI tests; release docs.
 - **Dependencies:** M1–M5; **Apple Developer account**.
-- **Exit criteria:** EPIC-M6 ACs; notarized universal DMG+ZIP published and verified.
+- **Exit criteria:** `TKT-M6-01 … TKT-M6-08` complete; notarized universal DMG+ZIP published and verified.
 - **Risks / Blockers:** Developer ID credentials (unconfirmed) block M6-04/05; notarized nested helper; universal build time.
 
 ## Critical path

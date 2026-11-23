@@ -73,6 +73,8 @@ docs/
 ├── specs/
 │   ├── index.md
 │   ├── file-manager.md            (SPEC-FM)
+│   ├── file-operations.md         (SPEC-FO)
+│   ├── macos-integration.md       (SPEC-MI)
 │   ├── archive-engine.md          (SPEC-AE)
 │   ├── archive-browser.md         (SPEC-AB)
 │   ├── compression.md             (SPEC-CW)
@@ -84,9 +86,9 @@ docs/
 │   ├── m1-file-browser-core.md
 │   ├── m2-archive-read-extract.md
 │   ├── m3-compression.md
-│   ├── epic-m4-file-management.md
-│   ├── epic-m5-macos-integration.md
-│   └── epic-m6-release-hardening.md
+│   ├── m4-file-management.md
+│   ├── m5-macos-integration.md
+│   └── m6-release-hardening.md
 ├── roadmap.md
 └── reference/
     └── 7zip/ui-reference.md       (internal design-reference screenshots + notes)
@@ -120,8 +122,9 @@ Every ticket names its `Related Spec` and `Related ADR`. Every ADR names the spe
 | Engine distribution / license / packaging | ADR-009 | SPEC-REL, SPEC-AE | TKT-M2-01, TKT-M6-04 |
 | CI build / test / release | ADR-010 | SPEC-REL | TKT-M1-10, TKT-M6-02, TKT-M6-03 |
 | Compression workflow | ADR-004, ADR-009 | SPEC-CW | TKT-M3-01 … TKT-M3-07 |
-| File operations (copy/move/drag) | ADR-003, ADR-007 | SPEC-FM | EPIC-M4 tickets |
-| macOS integration | ADR-010 | SPEC-REL, SPEC-AB | EPIC-M5 tickets |
+| File operations (copy/move/drag/dual-pane) | ADR-003, ADR-007 | SPEC-FO | TKT-M4-01 … TKT-M4-08 |
+| macOS integration | ADR-001, ADR-007, ADR-009, ADR-010 | SPEC-MI | TKT-M5-01 … TKT-M5-08 |
+| Release hardening / universal / notarization | ADR-009, ADR-010 | SPEC-REL, SPEC-SEC | TKT-M6-01 … TKT-M6-08 |
 
 ## 6. Status vocabulary
 

@@ -27,7 +27,7 @@ Engineering design lives in `docs/`:
 - [Architecture overview & traceability matrix](docs/architecture/overview.md)
 - [Architecture Decision Records](docs/architecture/adr/) — ADR-001 … ADR-010
 - [Specifications](docs/specs/index.md) — file manager, archive engine, archive browser, compression, task management, security, release
-- [Tickets](docs/tickets/index.md) — M1–M3 implementation-ready, M4–M6 epic-level
+- [Tickets](docs/tickets/index.md) — implementation-ready for all milestones (M1–M6)
 - [Development roadmap](docs/roadmap.md)
 
 ## Tech stack
