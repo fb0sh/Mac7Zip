@@ -5,6 +5,8 @@ enum TaskKind: String, Sendable, Codable {
     case extract
     case create
     case test
+    case copy
+    case move
 }
 
 enum TaskState: String, Sendable, Codable {

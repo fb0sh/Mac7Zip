@@ -30,6 +30,7 @@ struct ContentView: View {
         .frame(minWidth: 760, minHeight: 480)
         .task {
             model.loadInitialContentIfNeeded()
+            model.attachTasks(tasks)
             await tasks.start()
         }
         .sheet(isPresented: compressionSheetBinding) {

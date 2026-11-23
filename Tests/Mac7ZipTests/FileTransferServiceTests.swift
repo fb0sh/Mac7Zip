@@ -137,3 +137,79 @@ final class FileTransferServiceTests: XCTestCase {
         XCTAssertEqual(FileTransferService.uniqueSibling(of: existing, fileManager: .default).lastPathComponent, "x (2).7z")
     }
 }
+
+final class FileTransferOperationTests: XCTestCase {
+    private var root: URL!
+
+    override func setUpWithError() throws {
+        root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("Mac7ZipOp-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+    }
+
+    override func tearDownWithError() throws {
+        if let root { try? FileManager.default.removeItem(at: root) }
+    }
+
+    func testOperationReportsPerItemProgress() async throws {
+        let src = root.appendingPathComponent("src", isDirectory: true)
+        let dst = root.appendingPathComponent("dst", isDirectory: true)
+        try FileManager.default.createDirectory(at: src, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: dst, withIntermediateDirectories: true)
+        var sources: [URL] = []
+        for index in 0..<3 {
+            let url = src.appendingPathComponent("f\(index).txt")
+            try "x".write(to: url, atomically: true, encoding: .utf8)
+            sources.append(url)
+        }
+
+        let request = FileTransferRequest(kind: .copy, sources: sources, destinationDirectory: dst)
+        let operation = FileTransferOperation(request: request)
+        XCTAssertEqual(operation.kind, .copy)
+
+        let counter = ProgressCollector()
+        try await operation.run { fraction, metrics in
+            counter.record(fraction, metrics)
+        }
+
+        XCTAssertEqual(counter.fractionCount, 4, "One initial + one per item")
+        XCTAssertEqual(counter.lastFilesDone, 3)
+        XCTAssertEqual(counter.lastFilesTotal, 3)
+    }
+
+    func testOperationReportsFailureForMissingSource() async throws {
+        let dst = root.appendingPathComponent("dst2", isDirectory: true)
+        try FileManager.default.createDirectory(at: dst, withIntermediateDirectories: true)
+        let missing = root.appendingPathComponent("missing.txt")
+        let request = FileTransferRequest(kind: .copy, sources: [missing], destinationDirectory: dst)
+        do {
+            try await FileTransferOperation(request: request).run { _, _ in }
+            XCTFail("Expected failure")
+        } catch {
+            // expected
+        }
+    }
+}
+
+/// Thread-safe recorder for progress callbacks.
+final class ProgressCollector: @unchecked Sendable {
+    private let lock = NSLock()
+    private(set) var fractions: [Double?] = []
+    private(set) var lastFilesDone: Int?
+    private(set) var lastFilesTotal: Int?
+
+    var fractionCount: Int {
+        lock.lock(); defer { lock.unlock() }
+        return fractions.count
+    }
+
+    func record(_ fraction: Double?, _ metrics: TaskMetrics) {
+        lock.lock()
+        fractions.append(fraction)
+        if metrics.filesTotal != nil {
+            lastFilesDone = metrics.filesDone
+            lastFilesTotal = metrics.filesTotal
+        }
+        lock.unlock()
+    }
+}

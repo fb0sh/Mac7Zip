@@ -28,6 +28,8 @@ final class BrowserStore: ObservableObject {
     private let fileOperations: FileOperating
     private let transfers: FileTransferService
     private let archiveProviderFactory: @Sendable (URL) -> FileSystemProvider?
+    /// Set by the UI so transfers can be queued with visible progress (M4-07).
+    private weak var tasksBridge: TaskCenterAdapter?
     private var history: [BrowserLocation]
     private var historyIndex: Int
 
@@ -58,6 +60,11 @@ final class BrowserStore: ObservableObject {
             engine: SevenZipEngine(executableURL: helper),
             archiveURL: archiveURL
         )
+    }
+
+    /// Connects the task queue; called once when the window appears.
+    func attachTasks(_ adapter: TaskCenterAdapter) {
+        tasksBridge = adapter
     }
 
     var capabilities: FileSystemCapabilities { provider.capabilities }
@@ -288,6 +295,12 @@ final class BrowserStore: ObservableObject {
         let sources = selectedItems.map(\.url)
         guard !sources.isEmpty else { return }
 
+        if let bridge = tasksBridge {
+            // Preferred path: queued, cancellable, shows real progress.
+            enqueueTransfer(kind: kind, to: destinationDirectory, policy: policy, tasks: bridge)
+            return
+        }
+
         let request = FileTransferRequest(
             kind: kind,
             sources: sources,
@@ -296,21 +309,53 @@ final class BrowserStore: ObservableObject {
         )
         do {
             let outcomes = try await transfers.perform(request)
-            let failures = outcomes.compactMap { outcome -> String? in
-                if case .failed(let message) = outcome.status { return message }
-                return nil
-            }
-            let done = outcomes.count { if case .failed = $0.status { return false }; return $0.status != .skipped }
-            let skipped = outcomes.count { $0.status == .skipped }
-            var summary = "\(done) item(s) \(kind == .move ? "moved" : kind == .duplicate ? "duplicated" : "copied")."
-            if skipped > 0 { summary += " \(skipped) skipped." }
-            if !failures.isEmpty { summary += "\n" + failures.prefix(3).joined(separator: "\n") }
-            lastOperationMessage = summary
-            selection = []
-            reload()
+            reportTransferOutcomes(outcomes, kind: kind)
         } catch {
             operationError = error.localizedDescription
         }
+    }
+
+    /// Same as `transfer`, but queued through `TaskCenter` so it shows real
+    /// progress and can be cancelled (TKT-M4-07).
+    func enqueueTransfer(
+        kind: FileTransferRequest.Kind,
+        to destinationDirectory: URL,
+        policy: ConflictPolicy,
+        tasks: TaskCenterAdapter
+    ) {
+        guard canModify else { return }
+        let sources = selectedItems.map(\.url)
+        guard !sources.isEmpty else { return }
+        let request = FileTransferRequest(
+            kind: kind,
+            sources: sources,
+            destinationDirectory: destinationDirectory,
+            conflictPolicy: policy
+        )
+        selection = []
+        Task {
+            await tasks.submit(FileTransferOperation(request: request))
+            reload()
+        }
+    }
+
+    /// Summarises outcomes honestly: counts, skips and up to three errors.
+    private func reportTransferOutcomes(_ outcomes: [FileTransferOutcome], kind: FileTransferRequest.Kind) {
+        let failures = outcomes.compactMap { outcome -> String? in
+            if case .failed(let message) = outcome.status { return message }
+            return nil
+        }
+        let done = outcomes.filter {
+            if case .failed = $0.status { return false }
+            return $0.status != .skipped
+        }.count
+        let skipped = outcomes.filter { $0.status == .skipped }.count
+        var summary = "\(done) item(s) \(kind == .move ? "moved" : kind == .duplicate ? "duplicated" : "copied")."
+        if skipped > 0 { summary += " \(skipped) skipped." }
+        if !failures.isEmpty { summary += "\n" + failures.prefix(3).joined(separator: "\n") }
+        lastOperationMessage = summary
+        selection = []
+        reload()
     }
 
     // MARK: - Compression
