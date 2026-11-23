@@ -25,7 +25,7 @@ struct ContentView: View {
             MainToolbar(model: model, columnVisibility: $columnVisibility)
         }
         .navigationTitle(model.currentDirectory.lastPathComponent.isEmpty ? "Mac7Zip" : model.currentDirectory.lastPathComponent)
-        .navigationSubtitle(model.currentDirectory.path)
+        .navigationSubtitle(subtitle)
         .frame(minWidth: 760, minHeight: 480)
         .task { model.loadInitialContentIfNeeded() }
         .onChange(of: sidebarSelection) { _, newValue in
@@ -38,6 +38,14 @@ struct ContentView: View {
         } message: {
             Text(model.operationError ?? "")
         }
+    }
+
+    private var subtitle: String {
+        if let internalPath = model.archiveInternalPath {
+            let name = model.archiveURL?.lastPathComponent ?? "Archive"
+            return internalPath.isEmpty ? name : "\(name) › \(internalPath)"
+        }
+        return model.currentDirectory.path
     }
 
     private var operationErrorBinding: Binding<Bool> {

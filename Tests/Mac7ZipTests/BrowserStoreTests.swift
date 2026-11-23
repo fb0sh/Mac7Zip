@@ -76,4 +76,71 @@ final class BrowserStoreTests: XCTestCase {
         let store = makeStore(startingAt: URL(fileURLWithPath: "/tmp/a"))
         XCTAssertNil(store.resolveNavigationTarget("/definitely/not/a/real/path/xyz"))
     }
+
+    // MARK: - Archive browsing (TKT-M2-05)
+
+    private func makeStubProvider(_ entries: [ArchiveEntry]) -> FileSystemProvider {
+        ArchiveFileSystemProvider(engine: StubArchiveEngine(entries: entries), archiveURL: URL(fileURLWithPath: "/tmp/a.zip"))
+    }
+
+    func testOpenArchiveSwitchesLocation() {
+        let zipURL = URL(fileURLWithPath: "/tmp/a.zip")
+        let entries = [
+            ArchiveEntry(path: "docs", size: 0, packedSize: 0, isDirectory: true, modificationDate: nil, crc: nil, isEncrypted: false, method: nil),
+            ArchiveEntry(path: "docs/x.txt", size: 3, packedSize: 3, isDirectory: false, modificationDate: nil, crc: nil, isEncrypted: false, method: "Deflate"),
+        ]
+        let store = BrowserStore(
+            startingAt: URL(fileURLWithPath: "/tmp"),
+            provider: RealFileSystemProvider(),
+            access: RealFileAccess(),
+            archiveProviderFactory: { _ in
+                ArchiveFileSystemProvider(engine: StubArchiveEngine(entries: entries), archiveURL: zipURL)
+            }
+        )
+        store.openArchive(zipURL)
+        XCTAssertTrue(store.isInsideArchive)
+        XCTAssertEqual(store.archiveInternalPath, "")
+        XCTAssertFalse(store.canModify, "Archive locations are read-only")
+    }
+
+    func testNavigateInsideArchiveAndGoUp() {
+        let zipURL = URL(fileURLWithPath: "/tmp/a.zip")
+        let entries = [
+            ArchiveEntry(path: "docs/x.txt", size: 3, packedSize: 3, isDirectory: false, modificationDate: nil, crc: nil, isEncrypted: false, method: "Deflate"),
+        ]
+        let store = BrowserStore(
+            startingAt: URL(fileURLWithPath: "/tmp"),
+            access: RealFileAccess(),
+            archiveProviderFactory: { _ in
+                ArchiveFileSystemProvider(engine: StubArchiveEngine(entries: entries), archiveURL: zipURL)
+            }
+        )
+        store.openArchive(zipURL)
+        store.navigateToArchivePath("docs")
+        XCTAssertEqual(store.archiveInternalPath, "docs")
+
+        store.goUp()
+        XCTAssertEqual(store.archiveInternalPath, "")
+
+        store.goUp()
+        XCTAssertFalse(store.isInsideArchive, "Going up from archive root leaves the archive")
+    }
+
+    func testArchivePathsNeverBecomeRealLocations() {
+        let zipURL = URL(fileURLWithPath: "/tmp/a.zip")
+        let store = BrowserStore(
+            startingAt: URL(fileURLWithPath: "/tmp"),
+            access: RealFileAccess(),
+            archiveProviderFactory: { _ in
+                ArchiveFileSystemProvider(engine: StubArchiveEngine(entries: []), archiveURL: zipURL)
+            }
+        )
+        store.openArchive(zipURL)
+        store.navigateToArchivePath("deep/nested")
+        guard case .archive(_, let internalPath) = store.location else {
+            return XCTFail("Expected archive location")
+        }
+        XCTAssertEqual(internalPath, "deep/nested")
+        XCTAssertNil(store.location.realURL)
+    }
 }

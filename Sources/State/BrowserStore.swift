@@ -2,12 +2,12 @@ import AppKit
 import Combine
 import Foundation
 
-/// Owns the browsing state for the main window: location, listing, selection,
-/// sort configuration, and navigation history. All mutation happens on the main
-/// actor; disk reads are delegated to a `FileSystemProvider` (which uses `FileAccess`).
+/// Owns the browsing state for the main window: location (real directory or
+/// archive-internal path), listing, selection, sort, history and file operations.
 @MainActor
 final class BrowserStore: ObservableObject {
     @Published private(set) var currentDirectory: URL
+    @Published private(set) var location: BrowserLocation
     @Published private(set) var items: [FileItem] = []
     @Published var selection: Set<FileItem.ID> = []
     @Published var sortDescriptor: FileSortDescriptor = .default
@@ -18,68 +18,82 @@ final class BrowserStore: ObservableObject {
     @Published private(set) var canGoBack = false
     @Published private(set) var canGoForward = false
 
-    private let provider: FileSystemProvider
+    private var provider: FileSystemProvider
     private let access: FileAccess
     private let fileOperations: FileOperating
-    private var history: [URL]
+    private let archiveProviderFactory: @Sendable (URL) -> FileSystemProvider?
+    private var history: [BrowserLocation]
     private var historyIndex: Int
 
     init(
         startingAt url: URL = FileLocations.home,
         provider: FileSystemProvider = RealFileSystemProvider(),
         access: FileAccess = RealFileAccess(),
-        fileOperations: FileOperating = FileOperationsService()
+        fileOperations: FileOperating = FileOperationsService(),
+        archiveProviderFactory: @escaping @Sendable (URL) -> FileSystemProvider? = BrowserStore.makeArchiveProvider
     ) {
         let standardized = url.standardizedFileURL
         self.currentDirectory = standardized
+        self.location = .real(standardized)
         self.provider = provider
         self.access = access
         self.fileOperations = fileOperations
-        self.history = [standardized]
+        self.archiveProviderFactory = archiveProviderFactory
+        self.history = [.real(standardized)]
         self.historyIndex = 0
     }
 
-    /// The current browse location (real filesystem today; archive later).
-    var location: BrowserLocation { .real(currentDirectory) }
+    /// Default archive provider: needs the bundled 7zz helper to exist.
+    nonisolated static func makeArchiveProvider(_ archiveURL: URL) -> FileSystemProvider? {
+        guard let helper = SevenZipLocator.helperURL() else { return nil }
+        return ArchiveFileSystemProvider(
+            engine: SevenZipEngine(executableURL: helper),
+            archiveURL: archiveURL
+        )
+    }
 
-    /// Capabilities of the active provider (drives UI enable/disable).
     var capabilities: FileSystemCapabilities { provider.capabilities }
-
-    var selectedItems: [FileItem] {
-        items.filter { selection.contains($0.id) }
+    var canModify: Bool { capabilities.contains(.createDirectory) }
+    var isInsideArchive: Bool {
+        if case .archive = location { return true }
+        return false
+    }
+    var archiveInternalPath: String? {
+        if case .archive(_, let internalPath) = location { return internalPath }
+        return nil
+    }
+    var archiveURL: URL? {
+        if case .archive(let url, _) = location { return url }
+        return nil
     }
 
-    var selectedSize: Int64 {
-        selectedItems.reduce(0) { $0 + $1.size }
-    }
+    var selectedItems: [FileItem] { items.filter { selection.contains($0.id) } }
+    var selectedSize: Int64 { selectedItems.reduce(0) { $0 + $1.size } }
 
     // MARK: - Loading
 
     func loadInitialContentIfNeeded() {
-        if items.isEmpty && !isLoading {
-            reload()
-        }
+        if items.isEmpty && !isLoading { reload() }
     }
 
     func reload() {
         let requestedLocation = location
-        let directory = currentDirectory
         isLoading = true
         loadState = .loading
+        let activeProvider = provider
         Task {
             do {
-                let contents = try await provider.list(requestedLocation)
-                guard currentDirectory == directory else { return }
+                let contents = try await activeProvider.list(requestedLocation)
+                guard location == requestedLocation else { return }
                 items = FileSorting.sorted(contents, by: sortDescriptor)
-                let validIDs = Set(items.map(\.id))
-                selection = selection.intersection(validIDs)
+                selection = selection.intersection(Set(items.map(\.id)))
                 errorMessage = nil
                 loadState = items.isEmpty ? .empty : .loaded
             } catch {
-                guard currentDirectory == directory else { return }
+                guard location == requestedLocation else { return }
                 items = []
                 selection = []
-                let message = Self.message(for: error, directory: directory)
+                let message = Self.message(for: error, location: requestedLocation)
                 errorMessage = message
                 loadState = .failed(message)
             }
@@ -91,40 +105,77 @@ final class BrowserStore: ObservableObject {
 
     func navigate(to url: URL) {
         let target = url.standardizedFileURL
-        guard target != currentDirectory else { return }
+        provider = RealFileSystemProvider()
+        moveTo(.real(target))
+    }
+
+    func openArchive(_ url: URL) {
+        guard let archiveProvider = archiveProviderFactory(url) else {
+            operationError = "The 7-Zip engine isn’t available, so archives can’t be opened."
+            return
+        }
+        provider = archiveProvider
+        moveTo(.archive(archiveURL: url.standardizedFileURL, internalPath: ""))
+    }
+
+    /// Navigate to a folder **inside** the currently open archive.
+    func navigateToArchivePath(_ internalPath: String) {
+        guard let archiveURL else { return }
+        moveTo(.archive(archiveURL: archiveURL, internalPath: internalPath))
+    }
+
+    private func moveTo(_ newLocation: BrowserLocation) {
+        guard newLocation != location else { return }
         history = Array(history.prefix(historyIndex + 1))
-        history.append(target)
+        history.append(newLocation)
         historyIndex = history.count - 1
-        load(target)
+        apply(newLocation)
     }
 
     func goBack() {
         guard historyIndex > 0 else { return }
         historyIndex -= 1
-        load(history[historyIndex])
+        apply(history[historyIndex])
     }
 
     func goForward() {
         guard historyIndex < history.count - 1 else { return }
         historyIndex += 1
-        load(history[historyIndex])
+        apply(history[historyIndex])
     }
 
     func goUp() {
-        if let parent = PathUtilities.parent(of: currentDirectory) {
-            navigate(to: parent)
+        switch location {
+        case .real(let url):
+            if let parent = PathUtilities.parent(of: url) { navigate(to: parent) }
+        case .archive(let url, let internalPath):
+            if internalPath.isEmpty {
+                // Leave the archive: go to its enclosing real directory.
+                provider = RealFileSystemProvider()
+                if let parent = PathUtilities.parent(of: url) { moveTo(.real(parent)) }
+            } else {
+                let parent = ArchiveFileSystemProvider.normalize(
+                    (internalPath as NSString).deletingLastPathComponent
+                )
+                moveTo(.archive(archiveURL: url, internalPath: parent))
+            }
         }
     }
 
-    private func load(_ url: URL) {
-        currentDirectory = url
+    private func apply(_ newLocation: BrowserLocation) {
+        location = newLocation
+        switch newLocation {
+        case .real(let url):
+            currentDirectory = url
+        case .archive(let url, _):
+            currentDirectory = url
+        }
         selection = []
         refreshNavigationFlags()
         reload()
     }
 
-    /// Resolves a user-entered path to a navigable directory URL. A file path
-    /// resolves to its parent directory; a missing path resolves to nil.
+    /// Resolves a user-entered path to a navigable directory URL.
     func resolveNavigationTarget(_ rawPath: String) -> URL? {
         let url = access.normalizeUserPath(rawPath)
         let snapshot = access.snapshot(at: url)
@@ -149,23 +200,37 @@ final class BrowserStore: ObservableObject {
 
     func open(_ item: FileItem) {
         if item.isDirectory {
-            navigate(to: item.url)
-        } else {
-            NSWorkspace.shared.open(item.url)
+            if let archiveURL, isInsideArchive {
+                let childPath = ArchiveFileSystemProvider.normalize(
+                    (archiveInternalPath ?? "") + "/" + item.name
+                )
+                _ = archiveURL
+                navigateToArchivePath(childPath)
+            } else {
+                navigate(to: item.url)
+            }
+            return
         }
+
+        if !isInsideArchive, ArchiveFormat.detect(from: item.url) != nil {
+            openArchive(item.url)
+            return
+        }
+        if isInsideArchive {
+            // Browsing inside an archive: files open through extraction in M2-07+.
+            return
+        }
+        NSWorkspace.shared.open(item.url)
     }
 
     func openSelected() {
-        if let first = selectedItems.first {
-            open(first)
-        }
+        if let first = selectedItems.first { open(first) }
     }
 
     // MARK: - File operations
 
-    var canModify: Bool { capabilities.contains(.createDirectory) }
-
     func newFolder(named name: String) async {
+        guard canModify else { return }
         do {
             _ = try await fileOperations.createFolder(named: name, in: currentDirectory)
             reload()
@@ -175,6 +240,7 @@ final class BrowserStore: ObservableObject {
     }
 
     func rename(_ item: FileItem, to newName: String) async {
+        guard canModify else { return }
         do {
             _ = try await fileOperations.rename(item.url, to: newName)
             reload()
@@ -184,12 +250,11 @@ final class BrowserStore: ObservableObject {
     }
 
     func deleteSelected() async {
+        guard canModify else { return }
         let targets = selectedItems
         guard !targets.isEmpty else { return }
         do {
-            for item in targets {
-                try await fileOperations.moveToTrash(item.url)
-            }
+            for item in targets { try await fileOperations.moveToTrash(item.url) }
             reload()
         } catch {
             operationError = Self.operationMessage(error)
@@ -204,9 +269,7 @@ final class BrowserStore: ObservableObject {
     }
 
     private static func operationMessage(_ error: Error) -> String {
-        guard let fileError = error as? FileError else {
-            return error.localizedDescription
-        }
+        guard let fileError = error as? FileError else { return error.localizedDescription }
         switch fileError {
         case .accessDenied(let path): return "You don’t have permission to modify “\(path)”."
         case .notFound(let name): return "“\(name)” no longer exists."
@@ -217,19 +280,23 @@ final class BrowserStore: ObservableObject {
         }
     }
 
-    private static func message(for error: Error, directory: URL) -> String {
+    private static func message(for error: Error, location: BrowserLocation) -> String {
         if let providerError = error as? FileSystemProviderError {
             switch providerError {
-            case .unsupportedLocation:
-                return "This location can’t be browsed here."
+            case .unsupportedLocation: return "This location can’t be browsed here."
             }
+        }
+        let name: String
+        switch location {
+        case .real(let url): name = url.lastPathComponent
+        case .archive(let url, _): name = url.lastPathComponent
         }
         let nsError = error as NSError
         if nsError.domain == NSCocoaErrorDomain && nsError.code == NSFileReadNoPermissionError {
-            return "“\(directory.lastPathComponent)” can’t be opened because you don’t have permission to view it."
+            return "“\(name)” can’t be opened because you don’t have permission to view it."
         }
         if nsError.domain == NSPOSIXErrorDomain && nsError.code == Int(EACCES) {
-            return "You don’t have permission to view “\(directory.path)”."
+            return "You don’t have permission to view this location."
         }
         return error.localizedDescription
     }
