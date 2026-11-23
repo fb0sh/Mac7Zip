@@ -21,7 +21,7 @@
 | M6 Performance/Security/Release | 8 tickets | Not started (M6-04/05 external-blocked) |
 
 ## Next eligible work
-- **M6 release hardening** begins: **`TKT-M6-01` (#48)** performance budgets, **`TKT-M6-02` (#49)** crash/a11y hardening; #51/#52 (signing/notarization) blocked on Developer ID credentials.
+- **`TKT-M6-02` (#49)** extend security suite (special-file/cancel); **`TKT-M6-06` (#53)** XCUITest expansion. **#51/#52 blocked on Developer ID credentials.**
 - Manual-on-Mac items (VoiceOver/XCUITest/drag) tracked in `docs/execution/MANUAL-CHECKS.md`.
 
 ## Tickets
@@ -79,14 +79,14 @@
 | TKT-M5-06 — Finder Services / context actions | M5 | Implemented (planner tested; Finder invocation = manual check) | #45 | TKT-M2-07, TKT-M3-01. | integration/m1-m6 / PR #62 | [run 45163815744](https://github.com/fb0sh/Mac7Zip/actions/runs/45163815744) — 198 tests | — |
 | TKT-M5-07 — Window restoration + deep links | M5 | Implemented (logic tested; runtime restore = manual check) | #46 | TKT-M5-01. | integration/m1-m6 / PR #62 | [run 45160622088](https://github.com/fb0sh/Mac7Zip/actions/runs/45160622088) — 180 tests | — |
 | TKT-M5-08 — Integration tests + manual acceptance checklist | M5 | Implemented/verified (acceptance checklist + docs test) | #47 | TKT-M5-01…07. | integration/m1-m6 / PR #62 | [run 45163815744](https://github.com/fb0sh/Mac7Zip/actions/runs/45163815744) — 198 tests | — |
-| TKT-M6-01 — Large-directory & large-archive performance/memory tuning | M6 | Planned | #48 | TKT-M1-02, TKT-M2-03. | — | — | — |
+| TKT-M6-01 — Large-directory & large-archive performance/memory tuning | M6 | Implemented (perf harness + baselines recorded) | #48 | TKT-M1-02, TKT-M2-03. | integration/m1-m6 / PR #62 | [run 45164758320](https://github.com/fb0sh/Mac7Zip/actions/runs/45164758320) — 203 tests; universal lipo verified | — |
 | TKT-M6-02 — Malicious-archive security test suite (CI) | M6 | Planned | #49 | TKT-M2-06, TKT-M2-07, TKT-M2-11. | — | — | — |
-| TKT-M6-03 — Universal Binary (arm64 + x86_64) | M6 | Planned | #50 | TKT-M2-01. | — | — | — |
+| TKT-M6-03 — Universal Binary (arm64 + x86_64) | M6 | Implemented/verified (universal arm64+x86_64, both slices incl. 7zz) | #50 | TKT-M2-01. | integration/m1-m6 / PR #62 | [run 45164758320](https://github.com/fb0sh/Mac7Zip/actions/runs/45164758320) — 203 tests; universal lipo verified | — |
 | TKT-M6-04 — Developer ID signing + notarization (`release.yml`) | M6 | Planned | #51 | TKT-M2-01, TKT-M6-03. | — | — | External: Apple Developer credentials unconfirmed |
 | TKT-M6-05 — DMG packaging + GitHub Release automation | M6 | Planned | #52 | TKT-M6-04. | — | — | External: Apple Developer credentials unconfirmed |
 | TKT-M6-06 — XCUITest suite expansion | M6 | Planned | #53 | TKT-M1-10, TKT-M2-05, TKT-M3-02. | — | — | — |
-| TKT-M6-07 — Release docs, changelog & third-party notices | M6 | Planned | #54 | TKT-M2-01, TKT-M5-05. | — | — | — |
-| TKT-M6-08 — Reproducibility & tool-version pinning audit | M6 | Planned | #55 | TKT-M1-10. | — | — | — |
+| TKT-M6-07 — Release docs, changelog & third-party notices | M6 | Implemented/verified (docs + notice presence tests) | #54 | TKT-M2-01, TKT-M5-05. | integration/m1-m6 / PR #62 | [run 45164758320](https://github.com/fb0sh/Mac7Zip/actions/runs/45164758320) — 203 tests; universal lipo verified | — |
+| TKT-M6-08 — Reproducibility & tool-version pinning audit | M6 | Implemented/verified (versions.env + CI pin check) | #55 | TKT-M1-10. | integration/m1-m6 / PR #62 | [run 45164758320](https://github.com/fb0sh/Mac7Zip/actions/runs/45164758320) — 203 tests; universal lipo verified | — |
 
 ## Change log
 - 2026-11-23: Ledger created; planning corrections applied (authority policy, ADR-009 26.06 pinned+verified, ADR-008/SPEC-SEC extraction safety, 7zz password transport, drag-out deferred to M4, cancellation dependency, perf-vs-correctness gates).
@@ -96,6 +96,7 @@
 - 2026-11-23: **TKT-M1-05** (New Folder/Rename/Move-to-Trash UI via NSAlert + FileOperationsService; menu ⌘⇧N/⌘R/⌘⌫; toolbar trash enabled) and **TKT-M1-02** (IconCache + 10k sort benchmark) implemented & verified (commit cbd98c1); CI run 45132417806 green (38 tests).
 - 2026-11-23: **TKT-M1-08** (context menu: Open/Rename/Trash/New Folder/Reveal, validated by selection & capabilities) and **TKT-M1-10** (CI: swift-format/SwiftLint non-blocking + `lipo` arm64 gate + `otool -L` audit; configs `.swiftlint.yml`/`.swift-format`) verified (commit aa679c9); CI run 45132861591 green — 38 tests, archs: arm64.
 - 2026-11-23: **TKT-M1-09** (host-free test target: core sources compiled into the test bundle, `TEST_HOST` removed) and **TKT-M1-12** (accessibility labels for table + rows) verified (commit 6243d08); CI run 45133371206 green — 38 tests, no app host. **M1 COMPLETE.**
+- 2026-11-23: **TKT-M6-01 / M6-03 / M6-07 / M6-08** — performance harness extended to 100k entries with recorded baselines (`docs/execution/PERFORMANCE.md`, advisory); **universal build verified in CI** (`lipo` shows `x86_64 arm64`, helper 7zz is a 2-arch universal binary); release docs `CHANGELOG.md`, `THIRD_PARTY_NOTICES.md`, `docs/release/{PRIVACY,RELEASE-NOTES-0.1.0}.md` with presence tests; `versions.env` pins Xcode/XcodeGen/SwiftLint/swift-format/7zz with a CI pin-check step (`docs/execution/TOOLCHAIN.md`). Verified (commit b3338ca); CI green — **203 tests**.
 - 2026-11-23: **TKT-M5-03 / M5-06 / M5-08** — Quick Look second-entry preview via secure temp workspace with guaranteed cleanup (`QuickLookTempWorkspace` tested; ⌘Y / menu routed); Finder Services (`NSServices` in Info.plist + `ServiceActionPlanner` mapping Open/Extract Here/Extract to Folder/Test/Add to Archive, handled by `AppDelegate`); `docs/execution/ACCEPTANCE.md` mapping all AC-MI-1…6 to automated/manual evidence with a coverage test. Verified (commit 2593c53); CI green — **198 tests**. **M5 COMPLETE.**
 - 2026-11-23: **TKT-M5-01 / M5-04 / M5-05** — Info.plist document types (7z/zip/tar/gz/tgz) + imported UTIs + `mac7zip://` URL scheme via XcodeGen `info` block, Finder open routed through `AppDelegate`→`FileOpenInbox`; real `UNUserNotificationCenter` posting (`SystemNotificationService` + `NotificationCoordinator`, opt-in + auth-aware, wired to TaskCenter completions); About/Licenses tab with bundled `NOTICE.md` (LGPL + unRAR). Verified (commit 61d3186); CI green — **189 tests**. Finder open / OS notifications / About UI are manual checks.
 - 2026-11-23: **TKT-M5-02 / M5-07** — `AppSettings`+`SettingsStore` (double-click **Open vs Extract**, subfolder default, default format, safety limits with validation, notifications + restore toggles) and window restoration (`RestorationStore`); Settings window scene wired; double-click now honours the Extract choice (extract to sibling `<name>/` via TaskCenter); last real folder restored on launch. Also added `NotificationPolicy` (pure authorization decision) and `ArchiveDocumentTypes` constants. Verified (commit 260b28c); CI green — **180 tests**. (M5-04 remains policy-only; real notifications + M5-01 plist pending.)

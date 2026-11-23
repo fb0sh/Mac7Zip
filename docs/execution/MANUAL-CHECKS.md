@@ -54,3 +54,6 @@ Never mark an item verified without performing it. CI green is a *different* cla
 - [ ] Preview an unsupported type → handled gracefully (no crash).
 - [ ] In Finder, right-click an archive → Services shows Open Archive / Extract Here / Extract to Folder / Test Archive; each works.
 - [ ] Right-click plain files → Services ▸ Add to Archive… opens the compression flow.
+
+## Universal binary (M6-03)
+- [ ] Built app launches natively on Apple silicon and on Intel (or via Rosetta) — `lipo -info` already confirms both slices in CI.
