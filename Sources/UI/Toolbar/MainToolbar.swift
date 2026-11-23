@@ -47,11 +47,13 @@ struct MainToolbar: ToolbarContent {
             .help("Add to Archive — not available yet")
             .disabled(true)
 
-            Button {} label: {
+            Button {
+                model.requestExtract()
+            } label: {
                 Label("Extract", systemImage: "square.and.arrow.up")
             }
-            .help("Extract — not available yet")
-            .disabled(true)
+            .help("Extract the selected items (or the whole archive)")
+            .disabled(!model.isInsideArchive || model.items.isEmpty)
 
             Button {
                 Task { await model.testCurrentArchive() }
@@ -88,6 +90,18 @@ struct MainToolbar: ToolbarContent {
             }
             .help("Info — not available yet")
             .disabled(true)
+        }
+
+        ToolbarItem(placement: .primaryAction) {
+            Button {
+                showingTasks.toggle()
+            } label: {
+                Image(systemName: tasks.hasActiveTasks ? "arrow.triangle.2.circlepath" : "checklist")
+            }
+            .help("Tasks")
+            .popover(isPresented: $showingTasks) {
+                TasksPopoverView(adapter: tasks)
+            }
         }
 
         ToolbarItem(placement: .primaryAction) {

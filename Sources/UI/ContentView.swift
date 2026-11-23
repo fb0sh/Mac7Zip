@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject private var model: BrowserStore
+    @StateObject private var tasks = TaskCenterAdapter()
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
     @State private var sidebarSelection: SidebarLocation? = .home
 
@@ -22,12 +23,27 @@ struct ContentView: View {
             }
         }
         .toolbar {
-            MainToolbar(model: model, columnVisibility: $columnVisibility)
+            MainToolbar(model: model, tasks: tasks, columnVisibility: $columnVisibility)
         }
         .navigationTitle(model.currentDirectory.lastPathComponent.isEmpty ? "Mac7Zip" : model.currentDirectory.lastPathComponent)
         .navigationSubtitle(subtitle)
         .frame(minWidth: 760, minHeight: 480)
-        .task { model.loadInitialContentIfNeeded() }
+        .task {
+            model.loadInitialContentIfNeeded()
+            await tasks.start()
+        }
+        .sheet(isPresented: extractSheetBinding) {
+            if let archiveURL = model.archiveURL {
+                ExtractOptionsSheet(
+                    archiveName: archiveURL.lastPathComponent,
+                    defaultDestination: archiveURL.deletingLastPathComponent(),
+                    onExtract: { options in
+                        model.performExtract(options: options, tasks: tasks)
+                    },
+                    onCancel: { model.extractRequested = false }
+                )
+            }
+        }
         .onChange(of: sidebarSelection) { _, newValue in
             if let newValue {
                 model.navigate(to: newValue.url)
@@ -51,6 +67,13 @@ struct ContentView: View {
             return internalPath.isEmpty ? name : "\(name) › \(internalPath)"
         }
         return model.currentDirectory.path
+    }
+
+    private var extractSheetBinding: Binding<Bool> {
+        Binding(
+            get: { model.extractRequested },
+            set: { if !$0 { model.extractRequested = false } }
+        )
     }
 
     private var testResultBinding: Binding<Bool> {

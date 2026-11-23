@@ -14,6 +14,8 @@ final class BrowserStore: ObservableObject {
     @Published var errorMessage: String?
     @Published var operationError: String?
     @Published var testResultMessage: String?
+    @Published var extractRequested = false
+    @Published private(set) var lastExtractMessage: String?
     @Published private(set) var loadState: LoadState = .empty
     @Published private(set) var isLoading = false
     @Published private(set) var canGoBack = false
@@ -226,6 +228,46 @@ final class BrowserStore: ObservableObject {
 
     func openSelected() {
         if let first = selectedItems.first { open(first) }
+    }
+
+    // MARK: - Extraction
+
+    func requestExtract() {
+        guard isInsideArchive else { return }
+        extractRequested = true
+    }
+
+    /// Runs extraction through `TaskCenter` so it is queued, cancellable and
+    /// observable. `options.destination` is the user-chosen folder; a subfolder
+    /// is applied when requested.
+    func performExtract(options: ExtractOptions, tasks: TaskCenterAdapter) {
+        guard let archiveURL, let helper = SevenZipLocator.helperURL() else {
+            operationError = "The 7-Zip engine isn’t available."
+            extractRequested = false
+            return
+        }
+        let selected = selectedItems.filter { !$0.isDirectory }.map(\.name)
+        var effective = options
+        if !selected.isEmpty {
+            let base = archiveInternalPath ?? ""
+            effective.entries = selected.map { base.isEmpty ? $0 : base + "/" + $0 }
+        }
+        if let subfolder = options.createSubfolder {
+            effective.destination = options.destination.appendingPathComponent(subfolder, isDirectory: true)
+        }
+        let engine = SevenZipEngine(executableURL: helper)
+        let operation = ExtractOperation(
+            engine: engine,
+            archive: archiveURL,
+            destination: effective.destination,
+            options: effective
+        )
+        extractRequested = false
+        Task {
+            let id = await tasks.submit(operation)
+            _ = id
+            lastExtractMessage = "Extracting to \(effective.destination.lastPathComponent)…"
+        }
     }
 
     // MARK: - Archive integrity
