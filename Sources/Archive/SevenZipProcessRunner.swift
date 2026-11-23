@@ -74,31 +74,41 @@ struct SevenZipProcessRunner: Sendable {
         }
         try? inPipe.fileHandleForWriting.close()
 
-        let termination = Task { () -> Int32 in
+        // `waitUntilExit` is not cancellation-aware, but awaiting it from a task
+        // whose parent was cancelled can surface `CancellationError`. The child's
+        // exit status is what matters, so run it detached from the caller's
+        // cancellation state.
+        let termination = Task.detached { () -> Int32 in
             process.waitUntilExit()
             return process.terminationStatus
         }
 
-        let cancellation = Task {
-            while !Task.isCancelled {
-                try? await Task.sleep(nanoseconds: 100_000_000)
-                if !process.isRunning { return }
+        // Escalating cancellation: SIGINT -> SIGTERM -> SIGKILL. Runs only when
+        // the caller actually cancels; it never fires on normal completion.
+        let escalator = Task.detached { [graceInterval] in
+            do {
+                try await Task.sleep(nanoseconds: UInt64(graceInterval * 1_000_000_000))
+                guard process.isRunning else { return }
+                process.interrupt() // SIGINT
+                try await Task.sleep(nanoseconds: UInt64(graceInterval * 1_000_000_000))
+                guard process.isRunning else { return }
+                process.terminate() // SIGTERM
+                try await Task.sleep(nanoseconds: UInt64(graceInterval * 1_000_000_000))
+                guard process.isRunning else { return }
+                kill(process.processIdentifier, SIGKILL)
+            } catch {
+                // Cancelled because the process already finished.
             }
-            guard process.isRunning else { return }
-            process.interrupt() // SIGINT
-            try? await Task.sleep(nanoseconds: UInt64(graceInterval * 1_000_000_000))
-            if process.isRunning { process.terminate() } // SIGTERM
-            try? await Task.sleep(nanoseconds: UInt64(graceInterval * 1_000_000_000))
-            if process.isRunning { kill(process.processIdentifier, SIGKILL) }
         }
 
         let exitCode = await withTaskCancellationHandler {
             await termination.value
         } onCancel: {
-            cancellation.cancel()
+            // Caller cancelled: begin the escalation immediately.
+            if process.isRunning { process.interrupt() }
         }
 
-        cancellation.cancel()
+        escalator.cancel()
         outPipe.fileHandleForReading.readabilityHandler = nil
         errPipe.fileHandleForReading.readabilityHandler = nil
 
