@@ -9,18 +9,55 @@ import Foundation
 /// 4. commit per-item into the destination.
 ///
 /// Multi-file extraction is deliberately **not** whole-operation atomic.
+/// How a password may reach 7zz.
+///
+/// **Verified 2026-11-23 on macOS 26 / 7-Zip 26.06:** the `-p` prompt reads from
+/// the console and ignores piped stdin *and* a `script(1)` pseudo-terminal. There
+/// is therefore no non-argv transport available. Mac7Zip refuses password
+/// operations by default rather than silently exposing the password in `ps`.
+enum PasswordTransport: Sendable {
+    /// Fail closed (default). No insecure fallback.
+    case unavailable
+    /// Explicit opt-in: pass `-p<password>` in argv. Visible to other processes
+    /// via `ps`; must only be used with the user's informed consent.
+    case argvExplicit
+}
+
 struct SevenZipEngine: ArchiveEngine {
     let runner: SevenZipProcessRunner
     let validator: SecurityValidator
+    let passwordTransport: PasswordTransport
 
-    init(runner: SevenZipProcessRunner, validator: SecurityValidator = SecurityValidator()) {
+    init(
+        runner: SevenZipProcessRunner,
+        validator: SecurityValidator = SecurityValidator(),
+        passwordTransport: PasswordTransport = .unavailable
+    ) {
         self.runner = runner
         self.validator = validator
+        self.passwordTransport = passwordTransport
     }
 
-    init(executableURL: URL, limits: ExtractionLimits = ExtractionLimits(), timeout: TimeInterval = 300) {
+    init(
+        executableURL: URL,
+        limits: ExtractionLimits = ExtractionLimits(),
+        timeout: TimeInterval = 300,
+        passwordTransport: PasswordTransport = .unavailable
+    ) {
         self.runner = SevenZipProcessRunner(executableURL: executableURL, timeout: timeout)
         self.validator = SecurityValidator(limits: limits)
+        self.passwordTransport = passwordTransport
+    }
+
+    /// Applies the password policy, returning the argv fragment to use.
+    private func passwordArguments(_ password: String?) throws -> [String] {
+        guard let password else { return [] }
+        switch passwordTransport {
+        case .unavailable:
+            throw ArchiveError.passwordTransportUnavailable
+        case .argvExplicit:
+            return ["-p\(password)"]
+        }
     }
 
     // MARK: - List
@@ -31,9 +68,9 @@ struct SevenZipEngine: ArchiveEngine {
 
     func listContents(of archive: URL, password: String?) async throws -> [ArchiveEntry] {
         var arguments = ["l", "-slt", "-sccUTF-8"]
-        if password != nil { arguments.append("-p") }
+        arguments.append(contentsOf: try passwordArguments(password))
         arguments.append(archive.path)
-        let result = try await runner.run(arguments: arguments, stdinLines: password.map { [$0] } ?? [])
+        let result = try await runner.run(arguments: arguments)
         let diagnostic = result.combinedDiagnostic
 
         if let error = ArchiveError.from(exitCode: result.exitCode, diagnostic: diagnostic) {
@@ -72,16 +109,11 @@ struct SevenZipEngine: ArchiveEngine {
         if options.format == .sevenZip && options.encryptFileNames {
             arguments.append("-mhe")
         }
-        if options.password != nil {
-            // Interactive prompt; the password itself goes over stdin only.
-            arguments.append("-p")
-        }
+        arguments.append(contentsOf: try passwordArguments(options.password))
         arguments.append(destination.path)
         arguments.append(contentsOf: sources.map(\.path))
 
-        // Creation prompts twice ("Enter password" + "Re-enter password").
-        let stdinLines = options.password.map { [$0, $0] } ?? []
-        let result = try await runner.run(arguments: arguments, stdinLines: stdinLines)
+        let result = try await runner.run(arguments: arguments)
         if let error = ArchiveError.from(exitCode: result.exitCode, diagnostic: result.combinedDiagnostic) {
             throw error
         }
@@ -105,16 +137,14 @@ struct SevenZipEngine: ArchiveEngine {
         defer { staging.cleanUp() }
 
         var arguments = ["x", "-sccUTF-8", "-y", "-ao\(options.overwriteMode.switchValue)"]
-        if options.password != nil {
-            arguments.append("-p")
-        }
+        arguments.append(contentsOf: try passwordArguments(options.password))
         if let entriesToExtract = options.entries, !entriesToExtract.isEmpty {
             arguments.append(contentsOf: entriesToExtract)
         }
         arguments.append(archive.path)
         arguments.append("-o\(staging.url.path)")
 
-        let result = try await runner.run(arguments: arguments, stdinLines: options.password.map { [$0] } ?? [])
+        let result = try await runner.run(arguments: arguments)
         if let error = ArchiveError.from(exitCode: result.exitCode, diagnostic: result.combinedDiagnostic) {
             throw error
         }

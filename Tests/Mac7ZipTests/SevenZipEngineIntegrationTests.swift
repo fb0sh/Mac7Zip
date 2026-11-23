@@ -6,6 +6,7 @@ import XCTest
 final class SevenZipEngineIntegrationTests: XCTestCase {
     private var workDir: URL!
     private var engine: SevenZipEngine!
+    private var engineWithArgvPassword: SevenZipEngine!
 
     private static var helperURL: URL? {
         let relative = "Vendor/7zz/26.06/arm64/7zz"
@@ -48,6 +49,7 @@ final class SevenZipEngineIntegrationTests: XCTestCase {
             .appendingPathComponent("Mac7ZipEngineTests-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: workDir, withIntermediateDirectories: true)
         engine = SevenZipEngine(executableURL: helper, timeout: 30)
+        engineWithArgvPassword = SevenZipEngine(executableURL: helper, timeout: 30, passwordTransport: .argvExplicit)
     }
 
     override func tearDownWithError() throws {
@@ -102,17 +104,33 @@ final class SevenZipEngineIntegrationTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: dest.appendingPathComponent("src/b.txt").path))
     }
 
+    func testPasswordOperationsFailClosedByDefault() async throws {
+        let src = try makeSourceTree()
+        let archive = workDir.appendingPathComponent("blocked.7z")
+        do {
+            try await engine.createArchive(
+                at: archive,
+                from: [src],
+                options: ArchiveOptions(format: .sevenZip, password: "correct-horse")
+            )
+            XCTFail("Password operations must fail closed without an explicit transport")
+        } catch let error as ArchiveError {
+            XCTAssertEqual(error, .passwordTransportUnavailable)
+        }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: archive.path))
+    }
+
     func testEncryptedSevenZipWithPassword() async throws {
         let src = try makeSourceTree()
         let archive = workDir.appendingPathComponent("secret.7z")
-        try await engine.createArchive(
+        try await engineWithArgvPassword.createArchive(
             at: archive,
             from: [src],
             options: ArchiveOptions(format: .sevenZip, password: "correct-horse")
         )
 
         let dest = workDir.appendingPathComponent("outenc", isDirectory: true)
-        try await engine.extract(
+        try await engineWithArgvPassword.extract(
             archive: archive,
             to: dest,
             options: ExtractOptions(password: "correct-horse", destination: dest)
@@ -123,7 +141,7 @@ final class SevenZipEngineIntegrationTests: XCTestCase {
     func testWrongPasswordFails() async throws {
         let src = try makeSourceTree()
         let archive = workDir.appendingPathComponent("secret2.7z")
-        try await engine.createArchive(
+        try await engineWithArgvPassword.createArchive(
             at: archive,
             from: [src],
             options: ArchiveOptions(format: .sevenZip, password: "right")
@@ -131,7 +149,7 @@ final class SevenZipEngineIntegrationTests: XCTestCase {
 
         let dest = workDir.appendingPathComponent("outwrong", isDirectory: true)
         do {
-            try await engine.extract(
+            try await engineWithArgvPassword.extract(
                 archive: archive,
                 to: dest,
                 options: ExtractOptions(password: "wrong", destination: dest)

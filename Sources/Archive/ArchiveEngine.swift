@@ -131,6 +131,9 @@ enum ArchiveError: Error, Equatable, Sendable {
     case engineFailure(code: Int32, diagnostic: String)
     case engineNotFound
     case notImplemented
+    /// 7zz's password prompt is console-bound; no pipe/PTY transport is available.
+    /// Mac7Zip refuses rather than silently putting the password in argv.
+    case passwordTransportUnavailable
 
     /// Map a 7zz exit code + captured diagnostic to a typed error.
     static func from(exitCode: Int32, diagnostic: String) -> ArchiveError? {

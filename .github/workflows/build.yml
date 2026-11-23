@@ -64,30 +64,6 @@ jobs:
           xcodegen generate --spec project.yml
           ls -la
 
-      - name: DIAG 7zz password prompts (temporary)
-        run: |
-          set +e
-          W="$GITHUB_WORKSPACE/tmp/diag"; rm -rf "$W"; mkdir -p "$W/src"
-          echo hi > "$W/src/a.txt"; cd "$W"
-          ZZ="$GITHUB_WORKSPACE/Vendor/7zz/26.06/arm64/7zz"
-          printf 'pw123\n'      | "$ZZ" a -t7z -p one.7z src >/dev/null 2>&1; echo "CREATE_one=$?"
-          printf 'pw123\npw123\n' | "$ZZ" a -t7z -p two.7z src >/dev/null 2>&1; echo "CREATE_two=$?"
-          for m in one two; do
-            printf 'pw123\n' | "$ZZ" t -p "$m.7z" >/dev/null 2>&1; echo "TEST_${m}_good=$?"
-            printf 'bad\n'   | "$ZZ" t -p "$m.7z" >/dev/null 2>&1; echo "TEST_${m}_bad=$?"
-            printf 'pw123\n' | "$ZZ" x -p "$m.7z" -o"out_$m" -y >/dev/null 2>&1; echo "EXTRACT_${m}=$?"
-            ls "out_$m/src" 2>/dev/null | tr '\n' ',' ; echo " <- files_$m"
-          done
-          "$ZZ" t two.7z >/dev/null 2>&1; echo "TEST_two_no_pw=$?"
-          "$ZZ" t -ppw123 two.7z >/dev/null 2>&1; echo "TEST_two_argv_pw=$?"
-          printf 'pw123\n' | "$ZZ" a -t7z -ppw123 argv.7z src >/dev/null 2>&1; echo "CREATE_argv=$?"
-          printf 'pw123\n' | "$ZZ" t -p argv.7z >/dev/null 2>&1; echo "TEST_argv_with_promptpw=$?"
-          "$ZZ" t -ppw123 argv.7z >/dev/null 2>&1; echo "TEST_argv_with_argvpw=$?"
-          printf 'pw123\n' | /usr/bin/script -q /dev/null "$ZZ" t -p two.7z >/dev/null 2>&1; echo "PTY_TEST_good=$?"
-          printf 'bad\n'   | /usr/bin/script -q /dev/null "$ZZ" t -p two.7z >/dev/null 2>&1; echo "PTY_TEST_bad=$?"
-          printf 'pw123\n' | /usr/bin/script -q /dev/null "$ZZ" x -p two.7z -o"out_pty" -y >/dev/null 2>&1; echo "PTY_EXTRACT=$?"
-          echo "DIAGDONE"
-
       - name: Compile check (Debug)
         run: |
           set -o pipefail
