@@ -61,6 +61,7 @@ actor TaskCenter {
     private var records: [TaskRecord] = []
     private var queue: [(id: UUID, operation: TaskOperation)] = []
     private var running: UUID?
+    private var runningTask: Task<Void, Never>?
     private var cancellationRequested: Set<UUID> = []
     private let maxConcurrency: Int
     private let historyLimit: Int
@@ -105,6 +106,9 @@ actor TaskCenter {
         if records[index].state == .running {
             records[index].state = .cancelling
             cancellationRequested.insert(id)
+            // Actually cancel the running Swift task so `Task.checkCancellation()`
+            // inside the operation fires. Without this, cancel was a no-op.
+            runningTask?.cancel()
             notify()
         }
     }
@@ -121,7 +125,7 @@ actor TaskCenter {
         let operation = next.operation
         let taskID = next.id
 
-        Task.detached { [weak self] in
+        runningTask = Task.detached { [weak self] in
             do {
                 try await operation.run { progress, metrics in
                     Task { await self?.updateProgress(taskID, progress: progress, metrics: metrics) }
@@ -151,6 +155,7 @@ actor TaskCenter {
         }
         cancellationRequested.remove(id)
         running = nil
+        runningTask = nil
         trimHistory()
         notify()
         startNextIfPossible()
