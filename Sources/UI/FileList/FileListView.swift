@@ -74,6 +74,7 @@ struct FileListView: NSViewRepresentable {
 // MARK: - Coordinator
 
 extension FileListView {
+    @MainActor
     final class Coordinator: NSObject, NSTableViewDataSource, NSTableViewDelegate {
         var model: FileBrowserModel
         weak var tableView: NSTableView?
@@ -115,9 +116,10 @@ extension FileListView {
                 isSynchronizing = false
             }
 
-            let indexes = IndexSet(
-                items.enumerated().compactMap { model.selection.contains($0.element.id) ? $0.offset : nil }
-            )
+            var indexes = IndexSet()
+            for (offset, item) in items.enumerated() where model.selection.contains(item.id) {
+                indexes.insert(offset)
+            }
             if tableView.selectedRowIndexes != indexes {
                 isSynchronizing = true
                 tableView.selectRowIndexes(indexes, byExtendingSelection: false)
