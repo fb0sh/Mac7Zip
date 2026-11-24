@@ -27,12 +27,26 @@ final class FileIconRegistrar: ObservableObject {
         UTType(filenameExtension: ext)?.identifier
     }
 
-    /// Registers handlers for all catalog extensions. Returns how many succeeded.
+    /// Makes the system aware of Mac7Zip's document-type icons **without** changing
+    /// any default app, so macOS shows **no confirmation dialogs**. Finder uses these
+    /// icons for a type only when Mac7Zip is that type's default handler.
+    func register() {
+        refreshRegistration()
+        isRegistered = true
+        defaults.set(true, forKey: flagKey)
+    }
+
+    /// Sets Mac7Zip as the default handler for the chosen extensions. macOS shows
+    /// **one confirmation dialog per type**, which is why this is explicit/opt-in.
+    /// Returns how many were applied.
     @discardableResult
-    func register(bundleID: String = Bundle.main.bundleIdentifier ?? "com.mac7zip.Mac7Zip") -> Int {
+    func setDefault(
+        forExtensions extensions: [String],
+        bundleID: String = Bundle.main.bundleIdentifier ?? "com.mac7zip.Mac7Zip"
+    ) -> Int {
         var saved: [String: String] = (defaults.dictionary(forKey: savedKey) as? [String: String]) ?? [:]
         var changed = 0
-        for ext in ArchiveFileIconCatalog.extensions {
+        for ext in extensions {
             guard let uti = Self.uti(forExtension: ext) else { continue }
             if saved[uti] == nil, let previous = Self.currentHandler(for: uti) {
                 saved[uti] = previous
@@ -43,8 +57,6 @@ final class FileIconRegistrar: ObservableObject {
         }
         defaults.set(saved, forKey: savedKey)
         refreshRegistration()
-        isRegistered = true
-        defaults.set(true, forKey: flagKey)
         return changed
     }
 

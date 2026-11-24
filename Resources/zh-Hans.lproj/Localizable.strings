@@ -142,3 +142,8 @@
 "Registered" = "已注册";
 "Not registered" = "未注册";
 "Status" = "状态";
+
+"Register with system (no dialogs)" = "注册到系统（不弹框）";
+"Step 1: let the system learn Mac7Zip’s per-type icons. This changes NO default apps and shows NO dialogs." = "第一步：让系统认识 Mac7Zip 的各类型图标。此步不修改默认程序、不弹任何确认框。";
+"Step 2 (optional): macOS only shows a type’s icon from its default opener. Pick just the formats you want Mac7Zip to open by default — each adds ONE confirmation dialog." = "第二步（可选）：macOS 只对“默认打开程序”显示其图标。仅勾选你希望 Mac7Zip 默认打开的格式——每勾选一种会弹一次确认框。";
+"Set selected as default" = "设为默认（所选格式）";

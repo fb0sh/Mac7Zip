@@ -128,3 +128,8 @@
 "Registered" = "Registered";
 "Not registered" = "Not registered";
 "Status" = "Status";
+
+"Register with system (no dialogs)" = "Register with system (no dialogs)";
+"Step 1: let the system learn Mac7Zip’s per-type icons. This changes NO default apps and shows NO dialogs." = "Step 1: let the system learn Mac7Zip’s per-type icons. This changes NO default apps and shows NO dialogs.";
+"Step 2 (optional): macOS only shows a type’s icon from its default opener. Pick just the formats you want Mac7Zip to open by default — each adds ONE confirmation dialog." = "Step 2 (optional): macOS only shows a type’s icon from its default opener. Pick just the formats you want Mac7Zip to open by default — each adds ONE confirmation dialog.";
+"Set selected as default" = "Set selected as default";

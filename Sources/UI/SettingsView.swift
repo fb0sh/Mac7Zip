@@ -5,6 +5,7 @@ import SwiftUI
 struct SettingsView: View {
     @ObservedObject var store: SettingsStore
     @StateObject private var iconRegistrar = FileIconRegistrar()
+    @State private var selectedDefaultExtensions: Set<String> = []
 
     var body: some View {
         TabView {
@@ -78,20 +79,43 @@ struct SettingsView: View {
     private var fileIconsTab: some View {
         Form {
             Section("Finder file icons") {
-                Text("Register per-type archive icons so Finder shows the matching icon for .7z/.zip/.rar and more.")
+                Text("Step 1: let the system learn Mac7Zip’s per-type icons. This changes NO default apps and shows NO dialogs.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                Button("Register with system (no dialogs)") { iconRegistrar.register() }
+
+                Text("Step 2 (optional): macOS only shows a type’s icon from its default opener. Pick just the formats you want Mac7Zip to open by default — each adds ONE confirmation dialog.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                ScrollView {
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 84))], alignment: .leading) {
+                        ForEach(ArchiveFileIconCatalog.extensions, id: \.self) { ext in
+                            Toggle(ext, isOn: Binding(
+                                get: { selectedDefaultExtensions.contains(ext) },
+                                set: { isOn in
+                                    if isOn { selectedDefaultExtensions.insert(ext) }
+                                    else { selectedDefaultExtensions.remove(ext) }
+                                }
+                            ))
+                            .toggleStyle(.checkbox)
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+                .frame(height: 110)
+
                 HStack {
-                    Button("Register file icons") { _ = iconRegistrar.register() }
+                    Button("Set selected as default") {
+                        _ = iconRegistrar.setDefault(forExtensions: Array(selectedDefaultExtensions))
+                        selectedDefaultExtensions.removeAll()
+                    }
+                    .disabled(selectedDefaultExtensions.isEmpty)
                     Button("Restore system defaults") { _ = iconRegistrar.restoreDefaults() }
                 }
                 LabeledContent("Status") {
                     Text(iconRegistrar.isRegistered ? "Registered" : "Not registered")
                         .foregroundStyle(iconRegistrar.isRegistered ? .green : .secondary)
                 }
-                Text("macOS may ask you to confirm changing the default app for these types. Ad-hoc signed builds may be ignored by LaunchServices.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)
