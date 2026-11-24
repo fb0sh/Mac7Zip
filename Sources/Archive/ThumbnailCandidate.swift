@@ -34,6 +34,20 @@ enum ThumbnailCandidate {
         }
     }
 
+    /// Up to `limit` entry names to draw as a content preview when the archive has
+    /// no renderable image (so the thumbnail shows real contents, not blank paper).
+    static func previewLines(for entries: [Entry], limit: Int = 4) -> [String] {
+        let visible = entries.filter { !$0.isDirectory }
+        let sorted = visible.sorted { lhs, rhs in
+            if lhs.size == rhs.size { return lhs.path < rhs.path }
+            return lhs.size > rhs.size
+        }
+        return sorted.prefix(limit).map { entry in
+            let name = (entry.path as NSString).lastPathComponent
+            return name.isEmpty ? entry.path : name
+        }
+    }
+
     /// Short badge text for the archive (e.g. "ZIP", "7Z", "TAR.GZ"), uppercased.
     static func badgeText(forFileName name: String) -> String {
         let lower = name.lowercased()

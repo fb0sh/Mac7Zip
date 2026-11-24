@@ -39,7 +39,9 @@ final class ThumbnailProvider: QLThumbnailProvider {
         if let cover = renderCover(for: url, targetSize: bounds.size) {
             cover.draw(in: bounds)
         } else {
-            drawPlaceholder(in: bounds, name: name)
+            // No picture inside: draw a real content list instead of blank paper.
+            let names = contentPreview(for: url)
+            drawPlaceholder(in: bounds, name: name, fileNames: names)
         }
 
         drawBadge(in: bounds, text: badgeText(for: name))
@@ -78,17 +80,80 @@ final class ThumbnailProvider: QLThumbnailProvider {
         )
     }
 
-    private static func drawPlaceholder(in bounds: CGRect, name: String) {
-        // Simple archive glyph so archives without images still look distinct.
-        let inset = bounds.insetBy(dx: bounds.width * 0.22, dy: bounds.height * 0.22)
-        NSColor(calibratedWhite: 0.93, alpha: 1).setFill()
-        NSBezierPath(roundedRect: inset, xRadius: inset.width * 0.12, yRadius: inset.width * 0.12).fill()
-        NSColor(calibratedWhite: 0.55, alpha: 1).setStroke()
-        let line = NSBezierPath()
-        line.move(to: CGPoint(x: inset.midX, y: inset.minY + inset.height * 0.1))
-        line.line(to: CGPoint(x: inset.midX, y: inset.maxY - inset.height * 0.1))
-        line.lineWidth = max(1, bounds.width * 0.03)
-        line.stroke()
+    private static func drawPlaceholder(in bounds: CGRect, name: String, fileNames: [String]) {
+        let inset = bounds.insetBy(dx: bounds.width * 0.10, dy: bounds.height * 0.10)
+        NSColor(calibratedWhite: 0.97, alpha: 1).setFill()
+        let card = NSBezierPath(roundedRect: inset, xRadius: inset.width * 0.06, yRadius: inset.width * 0.06)
+        card.fill()
+        NSColor(calibratedWhite: 0.80, alpha: 1).setStroke()
+        card.lineWidth = max(0.5, bounds.width * 0.008)
+        card.stroke()
+
+        guard !fileNames.isEmpty else {
+            // Truly empty: draw a simple document glyph.
+            NSColor(calibratedWhite: 0.85, alpha: 1).setFill()
+            let glyph = inset.insetBy(dx: inset.width * 0.30, dy: inset.height * 0.30)
+            NSBezierPath(roundedRect: glyph, xRadius: glyph.width * 0.10, yRadius: glyph.width * 0.10).fill()
+            return
+        }
+
+        // Content list: one row per file name (largest first), truncated to fit.
+        let fontSize = max(6, bounds.width * 0.085)
+        let font = NSFont.systemFont(ofSize: fontSize)
+        let rowHeight = fontSize * 1.55
+        var y = inset.maxY - rowHeight - inset.height * 0.06
+        for fileName in fileNames {
+            guard y > inset.minY + inset.height * 0.18 else { break }
+            // Bullet
+            NSColor(calibratedWhite: 0.62, alpha: 1).setFill()
+            let bullet = CGRect(x: inset.minX + inset.width * 0.07, y: y + fontSize * 0.30,
+                                width: fontSize * 0.34, height: fontSize * 0.34)
+            NSBezierPath(ovalIn: bullet).fill()
+
+            let paragraph = NSMutableParagraphStyle()
+            paragraph.lineBreakMode = .byTruncatingMiddle
+            let textRect = CGRect(x: inset.minX + inset.width * 0.16, y: y,
+                                  width: inset.width * 0.76, height: rowHeight)
+            (fileName as NSString).draw(
+                with: textRect,
+                options: [.usesLineFragmentOrigin],
+                attributes: [
+                    .font: font,
+                    .foregroundColor: NSColor(calibratedWhite: 0.32, alpha: 1),
+                    .paragraphStyle: paragraph,
+                ],
+                context: nil
+            )
+            y -= rowHeight
+        }
+    }
+
+    /// Reads the archive listing and returns a few entry names for the preview.
+    private static func contentPreview(for url: URL) -> [String] {
+        guard let helper = helperURL(),
+              let listing = runSevenZip(helper: helper, arguments: ["l", "-slt", "-sccUTF-8", url.path]) else {
+            return []
+        }
+        var sizes: [String: Int64] = [:]
+        var dirs: Set<String> = []
+        var currentPath: String?
+        for line in listing.split(separator: "\n") {
+            let text = String(line)
+            if text.hasPrefix("Path = ") {
+                currentPath = String(text.dropFirst("Path = ".count))
+            } else if text.hasPrefix("Size = "), let path = currentPath {
+                sizes[path] = Int64(text.dropFirst("Size = ".count)) ?? 0
+            } else if text.hasPrefix("Folder = +"), let path = currentPath {
+                dirs.insert(path)
+            } else if text.hasPrefix("Attributes = "), let path = currentPath,
+                      text.dropFirst("Attributes = ".count).hasPrefix("D") {
+                dirs.insert(path)
+            }
+        }
+        let files = sizes.filter { !dirs.contains($0.key) }
+        return files.sorted { $0.value > $1.value }
+            .prefix(4)
+            .map { (($0.key as NSString).lastPathComponent) }
     }
 
     /// Extracts the largest image entry and returns it as an `NSImage`.

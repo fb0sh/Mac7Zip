@@ -41,4 +41,25 @@ final class ThumbnailCandidateTests: XCTestCase {
         XCTAssertEqual(ThumbnailCandidate.summaryText(fileCount: 2, folderCount: 1), "1 folder · 2 files")
         XCTAssertEqual(ThumbnailCandidate.summaryText(fileCount: 0, folderCount: 0), "Empty archive")
     }
+
+    func testPreviewLinesPicksLargestFiles() {
+        let entries = [
+            entry("docs/small.txt", 10),
+            entry("docs/big.bin", 5_000),
+            entry("folder", 0, dir: true),
+            entry("mid.dat", 500),
+        ]
+        let lines = ThumbnailCandidate.previewLines(for: entries, limit: 2)
+        XCTAssertEqual(lines, ["big.bin", "mid.dat"])
+    }
+
+    func testPreviewLinesSkipsDirectoriesAndRespectsLimit() {
+        let entries = [entry("a", 3, dir: true), entry("x.txt", 1), entry("y.txt", 2), entry("z.txt", 3)]
+        XCTAssertEqual(ThumbnailCandidate.previewLines(for: entries, limit: 2), ["z.txt", "y.txt"])
+    }
+
+    func testPreviewLinesEmptyArchive() {
+        XCTAssertTrue(ThumbnailCandidate.previewLines(for: []).isEmpty)
+        XCTAssertTrue(ThumbnailCandidate.previewLines(for: [entry("only", 1, dir: true)]).isEmpty)
+    }
 }
