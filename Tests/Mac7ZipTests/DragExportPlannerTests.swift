@@ -1,4 +1,5 @@
 import XCTest
+import UniformTypeIdentifiers
 @testable import Mac7Zip
 
 final class DragExportPlannerTests: XCTestCase {
@@ -23,16 +24,29 @@ final class DragExportPlannerTests: XCTestCase {
 
     func testArchiveFilesDragAsPromises() {
         let payload = DragExportPlanner.payload(for: makeItem("docs/a.txt"), isInsideArchive: true)
-        guard case .promise(let entryPath, let fileName) = payload else {
+        guard case .promise(let entryPath, let fileName, let isDirectory) = payload else {
             return XCTFail("Expected a promise payload")
         }
         XCTAssertEqual(entryPath, "docs/a.txt")
         XCTAssertEqual(fileName, "a.txt")
+        XCTAssertFalse(isDirectory)
     }
 
-    func testArchiveDirectoriesAreNotDraggable() {
+    func testArchiveDirectoriesDragAsFolderPromises() {
         let payload = DragExportPlanner.payload(for: makeItem("docs", dir: true), isInsideArchive: true)
-        if case .none = payload {} else { XCTFail("Archive folders shouldn't be draggable") }
+        guard case .promise(let entryPath, let fileName, let isDirectory) = payload else {
+            return XCTFail("Archive folders should be draggable via a promise")
+        }
+        XCTAssertEqual(entryPath, "docs")
+        XCTAssertEqual(fileName, "docs")
+        XCTAssertTrue(isDirectory)
+        XCTAssertEqual(DragExportPlanner.fileType(for: "docs", isDirectory: true), UTType.folder.identifier)
+    }
+
+    func testNestedEntryPathIncludesInternalFolder() {
+        let payload = DragExportPlanner.payload(for: makeItem("a.txt"), isInsideArchive: true, internalPath: "docs/sub")
+        guard case .promise(let entryPath, _, _) = payload else { return XCTFail("promise") }
+        XCTAssertEqual(entryPath, "docs/sub/a.txt")
     }
 
     func testFileTypeResolution() {

@@ -10,12 +10,22 @@ import Foundation
 final class ArchiveEntryExporter: NSObject {
     private let archiveURL: URL
     private let entryPath: String
+    private let isDirectory: Bool
     private let engineFactory: () -> ArchiveEngine?
 
-    init(archiveURL: URL, entryPath: String, engineFactory: @escaping () -> ArchiveEngine?) {
+    init(archiveURL: URL, entryPath: String, isDirectory: Bool = false, engineFactory: @escaping () -> ArchiveEngine?) {
         self.archiveURL = archiveURL
         self.entryPath = entryPath
+        self.isDirectory = isDirectory
         self.engineFactory = engineFactory
+    }
+
+    private static func findItem(named name: String, under root: URL) -> URL? {
+        let enumerator = FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil)
+        while let url = enumerator?.nextObject() as? URL {
+            if url.lastPathComponent == name { return url }
+        }
+        return nil
     }
 
     func export(to destination: URL) -> Bool {
@@ -41,7 +51,11 @@ final class ArchiveEntryExporter: NSObject {
                 try await engine.extract(archive: archiveURL, to: tempDir, options: options)
 
                 let name = DragExportPlanner.producedFileName(entryPath: entryPath)
-                let produced = tempDir.appendingPathComponent(name)
+                var produced = tempDir.appendingPathComponent(name)
+                if !FileManager.default.fileExists(atPath: produced.path) {
+                    // Fallback: locate the produced item by name anywhere in temp.
+                    if let found = Self.findItem(named: name, under: tempDir) { produced = found }
+                }
                 guard FileManager.default.fileExists(atPath: produced.path) else {
                     box.value = false
                     return

@@ -136,21 +136,22 @@ extension FileListView {
         func tableView(_ tableView: NSTableView, pasteboardWriterForRow row: Int) -> NSPasteboardWriting? {
             let items = model.items
             guard items.indices.contains(row) else { return nil }
-            let payload = DragExportPlanner.payload(for: items[row], isInsideArchive: model.isInsideArchive)
+            let payload = DragExportPlanner.payload(for: items[row], isInsideArchive: model.isInsideArchive, internalPath: model.archiveInternalPath ?? "")
 
             switch payload {
             case .fileURL(let url):
                 return url as NSURL
-            case .promise(let entryPath, let fileName):
+            case .promise(let entryPath, let fileName, let isDirectory):
                 guard let archiveURL = model.archiveURL,
                       let helper = SevenZipLocator.helperURL() else { return nil }
                 let exporter = ArchiveEntryExporter(
                     archiveURL: archiveURL,
                     entryPath: entryPath,
+                    isDirectory: isDirectory,
                     engineFactory: { SevenZipEngine(executableURL: helper) }
                 )
                 let delegate = ArchivePromiseDelegate(exporter: exporter)
-                let provider = NSFilePromiseProvider(fileType: DragExportPlanner.fileType(for: fileName), delegate: delegate)
+                let provider = NSFilePromiseProvider(fileType: DragExportPlanner.fileType(for: fileName, isDirectory: isDirectory), delegate: delegate)
                 provider.userInfo = fileName
                 DragDelegateStore.shared.retain(delegate, for: ObjectIdentifier(provider))
                 return provider

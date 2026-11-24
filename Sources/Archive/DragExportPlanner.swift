@@ -11,17 +11,26 @@ enum DragExportPlanner {
     /// What a row should advertise to the pasteboard.
     enum Payload: Equatable {
         case fileURL(URL)
-        case promise(entryPath: String, fileName: String)
+        case promise(entryPath: String, fileName: String, isDirectory: Bool)
         case none
     }
 
-    static func payload(for item: FileItem, isInsideArchive: Bool) -> Payload {
+    /// `internalPath` is the current archive subfolder ("" at archive root).
+    static func payload(for item: FileItem, isInsideArchive: Bool, internalPath: String = "") -> Payload {
         if isInsideArchive {
-            guard !item.isDirectory else { return .none }
+            let normalizedInternal = normalize(internalPath)
+            let entryPath = normalizedInternal.isEmpty ? item.name : normalizedInternal + "/" + item.name
             let name = (item.name as NSString).lastPathComponent
-            return .promise(entryPath: item.name, fileName: name)
+            return .promise(entryPath: entryPath, fileName: name, isDirectory: item.isDirectory)
         }
         return .fileURL(item.url)
+    }
+
+    static func normalize(_ path: String) -> String {
+        var value = path.replacingOccurrences(of: "\\", with: "/")
+        while value.hasPrefix("/") { value.removeFirst() }
+        while value.hasSuffix("/") { value.removeLast() }
+        return value
     }
 
     /// The file name 7-Zip produces for an entry (last path component), which is
@@ -30,8 +39,9 @@ enum DragExportPlanner {
         (entryPath as NSString).lastPathComponent
     }
 
-    /// File type identifier for a promised name; falls back to a generic type.
-    static func fileType(for name: String) -> String {
+    /// File type identifier for a promised item; folders use `public.folder`.
+    static func fileType(for name: String, isDirectory: Bool = false) -> String {
+        if isDirectory { return UTType.folder.identifier }
         let ext = (name as NSString).pathExtension
         guard !ext.isEmpty,
               let type = UTType(filenameExtension: ext)?.identifier else {
