@@ -4,7 +4,7 @@
 set -euo pipefail
 APP="${1:?usage: enable-finder-extension.sh <Mac7Zip.app>}"
 APPEX="$APP/Contents/PlugIns/Mac7ZipFinderSync.appex"
-BUNDLE_ID="com.mac7zip.Mac7Zip.FinderSync"
+BUNDLE_ID="com.fb0sh.Mac7Zip.FinderSync"
 
 if [ ! -d "$APPEX" ]; then echo "::error::Extension not found at $APPEX"; exit 1; fi
 

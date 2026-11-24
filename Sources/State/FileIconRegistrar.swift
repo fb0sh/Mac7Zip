@@ -42,7 +42,7 @@ final class FileIconRegistrar: ObservableObject {
     @discardableResult
     func setDefault(
         forExtensions extensions: [String],
-        bundleID: String = Bundle.main.bundleIdentifier ?? "com.mac7zip.Mac7Zip"
+        bundleID: String = Bundle.main.bundleIdentifier ?? "com.fb0sh.Mac7Zip"
     ) -> Int {
         var saved: [String: String] = (defaults.dictionary(forKey: savedKey) as? [String: String]) ?? [:]
         var changed = 0

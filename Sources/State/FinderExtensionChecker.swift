@@ -13,9 +13,9 @@ enum FinderExtensionState: String, Sendable, Equatable {
 }
 
 enum FinderExtensionChecker {
-    static let bundleID = "com.mac7zip.Mac7Zip.FinderSync"
+    static let bundleID = "com.fb0sh.Mac7Zip.FinderSync"
     /// Quick Look thumbnail extension (Finder content thumbnails).
-    static let thumbnailBundleID = "com.mac7zip.Mac7Zip.Thumbnail"
+    static let thumbnailBundleID = "com.fb0sh.Mac7Zip.Thumbnail"
 
     /// Parses `pluginkit -m -i <id>` output. Lines carry a leading flag:
     /// `+` = enabled, `-` = disabled. No line = not installed.
