@@ -1,6 +1,6 @@
 # Mac7Zip — Implementation Execution Ledger
 
-**Status:** Living · **Updated:** 2026-11-23 · **Policy:** batch implementation of M1–M6 authorized
+**Status:** Living · **Updated:** 2026-11-24 · **Policy:** batch implementation of M1–M6 authorized
 
 > **中文摘要**：可恢复的执行账本。记录每张票的状态、issue、依赖、分支/PR、CI 证据与阻塞项；新会话从此处恢复，按依赖前沿推进。
 
@@ -119,6 +119,16 @@
 - 2026-11-23: **TKT-M2-03** — `SevenZipOutputParser` (listing `-slt`, progress `%`, file counts, test results, error lines, dates) with **golden fixtures captured from real 7-Zip 26.06 runs on macOS CI** (`Tests/Mac7ZipTests/Fixtures/`); verified (commit c44a893, run 45135271075) — 57 tests. Temporary capture step removed from the workflow.
 - 2026-11-23: **TKT-M2-02** (SevenZipProcessRunner: concurrent stdout/stderr drain, stdin password, SIGINT→SIGTERM→SIGKILL cancellation, exit-code→ArchiveError mapping) and **TKT-M2-08** (TaskCenter actor: queue, lifecycle, bounded history, observers, cancel) implemented & verified (commit a1883ba); CI run 45134444697 green — 48 tests. Tasks popover UI remains for TKT-M2-16.
 - 2026-11-23: **TKT-M2-01** — vendored 7-Zip 26.06 arm64+x86_64 into `Vendor/7zz/26.06/` with `License.txt`, `readme.txt`, `SHA256SUMS`, `README.md`; added `scripts/verify-7zz.sh` (CI gate) and `scripts/bundle-7zz.sh`; workflow verifies + bundles + executes `7zz i`. Verified (commit 89178f4, run 45133937932): checksums OK, bundled helper = arm64, runtime prints `7-Zip (z) 26.06 (arm64)`. Nested codesign deferred to TKT-M6-04.
+
+- 2026-11-24: **Post-goal UX hardening (session 2)** — verified on CI run [45359008955](https://github.com/fb0sh/Mac7Zip/actions/runs/45359008955) green — **295 tests**:
+  - **Multi-window archives**: `WindowGroup(for: BrowserWindow.ID.self)` with per-window `BrowserStore`; menu commands use `@FocusedValue(\.browserStore)` so they act on the frontmost window (fixes `FocusedValueKey` collision + non-optional `defaultValue`).
+  - **Duplicate-open fix**: `FileOpenInbox` now hands out a `PendingOpen` (UUID) and `claim(_:)` is claim-once, so a Finder double-click opens the archive exactly once (was opening twice).
+  - **Real extraction progress**: `-bsp1` passed to 7zz, output collector splits on `\r` as well as `\n`, `ArchiveEngine` gained progress-carrying `extract`/`createArchive` (default implementations keep conformance), `TaskOperation.run`'s `report` is `@escaping`; status bar shows task title + bar + %.
+  - **In-app preview pane** (`PreviewPane` + `QLPreviewView`, `PreviewTarget` decision logic tested) and **Space = Quick Look** for both real files and archive entries; pane is collapsed by default.
+  - **Quick Look extensions** (all sandboxed, **no subprocess**): `Mac7ZipThumbnail` (`com.apple.quicklook.thumbnail`) and `Mac7ZipPreview` (`com.apple.quicklook.preview`). Preview returns a data-based `QLPreviewReply` with an **HTML table** (name/date/size + summary) — `PreviewHTMLBuilder` is pure and unit-tested.
+  - **libarchive (BSD-2) adopted** per explicit decision: `scripts/fetch-libarchive.sh` builds a universal static lib in CI; linked with `-larchive -lz -lbz2 -llzma -liconv -lxml2`. `LibArchiveReader` lists/extracts entries in-process (zip/7z/rar/tar/gz/bz2/xz/…), decodes legacy names via **UTF-8 → GB18030 → Big5**. Used by both QL extensions and for name repair in the browser.
+  - Bundle identifier prefix changed to **`com.fb0sh`** (app + both extensions); `CFBundleVersion` bumped to `3`; `UTTypeIconFile` added to imported type declarations.
+  - **Correction recorded**: an earlier claim that "zip/7z file icons cannot be overridden by a third-party app" was **wrong** — user screenshots show the custom icons working via Get Info and Quick Look. Claim withdrawn.
 
 ## Blockers
 - **TKT-M6-04 / TKT-M6-05 (#51 / #52) — Developer ID signing, notarization, DMG & GitHub Release.**
