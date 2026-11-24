@@ -30,3 +30,6 @@ tmp/
 
 # Archives produced by CI/local packaging
 *.zip
+
+Vendor/libarchive-prefix/
+Vendor/libarchive-src/

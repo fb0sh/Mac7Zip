@@ -72,6 +72,9 @@ jobs:
           # 7zz pinned version must match the vendored directory
           test -d "Vendor/7zz/$SEVENZIP_VERSION" || { echo "::error::vendored 7zz $SEVENZIP_VERSION missing"; exit 1; }
 
+      - name: Fetch & build libarchive (static)
+        run: ./scripts/fetch-libarchive.sh
+
       - name: Generate Xcode project
         run: |
           xcodegen generate --spec project.yml

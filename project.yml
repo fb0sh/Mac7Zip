@@ -13,6 +13,10 @@ settings:
     MARKETING_VERSION: "0.1.0"
     CURRENT_PROJECT_VERSION: "1"
     MACOSX_DEPLOYMENT_TARGET: "26.0"
+    HEADER_SEARCH_PATHS: "$(SRCROOT)/Vendor/libarchive-prefix/include"
+    LIBRARY_SEARCH_PATHS: "$(SRCROOT)/Vendor/libarchive-prefix/lib"
+    OTHER_LDFLAGS: "-larchive -lz -lbz2 -llzma -liconv"
+    SWIFT_OBJC_BRIDGING_HEADER: "$(SRCROOT)/Sources/ArchiveBridge/Mac7ZipArchiveBridge.h"
 
 targets:
   Mac7Zip:
@@ -260,6 +264,7 @@ targets:
     sources:
       - path: Sources/Mac7ZipThumbnail
       - path: Sources/Archive/ZipCentralDirectoryReader.swift
+      - path: Sources/ArchiveBridge/LibArchiveReader.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.fb0sh.Mac7Zip.Thumbnail
@@ -292,6 +297,7 @@ targets:
     sources:
       - path: Sources/Mac7ZipPreview
       - path: Sources/Archive/ZipCentralDirectoryReader.swift
+      - path: Sources/ArchiveBridge/LibArchiveReader.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.fb0sh.Mac7Zip.Preview
