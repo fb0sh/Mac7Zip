@@ -9,6 +9,7 @@ enum LibArchiveReader {
         let path: String
         let size: Int64
         let isDirectory: Bool
+        let modified: Date?
     }
 
     /// Lists entries. Returns nil if the archive can't be opened.
@@ -31,8 +32,10 @@ enum LibArchiveReader {
             let path = decodeName(archive_entry_pathname(entry))
             let size = Int64(archive_entry_size(entry))
             let isDirectory = archive_entry_filetype(entry) == mode_t(0o040000) // AE_IFDIR
+            let mtime = archive_entry_mtime(entry)
+            let modified = mtime > 0 ? Date(timeIntervalSince1970: TimeInterval(mtime)) : nil
             if !path.isEmpty {
-                entries.append(Entry(path: path, size: size, isDirectory: isDirectory))
+                entries.append(Entry(path: path, size: size, isDirectory: isDirectory, modified: modified))
             }
             archive_read_data_skip(archive)
         }

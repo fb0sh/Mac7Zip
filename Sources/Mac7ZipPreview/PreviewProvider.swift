@@ -3,36 +3,91 @@ import Foundation
 import Quartz
 
 /// Quick Look preview extension (`com.apple.quicklook.preview`).
-/// Deliberately minimal UI (a single multi-line label) to avoid anything that could
-/// throw inside Quick Look's host. Sandboxed — reads names via libarchive (no spawn).
-final class PreviewProvider: NSViewController, QLPreviewingController {
+/// Shows a table of entries (Name / Date Modified / Size) like a file browser.
+/// Sandboxed: reads names via libarchive (no subprocess).
+final class PreviewProvider: NSViewController, QLPreviewingController,
+                             NSTableViewDataSource, NSTableViewDelegate {
+    private var entries: [LibArchiveReader.Entry] = []
+    private let sizeFormatter = ByteCountFormatter()
 
     func preparePreviewOfFile(at url: URL, completionHandler handler: @escaping (Error?) -> Void) {
-        let text = Self.body(for: url)
-
-        let container = NSView(frame: NSRect(x: 0, y: 0, width: 720, height: 520))
-        let label = NSTextField(wrappingLabelWithString: text)
-        label.frame = container.bounds.insetBy(dx: 14, dy: 12)
-        label.autoresizingMask = [.width, .height]
-        label.font = .monospacedSystemFont(ofSize: 12, weight: .regular)
-        label.isSelectable = true
-        container.addSubview(label)
-        self.view = container
-
+        entries = LibArchiveReader.listEntries(at: url) ?? []
+        buildUI(title: url.lastPathComponent)
         handler(nil)
     }
 
-    private static func body(for url: URL) -> String {
-        guard let entries = LibArchiveReader.listEntries(at: url), !entries.isEmpty else {
-            return "请在 Mac7Zip 中打开以查看内容。"
-        }
+    private func buildUI(title: String) {
+        let bounds = NSRect(x: 0, y: 0, width: 720, height: 520)
+        let container = NSView(frame: bounds)
+
         let files = entries.filter { !$0.isDirectory }.count
         let folders = entries.count - files
-        var lines = ["\(entries.count) 项（\(folders) 文件夹 · \(files) 文件）", ""]
-        for entry in entries.prefix(500) {
-            lines.append("\(entry.path)\(entry.isDirectory ? "/" : "")")
-        }
-        if entries.count > 500 { lines.append("… 仅显示前 500 项") }
-        return lines.joined(separator: "\n")
+        let totalSize = entries.filter { !$0.isDirectory }.reduce(Int64(0)) { $0 + max(0, $1.size) }
+        let summary = entries.isEmpty
+            ? "无法读取内容"
+            : "\(entries.count) 项（\(folders) 文件夹 · \(files) 文件）  解压后约 \(sizeFormatter.string(fromByteCount: totalSize))"
+
+        let header = NSTextField(labelWithString: "\(title)    \(summary)")
+        header.frame = NSRect(x: 14, y: bounds.height - 30, width: bounds.width - 28, height: 20)
+        header.font = .systemFont(ofSize: 12)
+        header.textColor = .secondaryLabelColor
+        header.lineBreakMode = .byTruncatingMiddle
+        container.addSubview(header)
+
+        let table = NSTableView()
+        table.usesAlternatingRowBackgroundColors = true
+        table.rowHeight = 20
+        table.style = .plain
+        table.allowsMultipleSelection = false
+        table.dataSource = self
+        table.delegate = self
+
+        let nameCol = NSTableColumn(identifier: .init("name")); nameCol.title = "名称"; nameCol.width = 400
+        let dateCol = NSTableColumn(identifier: .init("date")); dateCol.title = "修改时间"; dateCol.width = 160
+        let sizeCol = NSTableColumn(identifier: .init("size")); sizeCol.title = "大小"; sizeCol.width = 110
+        [nameCol, dateCol, sizeCol].forEach { table.addTableColumn($0) }
+
+        let scroll = NSScrollView(frame: NSRect(x: 0, y: 0, width: bounds.width, height: bounds.height - 38))
+        scroll.hasVerticalScroller = true
+        scroll.documentView = table
+        container.addSubview(scroll)
+
+        self.view = container
     }
+
+    func numberOfRows(in tableView: NSTableView) -> Int { entries.count }
+
+    func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
+        guard entries.indices.contains(row) else { return nil }
+        let entry = entries[row]
+        let id = tableColumn?.identifier.rawValue ?? "name"
+        let cell = NSTableCellView()
+        let field = NSTextField(labelWithString: "")
+        field.frame = NSRect(x: 4, y: 0, width: (tableColumn?.width ?? 200) - 8, height: 18)
+        field.font = .systemFont(ofSize: 12)
+        field.lineBreakMode = .byTruncatingMiddle
+        field.autoresizingMask = [.width]
+
+        switch id {
+        case "name":
+            let name = (entry.path as NSString).lastPathComponent
+            field.stringValue = (entry.isDirectory ? "📁 " : "📄 ") + (name.isEmpty ? entry.path : name)
+        case "date":
+            field.stringValue = entry.modified.map { Self.dateFormatter.string(from: $0) } ?? ""
+        case "size":
+            field.alignment = .right
+            field.stringValue = entry.isDirectory ? "--" : sizeFormatter.string(fromByteCount: entry.size)
+        default:
+            break
+        }
+        cell.addSubview(field)
+        cell.textField = field
+        return cell
+    }
+
+    private static let dateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd HH:mm"
+        return f
+    }()
 }
