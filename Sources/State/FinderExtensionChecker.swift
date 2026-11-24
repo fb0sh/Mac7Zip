@@ -16,6 +16,8 @@ enum FinderExtensionChecker {
     static let bundleID = "com.fb0sh.Mac7Zip.FinderSync"
     /// Quick Look thumbnail extension (Finder content thumbnails).
     static let thumbnailBundleID = "com.fb0sh.Mac7Zip.Thumbnail"
+    /// Quick Look preview extension (Space preview content).
+    static let previewBundleID = "com.fb0sh.Mac7Zip.Preview"
 
     /// Parses `pluginkit -m -i <id>` output. Lines carry a leading flag:
     /// `+` = enabled, `-` = disabled. No line = not installed.
@@ -74,6 +76,11 @@ enum FinderExtensionChecker {
             FileManager.default.fileExists(atPath: appex.path) else { return }
         runPluginkit(["-a", appex.path])
         runPluginkit(["-e", "use", "-i", thumbnailBundleID])
+        if let previewAppex = Bundle.main.builtInPlugInsURL?.appendingPathComponent("Mac7ZipPreview.appex"),
+           FileManager.default.fileExists(atPath: previewAppex.path) {
+            runPluginkit(["-a", previewAppex.path])
+            runPluginkit(["-e", "use", "-i", previewBundleID])
+        }
     }
 
     /// Registers AND enables the bundled extension via `pluginkit` (macOS Sequoia+

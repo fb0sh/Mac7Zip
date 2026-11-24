@@ -98,4 +98,12 @@ final class ExtensionPackagingTests: XCTestCase {
             XCTAssertTrue(yml.contains(icon), "Missing \(icon)")
         }
     }
+
+    func testQuickLookExtensionsDeclared() {
+        let yml = (try? String(contentsOf: repoRoot.appendingPathComponent("project.yml"), encoding: .utf8)) ?? ""
+        XCTAssertTrue(yml.contains("com.apple.quicklook.thumbnail"))
+        XCTAssertTrue(yml.contains("com.apple.quicklook.preview"))
+        XCTAssertTrue(yml.contains("Mac7ZipPreview"))
+        XCTAssertTrue(yml.contains("- target: Mac7ZipPreview\n        embed: true"))
+    }
 }

@@ -27,6 +27,7 @@ if [ -d "$APP/Contents/PlugIns" ]; then
     ENT="$ROOT/Support/Mac7ZipFinderSync.entitlements"
     case "$(basename "$appex")" in
       *Thumbnail*) ENT="$ROOT/Support/Mac7ZipThumbnail.entitlements" ;;
+      *Preview*) ENT="$ROOT/Support/Mac7ZipPreview.entitlements" ;;
     esac
     if [ -f "$ENT" ]; then
       /usr/bin/codesign --force --sign - --timestamp=none --entitlements "$ENT" "$appex"
