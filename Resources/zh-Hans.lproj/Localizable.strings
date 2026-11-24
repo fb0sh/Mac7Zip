@@ -134,3 +134,11 @@
 "Open" = "打开";
 "Confirm" = "确认";
 "Folder name" = "文件夹名称";
+
+"File Icons" = "文件图标";
+"Finder file icons" = "访达文件图标";
+"Register file icons" = "注册文件图标";
+"Restore system defaults" = "恢复系统默认";
+"Registered" = "已注册";
+"Not registered" = "未注册";
+"Status" = "状态";

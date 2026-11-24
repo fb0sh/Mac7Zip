@@ -48,9 +48,125 @@ targets:
         NSPrincipalClass: NSApplication
         NSHumanReadableCopyright: "Copyright © 2026 Mac7Zip contributors."
         CFBundleDocumentTypes:
+          - CFBundleTypeName: "7z archive"
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            CFBundleTypeIconFile: 7z
+            CFBundleTypeExtensions: ["7z"]
+          - CFBundleTypeName: "apk archive"
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            CFBundleTypeIconFile: apk
+            CFBundleTypeExtensions: ["apk"]
+          - CFBundleTypeName: "arj archive"
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            CFBundleTypeIconFile: arj
+            CFBundleTypeExtensions: ["arj"]
+          - CFBundleTypeName: "bz2 archive"
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            CFBundleTypeIconFile: bz2
+            CFBundleTypeExtensions: ["bz2"]
+          - CFBundleTypeName: "cab archive"
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            CFBundleTypeIconFile: cab
+            CFBundleTypeExtensions: ["cab"]
+          - CFBundleTypeName: "gz archive"
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            CFBundleTypeIconFile: gz
+            CFBundleTypeExtensions: ["gz"]
+          - CFBundleTypeName: "img archive"
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            CFBundleTypeIconFile: img
+            CFBundleTypeExtensions: ["img"]
+          - CFBundleTypeName: "iso archive"
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            CFBundleTypeIconFile: iso
+            CFBundleTypeExtensions: ["iso"]
+          - CFBundleTypeName: "lz4 archive"
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            CFBundleTypeIconFile: lz4
+            CFBundleTypeExtensions: ["lz4"]
+          - CFBundleTypeName: "lzh archive"
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            CFBundleTypeIconFile: lzh
+            CFBundleTypeExtensions: ["lzh"]
+          - CFBundleTypeName: "lzma archive"
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            CFBundleTypeIconFile: lzma
+            CFBundleTypeExtensions: ["lzma"]
+          - CFBundleTypeName: "rar archive"
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            CFBundleTypeIconFile: rar
+            CFBundleTypeExtensions: ["rar"]
+          - CFBundleTypeName: "tar archive"
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            CFBundleTypeIconFile: tar
+            CFBundleTypeExtensions: ["tar"]
+          - CFBundleTypeName: "tar.gz archive"
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            CFBundleTypeIconFile: tar_gz
+            CFBundleTypeExtensions: ["tar.gz"]
+          - CFBundleTypeName: "tar.xz archive"
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            CFBundleTypeIconFile: tar_xz
+            CFBundleTypeExtensions: ["tar.xz"]
+          - CFBundleTypeName: "tar.zst archive"
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            CFBundleTypeIconFile: tar_zst
+            CFBundleTypeExtensions: ["tar.zst"]
+          - CFBundleTypeName: "tbz2 archive"
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            CFBundleTypeIconFile: tbz2
+            CFBundleTypeExtensions: ["tbz2"]
+          - CFBundleTypeName: "tgz archive"
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            CFBundleTypeIconFile: tgz
+            CFBundleTypeExtensions: ["tgz"]
+          - CFBundleTypeName: "wim archive"
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            CFBundleTypeIconFile: wim
+            CFBundleTypeExtensions: ["wim"]
+          - CFBundleTypeName: "xar archive"
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            CFBundleTypeIconFile: xar
+            CFBundleTypeExtensions: ["xar"]
+          - CFBundleTypeName: "xz archive"
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            CFBundleTypeIconFile: xz
+            CFBundleTypeExtensions: ["xz"]
+          - CFBundleTypeName: "zip archive"
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            CFBundleTypeIconFile: zip
+            CFBundleTypeExtensions: ["zip"]
+          - CFBundleTypeName: "zst archive"
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            CFBundleTypeIconFile: zst
+            CFBundleTypeExtensions: ["zst"]
           - CFBundleTypeName: Archive
             CFBundleTypeRole: Viewer
             LSHandlerRank: Alternate
+            CFBundleTypeIconFile: zip
             LSItemContentTypes:
               - org.7-zip.7-zip-archive
               - public.zip-archive

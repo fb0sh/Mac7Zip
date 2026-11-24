@@ -4,6 +4,7 @@ import SwiftUI
 /// subsequent operations immediately.
 struct SettingsView: View {
     @ObservedObject var store: SettingsStore
+    @StateObject private var iconRegistrar = FileIconRegistrar()
 
     var body: some View {
         TabView {
@@ -13,6 +14,8 @@ struct SettingsView: View {
                 .tabItem { Label("Limits", systemImage: "gauge") }
             generalTab
                 .tabItem { Label("General", systemImage: "gearshape") }
+            fileIconsTab
+                .tabItem { Label("File Icons", systemImage: "doc.badge.gearshape") }
             AboutView()
                 .tabItem { Label("About", systemImage: "info.circle") }
         }
@@ -67,6 +70,28 @@ struct SettingsView: View {
                         .foregroundStyle(.red)
                 }
                 Button("Reset to Defaults") { store.reset() }
+            }
+        }
+        .formStyle(.grouped)
+    }
+
+    private var fileIconsTab: some View {
+        Form {
+            Section("Finder file icons") {
+                Text("Register per-type archive icons so Finder shows the matching icon for .7z/.zip/.rar and more.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                HStack {
+                    Button("Register file icons") { _ = iconRegistrar.register() }
+                    Button("Restore system defaults") { _ = iconRegistrar.restoreDefaults() }
+                }
+                LabeledContent("Status") {
+                    Text(iconRegistrar.isRegistered ? "Registered" : "Not registered")
+                        .foregroundStyle(iconRegistrar.isRegistered ? .green : .secondary)
+                }
+                Text("macOS may ask you to confirm changing the default app for these types. Ad-hoc signed builds may be ignored by LaunchServices.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)
