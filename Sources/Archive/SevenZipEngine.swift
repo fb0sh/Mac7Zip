@@ -112,7 +112,34 @@ struct SevenZipEngine: ArchiveEngine {
         } else if let codePage {
             Self.resolvedZipCodePage[key] = codePage
         }
+
+        // Last resort for ZIP: read original names from the central directory
+        // (7-Zip may have replaced legacy names with '?' during listing).
+        if Self.isZipFamily(archive), Self.looksGarbled(entries),
+           let repaired = Self.repairZipNames(entries, archive: archive) {
+            entries = repaired
+        }
         return entries
+    }
+
+    /// Rebuilds entry paths from the ZIP central directory (authoritative names).
+    static func repairZipNames(_ entries: [ArchiveEntry], archive: URL) -> [ArchiveEntry]? {
+        guard let cd = ZipCentralDirectoryReader.entries(inFileAt: archive), cd.count == entries.count else {
+            return nil
+        }
+        return zip(entries, cd).map { entry, raw in
+            ArchiveEntry(
+                path: raw.path,
+                size: entry.size,
+                packedSize: entry.packedSize,
+                isDirectory: raw.isDirectory || entry.isDirectory,
+                modificationDate: entry.modificationDate,
+                crc: entry.crc,
+                isEncrypted: entry.isEncrypted,
+                method: entry.method,
+                linkTarget: entry.linkTarget
+            )
+        }
     }
 
     private func listOnce(archive: URL, password: String?, codePage: Int?) async throws -> [ArchiveEntry] {

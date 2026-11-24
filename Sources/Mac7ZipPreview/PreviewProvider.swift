@@ -17,7 +17,8 @@ final class PreviewProvider: NSViewController, QLPreviewingController {
     func preparePreviewOfFile(at url: URL, completionHandler handler: @escaping (Error?) -> Void) {
         // Build UI on the main thread; never throw.
         let finish: (String) -> Void = { [weak self] text in
-            let build = { self?.installTextView(title: url.lastPathComponent, body: text) }
+            let title = url.lastPathComponent
+            let build: () -> Void = { self?.installTextView(title: title, body: text) }
             if Thread.isMainThread { build() } else { DispatchQueue.main.async(execute: build) }
             handler(nil)
         }
