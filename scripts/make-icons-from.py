@@ -68,6 +68,27 @@ def squircle_mask(w, h, pad_frac=0.045, r_frac=0.2237):
             alpha[y*w + x] = 255 if inside else 0
     return alpha
 
+
+def crop_to_alpha(w, h, px, threshold=8):
+    """Crop to the bounding box of non-transparent pixels (removes blank margin)."""
+    minx, miny, maxx, maxy = w, h, -1, -1
+    for y in range(h):
+        base = y * w * 4
+        for x in range(w):
+            if px[base + x*4 + 3] > threshold:
+                if x < minx: minx = x
+                if x > maxx: maxx = x
+                if y < miny: miny = y
+                if y > maxy: maxy = y
+    if maxx < 0:
+        return w, h, px
+    cw, ch = maxx - minx + 1, maxy - miny + 1
+    out = bytearray(cw * ch * 4)
+    for y in range(ch):
+        src = ((miny + y) * w + minx) * 4
+        out[y*cw*4:(y+1)*cw*4] = px[src:src + cw*4]
+    return cw, ch, out
+
 def resize(w, h, px, size):
     """Area-average downscale honouring the source alpha (no external mask)."""
     out = bytearray(size * size * 4)
@@ -107,6 +128,7 @@ def write_png(path, size, rgba):
 def main():
     src, outdir = sys.argv[1], sys.argv[2]
     w, h, px = decode_png(src)
+    w, h, px = crop_to_alpha(w, h, px)
     slots = [(16, "icon_16x16.png"), (32, "icon_16x16@2x.png"), (32, "icon_32x32.png"),
              (64, "icon_32x32@2x.png"), (128, "icon_128x128.png"), (256, "icon_128x128@2x.png"),
              (256, "icon_256x256.png"), (512, "icon_256x256@2x.png"), (512, "icon_512x512.png"),
