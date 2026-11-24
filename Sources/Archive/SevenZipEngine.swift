@@ -210,6 +210,29 @@ struct SevenZipEngine: ArchiveEngine {
         }
     }
 
+
+    /// Builds the `7zz x` argument list. IMPORTANT: the archive path must come
+    /// **before** the entry filters (7-Zip treats anything before the archive as a
+    /// switch and at/after it as an archive; file filters belong after the archive).
+    static func extractArguments(
+        archive: URL,
+        entries: [String]?,
+        overwriteMode: OverwriteMode,
+        passwordArguments: [String],
+        codePage: Int?,
+        outputDirectory: URL
+    ) -> [String] {
+        var arguments = ["x", "-sccUTF-8", "-y", "-ao\(overwriteMode.switchValue)"]
+        arguments.append(contentsOf: passwordArguments)
+        if let codePage { arguments.append("-mcp=\(codePage)") }
+        arguments.append(archive.path)
+        if let entries, !entries.isEmpty {
+            arguments.append(contentsOf: entries)
+        }
+        arguments.append("-o\(outputDirectory.path)")
+        return arguments
+    }
+
     // MARK: - Extract
 
     func extract(archive: URL, to destination: URL, options: ExtractOptions) async throws {
@@ -227,16 +250,16 @@ struct SevenZipEngine: ArchiveEngine {
         let staging = try StagingArea()
         defer { staging.cleanUp() }
 
-        var arguments = ["x", "-sccUTF-8", "-y", "-ao\(options.overwriteMode.switchValue)"]
-        arguments.append(contentsOf: try passwordArguments(options.password))
-        if Self.isZipFamily(archive), let codePage = Self.zipCodePage ?? Self.resolvedZipCodePage[archive.path] {
-            arguments.append("-mcp=\(codePage)")
-        }
-        if let entriesToExtract = options.entries, !entriesToExtract.isEmpty {
-            arguments.append(contentsOf: entriesToExtract)
-        }
-        arguments.append(archive.path)
-        arguments.append("-o\(staging.url.path)")
+        let codePage = Self.isZipFamily(archive)
+            ? (Self.zipCodePage ?? Self.resolvedZipCodePage[archive.path]) : nil
+        let arguments = Self.extractArguments(
+            archive: archive,
+            entries: options.entries,
+            overwriteMode: options.overwriteMode,
+            passwordArguments: try passwordArguments(options.password),
+            codePage: codePage,
+            outputDirectory: staging.url
+        )
 
         let result = try await runner.run(arguments: arguments)
         if let error = ArchiveError.from(exitCode: result.exitCode, diagnostic: result.combinedDiagnostic) {
