@@ -27,7 +27,7 @@ struct FileTransferOperation: TaskOperation {
         self.title = "\(verb) \(count) item\(count == 1 ? "" : "s")"
     }
 
-    func run(report: @Sendable (Double?, TaskMetrics) -> Void) async throws {
+    func run(report: @escaping @Sendable (Double?, TaskMetrics) -> Void) async throws {
         let total = request.sources.count
         report(nil, TaskMetrics(filesDone: 0, filesTotal: total, currentItem: request.sources.first?.lastPathComponent))
 

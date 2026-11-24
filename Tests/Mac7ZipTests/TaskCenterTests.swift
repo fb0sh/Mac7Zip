@@ -7,7 +7,7 @@ private struct SleepyOperation: TaskOperation {
     let delay: UInt64
     let fail: Bool
 
-    func run(report: @Sendable (Double?, TaskMetrics) -> Void) async throws {
+    func run(report: @escaping @Sendable (Double?, TaskMetrics) -> Void) async throws {
         report(0.5, TaskMetrics())
         try await Task.sleep(nanoseconds: delay)
         report(1.0, TaskMetrics())
@@ -33,7 +33,7 @@ private struct GatedOperation: TaskOperation {
     let kind: TaskKind = .test
     let title: String
     let gate: Gate
-    func run(report: @Sendable (Double?, TaskMetrics) -> Void) async throws {
+    func run(report: @escaping @Sendable (Double?, TaskMetrics) -> Void) async throws {
         try await gate.wait()
     }
 }
@@ -101,7 +101,7 @@ final class TaskCenterTests: XCTestCase {
         struct NilProgress: TaskOperation {
             let kind: TaskKind = .list
             let title = "nil"
-            func run(report: @Sendable (Double?, TaskMetrics) -> Void) async throws {
+            func run(report: @escaping @Sendable (Double?, TaskMetrics) -> Void) async throws {
                 report(nil, TaskMetrics())
                 try await Task.sleep(nanoseconds: 10_000_000)
             }

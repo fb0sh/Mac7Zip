@@ -55,7 +55,7 @@ final class ListingSymlinkParseTests: XCTestCase {
 private struct SlowOperation: TaskOperation {
     let kind: TaskKind = .copy
     let title = "Slow op"
-    func run(report: @Sendable (Double?, TaskMetrics) -> Void) async throws {
+    func run(report: @escaping @Sendable (Double?, TaskMetrics) -> Void) async throws {
         for _ in 0..<50 {
             try Task.checkCancellation()
             try await Task.sleep(nanoseconds: 20_000_000)

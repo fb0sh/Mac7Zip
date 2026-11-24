@@ -18,7 +18,7 @@ struct ExtractOperation: TaskOperation {
         self.title = title ?? "Extract \(archive.lastPathComponent)"
     }
 
-    func run(report: @Sendable (Double?, TaskMetrics) -> Void) async throws {
+    func run(report: @escaping @Sendable (Double?, TaskMetrics) -> Void) async throws {
         // Extraction progress is not yet streamed from the engine; report
         // indeterminate rather than a fabricated percentage.
         report(nil, TaskMetrics(currentItem: archive.lastPathComponent))
@@ -47,7 +47,7 @@ struct CreateArchiveOperation: TaskOperation {
         self.title = title ?? "Create \(destination.lastPathComponent)"
     }
 
-    func run(report: @Sendable (Double?, TaskMetrics) -> Void) async throws {
+    func run(report: @escaping @Sendable (Double?, TaskMetrics) -> Void) async throws {
         report(nil, TaskMetrics(currentItem: destination.lastPathComponent))
         try Task.checkCancellation()
         try await engine.createArchive(at: destination, from: sources, options: options) { percent, item in

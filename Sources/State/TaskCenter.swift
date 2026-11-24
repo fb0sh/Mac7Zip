@@ -52,7 +52,7 @@ struct TaskRecord: Identifiable, Sendable, Equatable {
 protocol TaskOperation: Sendable {
     var kind: TaskKind { get }
     var title: String { get }
-    func run(report: @Sendable (Double?, TaskMetrics) -> Void) async throws
+    func run(report: @escaping @Sendable (Double?, TaskMetrics) -> Void) async throws
 }
 
 /// Centralized queue for archive operations. Deliberately independent of SwiftUI
