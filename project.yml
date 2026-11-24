@@ -15,7 +15,7 @@ settings:
     MACOSX_DEPLOYMENT_TARGET: "26.0"
     HEADER_SEARCH_PATHS: "$(SRCROOT)/Vendor/libarchive-prefix/include"
     LIBRARY_SEARCH_PATHS: "$(SRCROOT)/Vendor/libarchive-prefix/lib"
-    OTHER_LDFLAGS: "-larchive -lz -lbz2 -llzma -liconv"
+    OTHER_LDFLAGS: "-larchive -lz -lbz2 -llzma -liconv -lxml2"
     SWIFT_OBJC_BRIDGING_HEADER: "$(SRCROOT)/Sources/ArchiveBridge/Mac7ZipArchiveBridge.h"
 
 targets:
