@@ -4,8 +4,15 @@ import SwiftUI
 enum FileListColumn: String, CaseIterable {
     case name
     case size
+    case packedSize
     case kind
     case date
+    case crc
+    case encrypted
+    case method
+
+    /// Columns that only make sense while browsing inside an archive.
+    static let archiveOnly: Set<FileListColumn> = [.packedSize, .crc, .encrypted, .method]
 }
 
 /// AppKit-backed file table. `NSTableView` is used directly (rather than a
@@ -22,10 +29,15 @@ struct FileListView: NSViewRepresentable {
         let tableView = FileNSTableView()
         tableView.dataSource = context.coordinator
         tableView.delegate = context.coordinator
+        tableView.registerForDraggedTypes([.fileURL])
+        tableView.setDraggingSourceOperationMask([.copy, .move], forLocal: false)
+        tableView.setDraggingSourceOperationMask([.copy, .move], forLocal: true)
         tableView.allowsMultipleSelection = true
         tableView.allowsEmptySelection = true
         tableView.usesAlternatingRowBackgroundColors = true
-        tableView.rowHeight = 24
+        tableView.rowHeight = 22
+        tableView.setAccessibilityLabel("File list")
+        tableView.setAccessibilityRole(.table)
         tableView.style = .inset
         tableView.columnAutoresizingStyle = .lastColumnOnlyAutoresizingStyle
         tableView.target = context.coordinator
@@ -33,11 +45,38 @@ struct FileListView: NSViewRepresentable {
         tableView.onReturn = { [weak coordinator = context.coordinator] in
             coordinator?.openSelection()
         }
+        tableView.onQuickLook = {
+            NotificationCenter.default.post(name: .mac7zipQuickLook, object: nil)
+        }
 
         addColumn(to: tableView, column: .name, title: "Name", width: 320)
         addColumn(to: tableView, column: .size, title: "Size", width: 100, alignment: .right)
+        addColumn(to: tableView, column: .packedSize, title: "Packed Size", width: 100, alignment: .right)
         addColumn(to: tableView, column: .kind, title: "Kind", width: 140)
-        addColumn(to: tableView, column: .date, title: "Date Modified", width: 190)
+        addColumn(to: tableView, column: .date, title: "Date Modified", width: 170)
+        addColumn(to: tableView, column: .crc, title: "CRC", width: 90)
+        addColumn(to: tableView, column: .encrypted, title: "Encrypted", width: 80)
+        addColumn(to: tableView, column: .method, title: "Method", width: 120)
+
+        context.coordinator.applySavedColumnWidths(to: tableView)
+
+        let menu = NSMenu()
+        menu.addItem(withTitle: "Open", action: #selector(Coordinator.menuOpen(_:)), keyEquivalent: "")
+        menu.addItem(withTitle: "Quick Look", action: #selector(Coordinator.menuQuickLook(_:)), keyEquivalent: "")
+        menu.addItem(.separator())
+        for operation in CoreOperation.allCases {
+            let item = NSMenuItem(title: operation.title, action: #selector(Coordinator.menuCoreOperation(_:)), keyEquivalent: "")
+            item.representedObject = operation.rawValue
+            menu.addItem(item)
+        }
+        menu.addItem(.separator())
+        menu.addItem(withTitle: "Rename…", action: #selector(Coordinator.menuRename(_:)), keyEquivalent: "")
+        menu.addItem(withTitle: "Reveal in Finder", action: #selector(Coordinator.menuReveal(_:)), keyEquivalent: "")
+        menu.addItem(withTitle: "New Folder", action: #selector(Coordinator.menuNewFolder(_:)), keyEquivalent: "")
+        for item in menu.items where item.action != nil {
+            item.target = context.coordinator
+        }
+        tableView.menu = menu
 
         let scrollView = NSScrollView()
         scrollView.documentView = tableView
@@ -75,7 +114,7 @@ struct FileListView: NSViewRepresentable {
 
 extension FileListView {
     @MainActor
-    final class Coordinator: NSObject, NSTableViewDataSource, NSTableViewDelegate {
+    final class Coordinator: NSObject, NSTableViewDataSource, NSTableViewDelegate, NSMenuItemValidation {
         var model: FileBrowserModel
         weak var tableView: NSTableView?
 
@@ -95,8 +134,83 @@ extension FileListView {
             self.model = model
         }
 
+        // MARK: - Dragging out (TKT-M4-09)
+
+        func tableView(_ tableView: NSTableView, pasteboardWriterForRow row: Int) -> NSPasteboardWriting? {
+            let items = model.items
+            guard items.indices.contains(row) else { return nil }
+            let payload = DragExportPlanner.payload(for: items[row], isInsideArchive: model.isInsideArchive, internalPath: model.archiveInternalPath ?? "")
+
+            switch payload {
+            case .fileURL(let url):
+                return url as NSURL
+            case .promise(let entryPath, let fileName, let isDirectory):
+                guard let archiveURL = model.archiveURL,
+                      let helper = SevenZipLocator.helperURL() else { return nil }
+                let exporter = ArchiveEntryExporter(
+                    archiveURL: archiveURL,
+                    entryPath: entryPath,
+                    isDirectory: isDirectory,
+                    engineFactory: { SevenZipEngine(executableURL: helper) }
+                )
+                let delegate = ArchivePromiseDelegate(exporter: exporter)
+                let provider = NSFilePromiseProvider(fileType: DragExportPlanner.fileType(for: fileName, isDirectory: isDirectory), delegate: delegate)
+                provider.userInfo = fileName
+                DragDelegateStore.shared.retain(delegate, for: ObjectIdentifier(provider))
+                return provider
+            case .none:
+                return nil
+            }
+        }
+
+        func tableView(
+            _ tableView: NSTableView,
+            draggingSession session: NSDraggingSession,
+            endedAt screenPoint: NSPoint,
+            operation: NSDragOperation
+        ) {
+            for item in session.draggingPasteboard.pasteboardItems ?? [] {
+                if let provider = item as? NSFilePromiseProvider {
+                    DragDelegateStore.shared.release(ObjectIdentifier(provider))
+                }
+            }
+        }
+
+        // MARK: - Dropping in (TKT-M4-03)
+
+        func tableView(
+            _ tableView: NSTableView,
+            validateDrop info: NSDraggingInfo,
+            proposedRow row: Int,
+            proposedDropOperation dropOperation: NSTableView.DropOperation
+        ) -> NSDragOperation {
+            guard model.canModify, !model.isInsideArchive else { return [] }
+            return info.draggingSourceOperationMask.contains(.move) ? .move : .copy
+        }
+
+        func tableView(
+            _ tableView: NSTableView,
+            acceptDrop info: NSDraggingInfo,
+            row: Int,
+            dropOperation: NSTableView.DropOperation
+        ) -> Bool {
+            let urls = info.draggingPasteboard.readObjects(
+                forClasses: [NSURL.self],
+                options: [.urlReadingFileURLsOnly: true]
+            ) as? [URL] ?? []
+            guard !urls.isEmpty, model.canModify else { return false }
+            let kind: FileTransferRequest.Kind = info.draggingSourceOperationMask.contains(.move) ? .move : .copy
+            Task { await model.transfer(kind: kind, to: model.currentDirectory, policy: .ask) }
+            return true
+        }
+
         func synchronize() {
             guard let tableView else { return }
+            let archiveMode = model.isInsideArchive
+            for column in tableView.tableColumns {
+                guard let id = FileListColumn(rawValue: column.identifier.rawValue) else { continue }
+                column.isHidden = FileListColumn.archiveOnly.contains(id) && !archiveMode
+            }
             let items = model.items
 
             if items.map(\.id) != lastItemIDs {
@@ -140,15 +254,34 @@ extension FileListView {
             switch column {
             case .name:
                 cell.textField?.stringValue = item.name
-                cell.imageView?.image = NSWorkspace.shared.icon(forFile: item.url.path)
+                cell.imageView?.image = IconCache.shared.icon(for: item)
             case .size:
                 cell.textField?.stringValue = item.isDirectory ? "--" : FileSizeFormatter.string(fromByteCount: item.size)
             case .kind:
                 cell.textField?.stringValue = item.kind
             case .date:
                 cell.textField?.stringValue = item.modificationDate.map { dateFormatter.string(from: $0) } ?? "--"
+            case .packedSize:
+                if let meta = item.archiveMetadata {
+                    cell.textField?.stringValue = item.isDirectory ? "--" : FileSizeFormatter.string(fromByteCount: meta.packedSize)
+                } else {
+                    cell.textField?.stringValue = "--"
+                }
+            case .crc:
+                cell.textField?.stringValue = item.archiveMetadata?.crc ?? "--"
+            case .encrypted:
+                let encrypted = item.archiveMetadata?.isEncrypted ?? false
+                cell.textField?.stringValue = encrypted ? "Yes" : "No"
+            case .method:
+                cell.textField?.stringValue = item.archiveMetadata?.method ?? "--"
             case .none:
                 break
+            }
+
+            // Accessibility: expose a meaningful description per row.
+            if column == .name {
+                let sizeText = item.isDirectory ? "folder" : FileSizeFormatter.string(fromByteCount: item.size)
+                cell.setAccessibilityLabel("\(item.name), \(sizeText), \(item.kind)")
             }
             return cell
         }
@@ -182,14 +315,14 @@ extension FileListView {
                 NSLayoutConstraint.activate([
                     imageView.leadingAnchor.constraint(equalTo: cell.leadingAnchor, constant: 4),
                     imageView.centerYAnchor.constraint(equalTo: cell.centerYAnchor),
-                    imageView.widthAnchor.constraint(equalToConstant: 18),
-                    imageView.heightAnchor.constraint(equalToConstant: 18),
+                    imageView.widthAnchor.constraint(equalToConstant: 16),
+                    imageView.heightAnchor.constraint(equalToConstant: 16),
                     textField.leadingAnchor.constraint(equalTo: imageView.trailingAnchor, constant: 6),
                     textField.trailingAnchor.constraint(equalTo: cell.trailingAnchor, constant: -4),
                     textField.centerYAnchor.constraint(equalTo: cell.centerYAnchor),
                 ])
             } else {
-                textField.alignment = column == .size ? .right : .left
+                textField.alignment = (column == .size || column == .packedSize) ? .right : .left
                 NSLayoutConstraint.activate([
                     textField.leadingAnchor.constraint(equalTo: cell.leadingAnchor, constant: 4),
                     textField.trailingAnchor.constraint(equalTo: cell.trailingAnchor, constant: -4),
@@ -233,16 +366,112 @@ extension FileListView {
         func openSelection() {
             model.openSelected()
         }
+
+        // MARK: - Context menu
+
+        @objc func menuOpen(_ sender: Any?) {
+            model.openSelected()
+        }
+
+        @objc func menuQuickLook(_ sender: Any?) {
+            NotificationCenter.default.post(name: .mac7zipQuickLook, object: nil)
+        }
+
+        @objc func menuCoreOperation(_ sender: NSMenuItem) {
+            guard let raw = sender.representedObject as? String,
+                  let operation = CoreOperation(rawValue: raw) else { return }
+            switch operation {
+            case .add: model.requestCompression()
+            case .extract: model.requestExtract()
+            case .test: Task { await model.testCurrentArchive() }
+            case .copy: TransferViewActions.copySelection(in: model)
+            case .move: TransferViewActions.moveSelection(in: model)
+            case .delete: FileOperationsViewActions.deleteSelection(in: model)
+            case .info: model.showInfoForSelection()
+            }
+        }
+
+        @objc func menuRename(_ sender: Any?) {
+            if let item = model.selectedItems.first {
+                FileOperationsViewActions.rename(item, in: model)
+            }
+        }
+
+        @objc func menuDelete(_ sender: Any?) {
+            FileOperationsViewActions.deleteSelection(in: model)
+        }
+
+        @objc func menuNewFolder(_ sender: Any?) {
+            FileOperationsViewActions.newFolder(in: model)
+        }
+
+        @objc func menuReveal(_ sender: Any?) {
+            let urls = model.selectedItems.map(\.url)
+            guard !urls.isEmpty else { return }
+            NSWorkspace.shared.activateFileViewerSelecting(urls)
+        }
+
+        func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
+            switch menuItem.action {
+            case #selector(menuOpen(_:)), #selector(menuRename(_:)), #selector(menuReveal(_:)):
+                return !model.selection.isEmpty
+            case #selector(menuQuickLook(_:)):
+                return model.isInsideArchive && !model.selection.isEmpty
+            case #selector(menuCoreOperation(_:)):
+                guard let raw = menuItem.representedObject as? String,
+                      let operation = CoreOperation(rawValue: raw) else { return false }
+                return CoreOperation.isEnabled(
+                    operation,
+                    isInsideArchive: model.isInsideArchive,
+                    canModify: model.canModify,
+                    hasSelection: !model.selection.isEmpty,
+                    hasItems: !model.items.isEmpty
+                )
+            case #selector(menuNewFolder(_:)):
+                return model.canModify
+            default:
+                return true
+            }
+        }
+
+        // MARK: - Column width persistence
+
+        private static let widthsKey = "Mac7Zip.FileList.columnWidths"
+
+        func applySavedColumnWidths(to tableView: NSTableView) {
+            guard let saved = UserDefaults.standard.dictionary(forKey: Self.widthsKey) as? [String: Double] else {
+                return
+            }
+            for column in tableView.tableColumns {
+                if let width = saved[column.identifier.rawValue], width > 0 {
+                    column.width = width
+                }
+            }
+        }
+
+        func tableViewColumnDidResize(_ notification: Notification) {
+            guard let tableView = notification.object as? NSTableView else { return }
+            var widths: [String: Double] = [:]
+            for column in tableView.tableColumns {
+                widths[column.identifier.rawValue] = Double(column.width)
+            }
+            UserDefaults.standard.set(widths, forKey: Self.widthsKey)
+        }
     }
 }
 
 /// Table view that maps the Return / Enter keys to "open the selection".
 final class FileNSTableView: NSTableView {
     var onReturn: (() -> Void)?
+    var onQuickLook: (() -> Void)?
 
     override func keyDown(with event: NSEvent) {
-        if event.keyCode == 36 || event.keyCode == 76 {
+        if event.keyCode == 36 || event.keyCode == 76 { // Return / Enter
             onReturn?()
+            return
+        }
+        if event.keyCode == 49 { // Space → Quick Look (Finder-like)
+            onQuickLook?()
             return
         }
         super.keyDown(with: event)

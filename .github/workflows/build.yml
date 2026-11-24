@@ -59,6 +59,22 @@ jobs:
           brew install xcodegen
           xcodegen --version
 
+      - name: Verify toolchain pins (TKT-M6-08)
+        run: |
+          set -euo pipefail
+          . ./versions.env
+          echo "Pinned Xcode:     $XCODE_VERSION"
+          echo "Pinned XcodeGen:  $XCODEGEN_VERSION"
+          echo "Pinned 7zz:       $SEVENZIP_VERSION"
+          ACTUAL_XCODEGEN="$(xcodegen --version 2>/dev/null | grep -oE '[0-9]+\.[0-9.]+' | head -1 || echo unknown)"
+          echo "Installed XcodeGen: $ACTUAL_XCODEGEN"
+          test -n "$XCODEGEN_VERSION"
+          # 7zz pinned version must match the vendored directory
+          test -d "Vendor/7zz/$SEVENZIP_VERSION" || { echo "::error::vendored 7zz $SEVENZIP_VERSION missing"; exit 1; }
+
+      - name: Fetch & build libarchive (static)
+        run: ./scripts/fetch-libarchive.sh
+
       - name: Generate Xcode project
         run: |
           xcodegen generate --spec project.yml
@@ -88,18 +104,72 @@ jobs:
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
             test | tee test.log
 
-      - name: Release build (arm64)
+      - name: UI smoke tests (non-blocking, TKT-M6-06)
+        continue-on-error: true
+        timeout-minutes: 20
+        run: |
+          set +e
+          xcodebuild \
+            -project "$PROJECT" \
+            -scheme Mac7ZipUITests \
+            -configuration Debug \
+            -destination 'platform=macOS' \
+            -derivedDataPath build-ui \
+            -resultBundlePath build-ui/Smoke.xcresult \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            test 2>&1 | tee build-uitest.log
+          echo "UI exit: ${PIPESTATUS[0]} (non-blocking)"
+
+      - name: Release build (universal arm64 + x86_64)
         run: |
           set -o pipefail
           xcodebuild \
             -project "$PROJECT" \
             -scheme "$SCHEME" \
             -configuration Release \
-            -destination 'platform=macOS,arch=arm64' \
+            -destination 'platform=macOS' \
             -derivedDataPath build \
-            ARCHS=arm64 ONLY_ACTIVE_ARCH=NO \
+            ARCHS="arm64 x86_64" ONLY_ACTIVE_ARCH=NO \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
             build | tee build-release.log
+
+      - name: Verify vendored 7zz
+        run: ./scripts/verify-7zz.sh
+
+      - name: Lint (non-blocking)
+        continue-on-error: true
+        run: |
+          echo "--- swift-format lint (non-blocking) ---"
+          swift format lint --strict --recursive Sources Tests 2>&1 | head -60 || true
+          echo "--- SwiftLint (non-blocking) ---"
+          if command -v swiftlint >/dev/null 2>&1; then
+            swiftlint lint --quiet 2>&1 | head -60 || true
+          else
+            echo "swiftlint not installed; skipping"
+          fi
+
+      - name: Verify architecture and dependencies
+        run: |
+          set -euo pipefail
+          BINARY="build/Build/Products/Release/${APP_NAME}.app/Contents/MacOS/${APP_NAME}"
+          if [ ! -f "$BINARY" ]; then
+            echo "::error::Executable not found at $BINARY"
+            exit 1
+          fi
+          echo "--- lipo -info ---"
+          lipo -info "$BINARY"
+          ARCHS_FOUND="$(lipo -archs "$BINARY")"
+          echo "archs: $ARCHS_FOUND"
+          case "$ARCHS_FOUND" in
+            *arm64*) echo "arm64 present" ;;
+            *) echo "::error::arm64 missing from binary"; exit 1 ;;
+          esac
+          case "$ARCHS_FOUND" in
+            *x86_64*) echo "x86_64 present" ;;
+            *) echo "::error::x86_64 missing (universal build required, TKT-M6-03)"; exit 1 ;;
+          esac
+          echo "--- otool -L ---"
+          otool -L "$BINARY"
 
       - name: Package .app into ZIP
         run: |
@@ -110,18 +180,41 @@ jobs:
             find build -maxdepth 6 -name "*.app" -print || true
             exit 1
           fi
-          /usr/bin/ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "${APP_NAME}-arm64.zip"
-          ls -lh "${APP_NAME}-arm64.zip"
+          echo "--- bundling 7zz helper ---"
+          ./scripts/bundle-7zz.sh "$APP_PATH" universal
+          lipo -info "$APP_PATH/Contents/Helpers/7zz"
+          "$APP_PATH/Contents/Helpers/7zz" i | head -12
+
+          /usr/bin/ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "${APP_NAME}-universal.zip"
+          ls -lh "${APP_NAME}-universal.zip"
+
+          echo "--- ad-hoc (self) signing for local use ---"
+          ./scripts/sign-adhoc.sh "$APP_PATH"
+          /usr/bin/ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "${APP_NAME}-selfsigned.zip"
+          ls -lh "${APP_NAME}-selfsigned.zip"
           echo "--- archive contents (top) ---"
-          /usr/bin/unzip -l "${APP_NAME}-arm64.zip" | head -40
+          /usr/bin/unzip -l "${APP_NAME}-selfsigned.zip" | head -40
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.APP_NAME }}-arm64
-          path: ${{ env.APP_NAME }}-arm64.zip
+          name: ${{ env.APP_NAME }}-selfsigned
+          path: |
+            ${{ env.APP_NAME }}-selfsigned.zip
+            ${{ env.APP_NAME }}-universal.zip
           if-no-files-found: error
           retention-days: 14
+
+      - name: Upload UI test artifacts (if any)
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: uitest-artifacts
+          path: |
+            build-ui/Smoke.xcresult
+            build-uitest.log
+          if-no-files-found: ignore
 
       - name: Upload logs on failure
         if: failure()

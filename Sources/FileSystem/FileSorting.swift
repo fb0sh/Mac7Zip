@@ -5,6 +5,9 @@ import Foundation
 enum FileSorting {
     static func sorted(_ items: [FileItem], by descriptor: FileSortDescriptor) -> [FileItem] {
         items.sorted { lhs, rhs in
+            // Finder convention: folders always group before files, regardless of
+            // sort direction, then sort within each group.
+            if lhs.isDirectory != rhs.isDirectory { return lhs.isDirectory }
             let order = compare(lhs, rhs, field: descriptor.field)
             if order == .orderedSame {
                 // Stable, predictable tie-break by name.

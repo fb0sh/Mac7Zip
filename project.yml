@@ -1,7 +1,7 @@
 name: Mac7Zip
 
 options:
-  bundleIdPrefix: com.mac7zip
+  bundleIdPrefix: com.fb0sh
   deploymentTarget:
     macOS: "26.0"
   createIntermediateGroups: true
@@ -13,6 +13,10 @@ settings:
     MARKETING_VERSION: "0.1.0"
     CURRENT_PROJECT_VERSION: "1"
     MACOSX_DEPLOYMENT_TARGET: "26.0"
+    HEADER_SEARCH_PATHS: "$(SRCROOT)/Vendor/libarchive-prefix/include"
+    LIBRARY_SEARCH_PATHS: "$(SRCROOT)/Vendor/libarchive-prefix/lib"
+    OTHER_LDFLAGS: "-larchive -lz -lbz2 -llzma -liconv -lxml2"
+    SWIFT_OBJC_BRIDGING_HEADER: "$(SRCROOT)/Sources/ArchiveBridge/Mac7ZipArchiveBridge.h"
 
 targets:
   Mac7Zip:
@@ -20,15 +24,12 @@ targets:
     platform: macOS
     sources:
       - path: Sources
+      - path: Resources
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.mac7zip.Mac7Zip
+        PRODUCT_BUNDLE_IDENTIFIER: com.fb0sh.Mac7Zip
         PRODUCT_NAME: Mac7Zip
-        GENERATE_INFOPLIST_FILE: YES
-        INFOPLIST_KEY_CFBundleDisplayName: Mac7Zip
-        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.utilities
-        INFOPLIST_KEY_NSHumanReadableCopyright: "Copyright © 2026 Mac7Zip contributors."
-        INFOPLIST_KEY_NSPrincipalClass: NSApplication
+        GENERATE_INFOPLIST_FILE: NO
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         COMBINE_HIDPI_IMAGES: YES
@@ -36,20 +37,323 @@ targets:
         LD_RUNPATH_SEARCH_PATHS:
           - "$(inherited)"
           - "@executable_path/../Frameworks"
+    dependencies:
+      - target: Mac7ZipFinderSync
+        embed: true
+      - target: Mac7ZipThumbnail
+        embed: true
+      - target: Mac7ZipPreview
+        embed: true
+    info:
+      path: Support/Info.plist
+      properties:
+        CFBundleDisplayName: Mac7Zip
+        CFBundleShortVersionString: "0.1.0"
+        CFBundleVersion: "3"
+        CFBundleDevelopmentRegion: en
+        CFBundleLocalizations: [en, zh-Hans]
+        LSApplicationCategoryType: public.app-category.utilities
+        NSPrincipalClass: NSApplication
+        NSHumanReadableCopyright: "Copyright © 2026 Mac7Zip contributors."
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: "7z archive"
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            CFBundleTypeIconFile: 7z
+            CFBundleTypeExtensions: ["7z"]
+          - CFBundleTypeName: "apk archive"
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            CFBundleTypeIconFile: apk
+            CFBundleTypeExtensions: ["apk"]
+          - CFBundleTypeName: "arj archive"
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            CFBundleTypeIconFile: arj
+            CFBundleTypeExtensions: ["arj"]
+          - CFBundleTypeName: "bz2 archive"
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            CFBundleTypeIconFile: bz2
+            CFBundleTypeExtensions: ["bz2"]
+          - CFBundleTypeName: "cab archive"
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            CFBundleTypeIconFile: cab
+            CFBundleTypeExtensions: ["cab"]
+          - CFBundleTypeName: "gz archive"
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            CFBundleTypeIconFile: gz
+            CFBundleTypeExtensions: ["gz"]
+          - CFBundleTypeName: "img archive"
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            CFBundleTypeIconFile: img
+            CFBundleTypeExtensions: ["img"]
+          - CFBundleTypeName: "iso archive"
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            CFBundleTypeIconFile: iso
+            CFBundleTypeExtensions: ["iso"]
+          - CFBundleTypeName: "lz4 archive"
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            CFBundleTypeIconFile: lz4
+            CFBundleTypeExtensions: ["lz4"]
+          - CFBundleTypeName: "lzh archive"
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            CFBundleTypeIconFile: lzh
+            CFBundleTypeExtensions: ["lzh"]
+          - CFBundleTypeName: "lzma archive"
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            CFBundleTypeIconFile: lzma
+            CFBundleTypeExtensions: ["lzma"]
+          - CFBundleTypeName: "rar archive"
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            CFBundleTypeIconFile: rar
+            CFBundleTypeExtensions: ["rar"]
+          - CFBundleTypeName: "tar archive"
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            CFBundleTypeIconFile: tar
+            CFBundleTypeExtensions: ["tar"]
+          - CFBundleTypeName: "tar.gz archive"
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            CFBundleTypeIconFile: tar_gz
+            CFBundleTypeExtensions: ["tar.gz"]
+          - CFBundleTypeName: "tar.xz archive"
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            CFBundleTypeIconFile: tar_xz
+            CFBundleTypeExtensions: ["tar.xz"]
+          - CFBundleTypeName: "tar.zst archive"
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            CFBundleTypeIconFile: tar_zst
+            CFBundleTypeExtensions: ["tar.zst"]
+          - CFBundleTypeName: "tbz2 archive"
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            CFBundleTypeIconFile: tbz2
+            CFBundleTypeExtensions: ["tbz2"]
+          - CFBundleTypeName: "tgz archive"
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            CFBundleTypeIconFile: tgz
+            CFBundleTypeExtensions: ["tgz"]
+          - CFBundleTypeName: "wim archive"
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            CFBundleTypeIconFile: wim
+            CFBundleTypeExtensions: ["wim"]
+          - CFBundleTypeName: "xar archive"
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            CFBundleTypeIconFile: xar
+            CFBundleTypeExtensions: ["xar"]
+          - CFBundleTypeName: "xz archive"
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            CFBundleTypeIconFile: xz
+            CFBundleTypeExtensions: ["xz"]
+          - CFBundleTypeName: "zip archive"
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            CFBundleTypeIconFile: zip
+            CFBundleTypeExtensions: ["zip"]
+          - CFBundleTypeName: "zst archive"
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            CFBundleTypeIconFile: zst
+            CFBundleTypeExtensions: ["zst"]
+          - CFBundleTypeName: Archive
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            CFBundleTypeIconFile: zip
+            LSItemContentTypes:
+              - org.7-zip.7-zip-archive
+              - public.zip-archive
+              - public.tar-archive
+              - org.gnu.gnu-zip-archive
+              - org.gnu.gnu-zip-tar-archive
+        UTImportedTypeDeclarations:
+          - UTTypeIdentifier: org.7-zip.7-zip-archive
+            UTTypeDescription: 7-Zip Archive
+            UTTypeIconFile: 7z
+            UTTypeConformsTo: [public.data, public.archive]
+            UTTypeTagSpecification:
+              public.filename-extension: [7z]
+          - UTTypeIdentifier: org.gnu.gnu-zip-archive
+            UTTypeDescription: Gzip Archive
+            UTTypeIconFile: gz
+            UTTypeConformsTo: [public.data, public.archive]
+            UTTypeTagSpecification:
+              public.filename-extension: [gz]
+          - UTTypeIdentifier: org.gnu.gnu-zip-tar-archive
+            UTTypeDescription: Gzipped Tar Archive
+            UTTypeIconFile: tar_gz
+            UTTypeConformsTo: [public.data, public.archive]
+            UTTypeTagSpecification:
+              public.filename-extension: [tgz]
+          - UTTypeIdentifier: org.tukaani.xz-archive
+            UTTypeDescription: XZ Archive
+            UTTypeIconFile: xz
+            UTTypeConformsTo: [public.data, public.archive]
+            UTTypeTagSpecification:
+              public.filename-extension: [xz]
+          - UTTypeIdentifier: public.bzip2-archive
+            UTTypeDescription: Bzip2 Archive
+            UTTypeIconFile: bz2
+            UTTypeConformsTo: [public.data, public.archive]
+            UTTypeTagSpecification:
+              public.filename-extension: [bz2]
+          - UTTypeIdentifier: com.rarlab.rar-archive
+            UTTypeDescription: RAR Archive
+            UTTypeIconFile: rar
+            UTTypeConformsTo: [public.data, public.archive]
+            UTTypeTagSpecification:
+              public.filename-extension: [rar]
+        NSServices:
+          - NSMenuItem: {default: Open Archive}
+            NSMessage: openArchiveService
+            NSSendFileTypes: [public.data]
+          - NSMenuItem: {default: Extract Here}
+            NSMessage: extractHereService
+            NSSendFileTypes: [public.data]
+          - NSMenuItem: {default: Extract to Folder}
+            NSMessage: extractToFolderService
+            NSSendFileTypes: [public.data]
+          - NSMenuItem: {default: Test Archive}
+            NSMessage: testArchiveService
+            NSSendFileTypes: [public.data]
+          - NSMenuItem: {default: Add to Archive}
+            NSMessage: addToArchiveService
+            NSSendFileTypes: [public.data]
+        CFBundleURLTypes:
+          - CFBundleURLName: com.fb0sh.URL
+            CFBundleURLSchemes: [mac7zip]
+
+  Mac7ZipFinderSync:
+    type: app-extension
+    platform: macOS
+    sources:
+      - path: Sources/Mac7ZipFinderSync
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.fb0sh.Mac7Zip.FinderSync
+        PRODUCT_NAME: Mac7ZipFinderSync
+        GENERATE_INFOPLIST_FILE: NO
+        SKIP_INSTALL: YES
+        CODE_SIGN_ENTITLEMENTS: Support/Mac7ZipFinderSync.entitlements
+    info:
+      path: Support/FinderSync-Info.plist
+      properties:
+        CFBundleDisplayName: Mac7Zip Finder
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.FinderSync
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).FinderSync
+
+  Mac7ZipThumbnail:
+    type: app-extension
+    platform: macOS
+    sources:
+      - path: Sources/Mac7ZipThumbnail
+      - path: Sources/Archive/ZipCentralDirectoryReader.swift
+      - path: Sources/ArchiveBridge/LibArchiveReader.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.fb0sh.Mac7Zip.Thumbnail
+        PRODUCT_NAME: Mac7ZipThumbnail
+        GENERATE_INFOPLIST_FILE: NO
+        SKIP_INSTALL: YES
+        CODE_SIGN_ENTITLEMENTS: Support/Mac7ZipThumbnail.entitlements
+    info:
+      path: Support/Thumbnail-Info.plist
+      properties:
+        CFBundleDisplayName: Mac7Zip Thumbnail
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.quicklook.thumbnail
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ThumbnailProvider
+          NSExtensionAttributes:
+            QLSupportedContentTypes:
+              - public.zip-archive
+              - org.7-zip.7-zip-archive
+              - public.tar-archive
+              - org.gnu.gnu-zip-archive
+              - org.gnu.gnu-zip-tar-archive
+              - com.rarlab.rar-archive
+              - public.bzip2-archive
+              - org.tukaani.xz-archive
+            QLThumbnailMinimumDimension: 16
+
+  Mac7ZipPreview:
+    type: app-extension
+    platform: macOS
+    sources:
+      - path: Sources/Mac7ZipPreview
+      - path: Sources/Archive/PreviewHTMLBuilder.swift
+      - path: Sources/ArchiveBridge/LibArchiveReader.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.fb0sh.Mac7Zip.Preview
+        PRODUCT_NAME: Mac7ZipPreview
+        GENERATE_INFOPLIST_FILE: NO
+        SKIP_INSTALL: YES
+        CODE_SIGN_ENTITLEMENTS: Support/Mac7ZipPreview.entitlements
+    info:
+      path: Support/Preview-Info.plist
+      properties:
+        CFBundleDisplayName: Mac7Zip Preview
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.quicklook.preview
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).PreviewProvider
+          NSExtensionAttributes:
+            QLSupportedContentTypes:
+              - public.zip-archive
+              - org.7-zip.7-zip-archive
+              - public.tar-archive
+              - org.gnu.gnu-zip-archive
+              - org.gnu.gnu-zip-tar-archive
+              - com.rarlab.rar-archive
+              - public.bzip2-archive
+              - org.tukaani.xz-archive
 
   Mac7ZipTests:
     type: bundle.unit-test
     platform: macOS
     sources:
       - path: Tests/Mac7ZipTests
+      - path: Tests/Mac7ZipTests/Fixtures
+        buildPhase: resources
+      # Core sources are compiled into the test bundle so tests run host-free
+      # (no app launch, no TEST_HOST) while staying in the same module.
+      - path: Sources/Models
+      - path: Sources/FileSystem
+      - path: Sources/Archive
+      - path: Sources/ArchiveBridge/LibArchiveReader.swift
+      - path: Sources/State
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.fb0sh.Mac7ZipTests
+        GENERATE_INFOPLIST_FILE: YES
+
+  Mac7ZipUITests:
+    type: bundle.ui-testing
+    platform: macOS
+    sources:
+      - path: Tests/Mac7ZipUITests
     dependencies:
       - target: Mac7Zip
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.mac7zip.Mac7ZipTests
+        PRODUCT_BUNDLE_IDENTIFIER: com.fb0sh.Mac7ZipUITests
         GENERATE_INFOPLIST_FILE: YES
-        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Mac7Zip.app/Contents/MacOS/Mac7Zip"
-        BUNDLE_LOADER: "$(TEST_HOST)"
+
 
 schemes:
   Mac7Zip:
@@ -70,3 +374,13 @@ schemes:
       config: Debug
     archive:
       config: Release
+
+  Mac7ZipUITests:
+    build:
+      targets:
+        Mac7Zip: all
+        Mac7ZipUITests: [test]
+    test:
+      config: Debug
+      targets:
+        - Mac7ZipUITests

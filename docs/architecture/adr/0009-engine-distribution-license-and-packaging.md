@@ -19,7 +19,9 @@ Source: official release `ip7z/7zip` tag **26.06** (assets fetched via `gh relea
 
 - License: GNU LGPL (some code LGPL + unRAR restriction, some BSD); binary redistributions must reproduce license info — `License.txt` from the archive ([7-zip.org/license.txt](https://www.7-zip.org/license.txt)).
 - unRAR restriction permits handling RAR but **not creating RAR**.
-- **Not verified here:** runtime execution, codesign validity on macOS → validated in `TKT-M2-01` / macOS CI.
+- **Runtime execution now VERIFIED** (CI run 45133937932, macOS 26 arm64): bundled helper reports `7-Zip (z) 26.06 (arm64) : Copyright (c) 1999-2026 Igor Pavlov : 2026-11-06`.
+- **Extracted-binary checksums** (pinned in `Vendor/7zz/26.06/SHA256SUMS`): arm64 `56cf8eb2fdc6f9c0ac5d7a3cd238505814ac8ed6b88a7c64a7e3256036252c60`; x86_64 `d54aa0864244abeef158772fbde3dd9bac2b93a54c564a76c4334c5a8bcaf35a`.
+- **Still unverified:** codesign validity of the signed/notarized artifact (needs Developer ID credentials) → `TKT-M6-04`.
 
 ## Decision Drivers
 

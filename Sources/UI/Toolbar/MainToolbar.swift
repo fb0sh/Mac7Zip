@@ -3,18 +3,34 @@ import SwiftUI
 /// Native macOS toolbar. Navigation and archive actions are grouped; every
 /// archive/editing action that is not implemented in Phase 0 is disabled.
 struct MainToolbar: ToolbarContent {
-    let model: FileBrowserModel
-    @Binding var columnVisibility: NavigationSplitViewVisibility
+    let model: BrowserStore
+    @ObservedObject var tasks: TaskCenterAdapter
+    @Binding var showSidebar: Bool
+    @Binding var showPreview: Bool
+    var isDualPane: Bool = false
+    var onToggleDualPane: (() -> Void)? = nil
+    @State private var showingTasks = false
 
-    init(model: FileBrowserModel, columnVisibility: Binding<NavigationSplitViewVisibility>) {
+    init(
+        model: BrowserStore,
+        tasks: TaskCenterAdapter,
+        showSidebar: Binding<Bool>,
+        showPreview: Binding<Bool>,
+        isDualPane: Bool = false,
+        onToggleDualPane: (() -> Void)? = nil
+    ) {
         self.model = model
-        self._columnVisibility = columnVisibility
+        self.tasks = tasks
+        self._showSidebar = showSidebar
+        self._showPreview = showPreview
+        self.isDualPane = isDualPane
+        self.onToggleDualPane = onToggleDualPane
     }
 
     var body: some ToolbarContent {
         ToolbarItem(placement: .navigation) {
             Button {
-                columnVisibility = columnVisibility == .detailOnly ? .all : .detailOnly
+                showSidebar.toggle()
             } label: {
                 Image(systemName: "sidebar.left")
             }
@@ -41,49 +57,46 @@ struct MainToolbar: ToolbarContent {
         }
 
         ToolbarItemGroup(placement: .primaryAction) {
-            Button {} label: {
-                Label("Add", systemImage: "plus")
+            ForEach(CoreOperation.allCases) { operation in
+                Button {
+                    perform(operation)
+                } label: {
+                    Label(operation.title, systemImage: operation.systemImage)
+                }
+                .help(operation.title)
+                .disabled(!isEnabled(operation))
             }
-            .help("Add to Archive — not available yet")
-            .disabled(true)
-
-            Button {} label: {
-                Label("Extract", systemImage: "square.and.arrow.up")
-            }
-            .help("Extract — not available yet")
-            .disabled(true)
-
-            Button {} label: {
-                Label("Test", systemImage: "checkmark.seal")
-            }
-            .help("Test Archive — not available yet")
-            .disabled(true)
         }
 
-        ToolbarItemGroup(placement: .primaryAction) {
-            Button {} label: {
-                Image(systemName: "doc.on.doc")
+        ToolbarItem(placement: .primaryAction) {
+            Button {
+                showPreview.toggle()
+            } label: {
+                Image(systemName: showPreview ? "sidebar.right" : "sidebar.squares.right")
             }
-            .help("Copy — not available yet")
-            .disabled(true)
+            .help("Show or Hide Preview")
+        }
 
-            Button {} label: {
-                Image(systemName: "folder")
+        ToolbarItem(placement: .primaryAction) {
+            Button {
+                onToggleDualPane?()
+            } label: {
+                Image(systemName: isDualPane ? "rectangle.split.2x1.fill" : "rectangle.split.2x1")
             }
-            .help("Move — not available yet")
-            .disabled(true)
+            .help("Toggle dual-pane mode")
+            .disabled(onToggleDualPane == nil)
+        }
 
-            Button {} label: {
-                Image(systemName: "trash")
+        ToolbarItem(placement: .primaryAction) {
+            Button {
+                showingTasks.toggle()
+            } label: {
+                Image(systemName: tasks.hasActiveTasks ? "arrow.triangle.2.circlepath" : "checklist")
             }
-            .help("Delete — not available yet")
-            .disabled(true)
-
-            Button {} label: {
-                Image(systemName: "info.circle")
+            .help("Tasks")
+            .popover(isPresented: $showingTasks) {
+                TasksPopoverView(adapter: tasks)
             }
-            .help("Info — not available yet")
-            .disabled(true)
         }
 
         ToolbarItem(placement: .primaryAction) {
@@ -108,6 +121,28 @@ struct MainToolbar: ToolbarContent {
                 Image(systemName: "slider.horizontal.3")
             }
             .help("View Options")
+        }
+    }
+
+    private func isEnabled(_ operation: CoreOperation) -> Bool {
+        CoreOperation.isEnabled(
+            operation,
+            isInsideArchive: model.isInsideArchive,
+            canModify: model.canModify,
+            hasSelection: !model.selection.isEmpty,
+            hasItems: !model.items.isEmpty
+        )
+    }
+
+    private func perform(_ operation: CoreOperation) {
+        switch operation {
+        case .add: model.requestCompression()
+        case .extract: model.requestExtract()
+        case .test: Task { await model.testCurrentArchive() }
+        case .copy: TransferViewActions.copySelection(in: model)
+        case .move: TransferViewActions.moveSelection(in: model)
+        case .delete: FileOperationsViewActions.deleteSelection(in: model)
+        case .info: model.showInfoForSelection()
         }
     }
 }

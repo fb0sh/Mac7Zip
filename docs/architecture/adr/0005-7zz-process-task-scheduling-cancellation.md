@@ -32,7 +32,12 @@ Archive operations are long-running, CPU/IO heavy, and must be cancellable, obse
 - **Progress**: run with `-bsp1` and `-bs{o|e|p}1` so progress goes to a parsed stream; parse percentage tokens; if absent, report indeterminate. Exact line grammar is a **Proposed** detail validated by fixtures in `TKT-M2-03`.
 - **Cancellation (graceful → forced):** send `SIGINT` (`process.interrupt()`); await exit up to a grace window (default 3 s); if still running, `terminate()` (SIGTERM) then `SIGKILL` after a final window; always reap the process and delete its staging/temp dirs. User-stop maps to exit code 255 → state `cancelled`.
 - **Error mapping:** exit 0→success; 1→warning (surface but non-fatal); 2→fatal; 7→command-line/programming error; 8→out-of-memory; 255→cancelled; signal termination→cancelled/failed by context.
-- **Password transport (verified from bundled 7-Zip 26.06 manual):** pass **`-p` with no value** and write the password to the child's **stdin** (7zz prompts interactively); **never** use `-p<password>` in argv (visible to `ps`). `-si` means *data from stdin*, not password — do not conflate. If an interactive stdin prompt cannot be established, **fail the operation** rather than silently falling back to an argv password. Document residual limitations (helper has the plaintext in memory/stdin).
+- **Password transport — CORRECTED after empirical testing (2026-11-23, macOS 26, 7-Zip 26.06):**
+  - The manual says `-p` without a value "will prompt for a password". **That prompt reads the console, not stdin.** Piped stdin is ignored, and a `script(1)` pseudo-terminal does not help either (measured: `-p` + piped `pw123` → exit 2 wrong-password; `-p<password>` → exit 0).
+  - There is therefore **no verified non-argv transport**. Mac7Zip defaults to **fail-closed**: password operations throw `.passwordTransportUnavailable` and write nothing.
+  - An explicit opt-in `PasswordTransport.argvExplicit` exists for local/testing use and documents that `-p<password>` is visible to other processes via `ps`.
+  - We do **not** silently fall back. `-si` is *data from stdin*, unrelated to passwords.
+  - Residual risk: with `.argvExplicit`, the password is visible to `ps`; a future PTY/console bridge would be required to avoid this.
 - **No secrets in logs:** passwords passed via stdin or a protected argument as decided in ADR-008; command lines logged with `-p` redacted.
 
 ## Rationale

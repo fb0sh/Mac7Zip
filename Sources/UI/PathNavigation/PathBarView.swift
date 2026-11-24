@@ -19,28 +19,47 @@ struct PathBarView: View {
             } else {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 4) {
-                        ForEach(PathUtilities.breadcrumbs(for: model.currentDirectory), id: \.url) { crumb in
-                            Button(crumb.title) { model.navigate(to: crumb.url) }
-                                .buttonStyle(.plain)
-                                .foregroundStyle(.secondary)
-                            if crumb.url != model.currentDirectory {
+                        if model.isInsideArchive {
+                            Button(model.archiveURL?.lastPathComponent ?? "Archive") {
+                                model.navigateToArchivePath("")
+                            }
+                            .buttonStyle(.plain)
+                            .foregroundStyle(.secondary)
+
+                            ForEach(Array(archiveCrumbs.enumerated()), id: \.offset) { _, crumb in
                                 Image(systemName: "chevron.right")
                                     .font(.caption2)
                                     .foregroundStyle(.tertiary)
+                                Button(crumb.title) { model.navigateToArchivePath(crumb.path) }
+                                    .buttonStyle(.plain)
+                                    .foregroundStyle(.secondary)
+                            }
+                        } else {
+                            ForEach(PathUtilities.breadcrumbs(for: model.currentDirectory), id: \.url) { crumb in
+                                Button(crumb.title) { model.navigate(to: crumb.url) }
+                                    .buttonStyle(.plain)
+                                    .foregroundStyle(.secondary)
+                                if crumb.url != model.currentDirectory {
+                                    Image(systemName: "chevron.right")
+                                        .font(.caption2)
+                                        .foregroundStyle(.tertiary)
+                                }
                             }
                         }
                     }
                 }
                 Spacer(minLength: 0)
-                Button {
-                    draft = model.currentDirectory.path
-                    isEditing = true
-                    fieldFocused = true
-                } label: {
-                    Image(systemName: "pencil")
+                if !model.isInsideArchive {
+                    Button {
+                        draft = model.currentDirectory.path
+                        isEditing = true
+                        fieldFocused = true
+                    } label: {
+                        Image(systemName: "pencil")
+                    }
+                    .buttonStyle(.borderless)
+                    .help("Edit Path")
                 }
-                .buttonStyle(.borderless)
-                .help("Edit Path")
             }
         }
         .padding(.horizontal, 10)
@@ -55,13 +74,22 @@ struct PathBarView: View {
             isEditing = false
             return
         }
-        let expanded = (trimmed as NSString).expandingTildeInPath
-        var url = URL(fileURLWithPath: expanded)
-        var isDirectory: ObjCBool = false
-        if FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory), !isDirectory.boolValue {
-            url = url.deletingLastPathComponent()
+        guard let target = model.resolveNavigationTarget(trimmed) else {
+            isEditing = false
+            return
         }
-        model.navigate(to: url)
+        model.navigate(to: target)
         isEditing = false
+    }
+
+    private var archiveCrumbs: [(title: String, path: String)] {
+        let parts = ArchiveFileSystemProvider.breadcrumbs(prefix: model.archiveInternalPath ?? "")
+        var accumulated: [String] = []
+        var result: [(title: String, path: String)] = []
+        for part in parts {
+            accumulated.append(part)
+            result.append((part, accumulated.joined(separator: "/")))
+        }
+        return result
     }
 }

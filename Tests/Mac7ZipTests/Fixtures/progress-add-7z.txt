@@ -1,0 +1,14 @@
+7-Zip (z) 26.06 (arm64) : Copyright (c) 1999-2026 Igor Pavlov : 2026-11-06
+ 64-bit arm_v:8.5-A locale=en_US.UTF-8 Threads:3 OPEN_MAX:10240, ASM
+
+Scanning the drive:
+  0M Scan           2 folders, 3 files, 24 bytes (1 KiB)
+
+Creating archive: prog.7z
+
+Add new data to archive: 2 folders, 3 files, 24 bytes (1 KiB)
+
+  0%    
+Files read from disk: 3
+Archive size: 228 bytes (1 KiB)
+Everything is Ok

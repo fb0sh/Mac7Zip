@@ -1,0 +1,163 @@
+/* Mac7Zip 简体中文 */
+
+/* 通用 */
+"Cancel" = "取消";
+"OK" = "好";
+"Save" = "存储";
+"Retry" = "重试";
+"Choose…" = "选取…";
+"Done" = "完成";
+"Apply" = "应用";
+"Create" = "创建";
+"Extract" = "解压";
+"Add" = "添加";
+"Test" = "测试";
+"Info" = "简介";
+
+/* 侧边栏 */
+"Favourites" = "个人收藏";
+"System" = "系统位置";
+"Home" = "个人文件夹";
+"Desktop" = "桌面";
+"Documents" = "文稿";
+"Downloads" = "下载";
+"Applications" = "应用程序";
+"Add Current Folder" = "添加当前文件夹";
+"Remove from Favourites" = "从个人收藏中移除";
+
+/* 工具栏 / 菜单 */
+"Back" = "后退";
+"Forward" = "前进";
+"Show or Hide Sidebar" = "显示或隐藏边栏";
+"Edit Path" = "编辑路径";
+"New Folder" = "新建文件夹";
+"Rename…" = "重新命名…";
+"Move to Trash" = "移到废纸篓";
+"Quick Look" = "快速查看";
+"Add to Archive…" = "添加到压缩包…";
+"Copy to Folder…" = "拷贝到文件夹…";
+"Move to Folder…" = "移动到文件夹…";
+"Duplicate" = "制作副本";
+"Tasks" = "任务";
+"View Options" = "显示选项";
+"Sort By" = "排序方式";
+"File list" = "文件列表";
+"Open Archive" = "打开压缩包";
+"Extract Here" = "解压到此处";
+"Extract to Folder" = "解压到文件夹";
+"Test Archive" = "测试压缩包";
+
+/* 设置 */
+"Archives" = "压缩包";
+"Limits" = "限制";
+"General" = "通用";
+"About" = "关于";
+"Double-click an archive" = "双击压缩包时";
+"Action" = "操作";
+"Open in Mac7Zip" = "在 Mac7Zip 中打开";
+"Extract to <name>/ folder" = "解压到 <名称>/ 文件夹";
+"Defaults" = "默认设置";
+"Default archive format" = "默认压缩包格式";
+"Extract into a subfolder by default" = "默认解压到子文件夹";
+"Extraction safety limits" = "解压安全限制";
+"Maximum total size (bytes)" = "最大总大小（字节）";
+"Maximum expansion ratio" = "最大膨胀比";
+"Maximum entry count" = "最大条目数";
+"Reset to Defaults" = "恢复默认设置";
+"Notify me when a task finishes" = "任务完成时通知我";
+"Restore the last folder on launch" = "启动时恢复上次的文件夹";
+"Ownership & Permissions" = "所有权与权限";
+"Owner" = "所有者";
+"Group" = "群组";
+"Permissions" = "权限";
+"Tags" = "标签";
+"Save Tags" = "存储标签";
+"Name" = "名称";
+"Kind" = "种类";
+"Size" = "大小";
+"Created" = "创建时间";
+"Modified" = "修改时间";
+"Items" = "项目数";
+"Link Target" = "链接目标";
+
+/* 压缩对话框 */
+"Save To" = "存储到";
+"Archive name" = "压缩包名称";
+"Format" = "格式";
+"Compression level" = "压缩级别";
+"Advanced" = "高级";
+"Method" = "方法";
+"Encrypt file names" = "加密文件名";
+"Dictionary size (e.g. 32m)" = "字典大小（如 32m）";
+"Word size (e.g. 64)" = "单词大小（如 64）";
+"Solid block size (e.g. 8g)" = "固实块大小（如 8g）";
+"Update mode" = "更新方式";
+"Path mode" = "路径模式";
+"Threads (optional)" = "线程数（可选）";
+"Split volume size (e.g. 100m)" = "分卷大小（如 100m）";
+"Store (0)" = "仅存储 (0)";
+"Fastest (1)" = "最快 (1)";
+"Fast (3)" = "快速 (3)";
+"Normal (5)" = "标准 (5)";
+"Maximum (7)" = "最大 (7)";
+"Ultra (9)" = "极限 (9)";
+"Relative" = "相对路径";
+"Full paths" = "完整路径";
+
+/* 解压对话框 */
+"Extract To" = "解压到";
+"Extract into subfolder" = "解压到子文件夹";
+"Subfolder name" = "子文件夹名称";
+"Options" = "选项";
+"Eliminate duplicate root folder" = "消除重复的根文件夹";
+"Overwrite" = "覆盖";
+"Ask before overwriting" = "覆盖前询问";
+"Overwrite" = "覆盖";
+"Skip existing" = "跳过已存在的";
+"Auto-rename" = "自动重命名";
+"Restore file security settings" = "恢复文件安全设置";
+"Password" = "密码";
+
+/* 状态 / 空状态 / 错误 */
+"Empty Folder" = "空文件夹";
+"Loading…" = "正在载入…";
+"Archive is OK." = "压缩包正常。";
+"Archive Test" = "压缩包测试";
+"Operation Failed" = "操作失败";
+"Not enough memory" = "内存不足";
+
+/* added */
+"Copy" = "拷贝";
+"Move" = "移动";
+"Delete" = "删除";
+"Reveal in Finder" = "在访达中显示";
+"Open" = "打开";
+"Confirm" = "确认";
+"Folder name" = "文件夹名称";
+
+"File Icons" = "文件图标";
+"Finder file icons" = "访达文件图标";
+"Register file icons" = "注册文件图标";
+"Restore system defaults" = "恢复系统默认";
+"Registered" = "已注册";
+"Not registered" = "未注册";
+"Status" = "状态";
+
+"Register with system (no dialogs)" = "注册到系统（不弹框）";
+"Step 1: let the system learn Mac7Zip’s per-type icons. This changes NO default apps and shows NO dialogs." = "第一步：让系统认识 Mac7Zip 的各类型图标。此步不修改默认程序、不弹任何确认框。";
+"Step 2 (optional): macOS only shows a type’s icon from its default opener. Pick just the formats you want Mac7Zip to open by default — each adds ONE confirmation dialog." = "第二步（可选）：macOS 只对“默认打开程序”显示其图标。仅勾选你希望 Mac7Zip 默认打开的格式——每勾选一种会弹一次确认框。";
+"Set selected as default" = "设为默认（所选格式）";
+
+"ZIP file-name encoding" = "ZIP 文件名编码";
+"Auto-detect" = "自动识别";
+"GBK / GB2312 (936)" = "GBK / GB2312 (936)";
+"Big5 (950)" = "Big5 (950)";
+"UTF-8 (65001)" = "UTF-8 (65001)";
+"Finder 右键菜单" = "Finder 右键菜单";
+"状态" = "状态";
+"启用/注册扩展" = "启用/注册扩展";
+"重新检查" = "重新检查";
+"已启用" = "已启用";
+"已安装但未启用" = "已安装但未启用";
+"未注册" = "未注册";
+"未知" = "未知";

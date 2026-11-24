@@ -2,6 +2,7 @@ import SwiftUI
 
 struct StatusBarView: View {
     @EnvironmentObject private var model: FileBrowserModel
+    @EnvironmentObject private var tasks: TaskCenterAdapter
 
     var body: some View {
         HStack(spacing: 10) {
@@ -11,7 +12,19 @@ struct StatusBarView: View {
                 Text(selectionText)
             }
             Spacer(minLength: 0)
-            if model.isLoading {
+            if let running = tasks.runningRecord {
+                Text(running.title)
+                    .lineLimit(1)
+                if let progress = running.progress {
+                    ProgressView(value: progress)
+                        .frame(width: 140)
+                    Text("\(Int(progress * 100))%")
+                        .monospacedDigit()
+                } else {
+                    ProgressView()
+                        .controlSize(.small)
+                }
+            } else if model.isLoading {
                 ProgressView().controlSize(.small)
             }
         }

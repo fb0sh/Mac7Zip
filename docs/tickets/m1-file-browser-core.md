@@ -13,7 +13,7 @@
 - **Scope:** Introduce `FileEntry`, `BrowserLocation`, `FileSystemProvider`, `RealFileSystemProvider`, `FileAccess`, and `BrowserStore` (replacing `FileBrowserModel`). Keep Phase 0 behavior. Convert tests to a host-free core test target.
 - **Implementation Notes:** Preserve current UI bindings; wrap `FileManager` in `RealFileAccess`; keep `ObservableObject`. No new features here. Update `project.yml` for a host-free `Mac7ZipCoreTests`.
 - **Dependencies:** None.
-- **Acceptance Criteria:** App builds; existing 19 tests pass (moved host-free); no direct `FileManager` in UI/State; `BrowserLocation.real` conversion tested.
+- **Acceptance Criteria:** App builds; all unit tests pass (25 incl. new BrowserLocation + provider tests); no direct `FileManager` in UI/State; `BrowserLocation.real` conversion + provider contract tested. *(Host-free test-target migration is tracked in TKT-M1-09.)*
 - **Tests:** Provider contract tests; store navigation unit tests.
 - **DoD:** PR merged; CI green; behavior identical in manual smoke.
 - **Related:** SPEC-FM, SPEC-SEC · ADR-003, ADR-006, ADR-007
@@ -99,7 +99,7 @@
 ## TKT-M1-09 — Tests: FS core, ops, performance
 
 - **Milestone:** M1 · **Priority:** P0 · **Type:** Test · **Status:** Planned
-- **Scope:** Unit + integration coverage for provider, sorting, path, create/rename/delete, performance harness.
+- **Scope:** Unit + integration coverage for provider, sorting, path, create/rename/delete, performance harness; **migrate tests to a host-free core test target** (moved here from TKT-M1-01).
 - **Implementation Notes:** Temp directories per test; deterministic fixtures.
 - **Dependencies:** TKT-M1-01…07.
 - **Acceptance Criteria:** Coverage of all M1 requirements; tests run host-free.

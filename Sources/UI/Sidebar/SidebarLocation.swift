@@ -32,21 +32,12 @@ enum SidebarLocation: String, CaseIterable, Identifiable, Hashable {
     }
 
     var url: URL {
-        let fileManager = FileManager.default
         switch self {
-        case .home:
-            return fileManager.homeDirectoryForCurrentUser
-        case .desktop:
-            return fileManager.urls(for: .desktopDirectory, in: .userDomainMask).first
-                ?? fileManager.homeDirectoryForCurrentUser.appendingPathComponent("Desktop")
-        case .documents:
-            return fileManager.urls(for: .documentDirectory, in: .userDomainMask).first
-                ?? fileManager.homeDirectoryForCurrentUser.appendingPathComponent("Documents")
-        case .downloads:
-            return fileManager.urls(for: .downloadsDirectory, in: .userDomainMask).first
-                ?? fileManager.homeDirectoryForCurrentUser.appendingPathComponent("Downloads")
-        case .applications:
-            return URL(fileURLWithPath: "/Applications", isDirectory: true)
+        case .home: return FileLocations.home
+        case .desktop: return FileLocations.desktop
+        case .documents: return FileLocations.documents
+        case .downloads: return FileLocations.downloads
+        case .applications: return FileLocations.applications
         }
     }
 }

@@ -1,0 +1,46 @@
+# SwiftLint configuration for Mac7Zip.
+# Kept minimal: correctness/readability rules only. Non-blocking in CI initially
+# (see ADR-010); promote to blocking once the baseline is clean.
+
+included:
+  - Sources
+  - Tests
+
+excluded:
+  - tmp
+  - Vendor
+  - build
+
+disabled_rules:
+  - todo
+  - trailing_comma
+
+opt_in_rules:
+  - empty_count
+  - explicit_init
+  - force_unwrapping
+  - redundant_nil_coalescing
+
+line_length:
+  warning: 140
+  error: 200
+
+type_body_length:
+  warning: 400
+  error: 600
+
+file_length:
+  warning: 600
+  error: 900
+
+function_body_length:
+  warning: 80
+  error: 140
+
+identifier_name:
+  min_length:
+    warning: 2
+  excluded:
+    - id
+
+force_unwrapping: warning
