@@ -42,4 +42,22 @@ final class DragExportPlannerTests: XCTestCase {
         let unknown = DragExportPlanner.fileType(for: "weird.zzzqqq")
         XCTAssertFalse(unknown.isEmpty)
     }
+
+    func testProducedFileNameUsesLastComponent() {
+        XCTAssertEqual(DragExportPlanner.producedFileName(entryPath: "docs/a.txt"), "a.txt")
+        XCTAssertEqual(DragExportPlanner.producedFileName(entryPath: "a.txt"), "a.txt")
+        XCTAssertEqual(DragExportPlanner.producedFileName(entryPath: "a/b/c/deep.bin"), "deep.bin")
+    }
+
+    func testAppBundleDetection() {
+        let app = FileItem(url: URL(fileURLWithPath: "/Applications/Safari.app"), name: "Safari.app",
+                           isDirectory: true, size: 0, modificationDate: nil, kind: "Application")
+        XCTAssertTrue(app.isApplicationBundle)
+        let folder = FileItem(url: URL(fileURLWithPath: "/tmp/Documents"), name: "Documents",
+                              isDirectory: true, size: 0, modificationDate: nil, kind: "Folder")
+        XCTAssertFalse(folder.isApplicationBundle)
+        let file = FileItem(url: URL(fileURLWithPath: "/tmp/a.zip"), name: "a.zip",
+                            isDirectory: false, size: 1, modificationDate: nil, kind: "ZIP")
+        XCTAssertFalse(file.isApplicationBundle)
+    }
 }

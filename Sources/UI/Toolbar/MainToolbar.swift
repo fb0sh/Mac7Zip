@@ -29,9 +29,9 @@ struct MainToolbar: ToolbarContent {
             Button {
                 showSidebar.toggle()
             } label: {
-                Image(systemName: "sidebar.right")
+                Image(systemName: "sidebar.left")
             }
-            .help("Show or Hide Sidebar (right)")
+            .help("Show or Hide Sidebar")
         }
 
         ToolbarItemGroup(placement: .navigation) {

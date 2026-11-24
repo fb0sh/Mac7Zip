@@ -9,6 +9,17 @@ final class IconCache {
     private let lock = NSLock()
 
     func icon(for item: FileItem) -> NSImage {
+        // Application bundles are directories but must show the app's own icon.
+        if item.archiveMetadata == nil, item.isApplicationBundle {
+            let pathKey = "app:" + item.url.path
+            lock.lock()
+            if let cached = cache[pathKey] { lock.unlock(); return cached }
+            lock.unlock()
+            let image = NSWorkspace.shared.icon(forFile: item.url.path)
+            lock.lock(); cache[pathKey] = image; lock.unlock()
+            return image
+        }
+
         let key: String
         if item.isDirectory {
             key = "public.folder"

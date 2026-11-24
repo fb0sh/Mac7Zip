@@ -24,6 +24,12 @@ enum DragExportPlanner {
         return .fileURL(item.url)
     }
 
+    /// The file name 7-Zip produces for an entry (last path component), which is
+    /// what the promise must copy to the drop location.
+    static func producedFileName(entryPath: String) -> String {
+        (entryPath as NSString).lastPathComponent
+    }
+
     /// File type identifier for a promised name; falls back to a generic type.
     static func fileType(for name: String) -> String {
         let ext = (name as NSString).pathExtension

@@ -10,13 +10,10 @@ struct ContentView: View {
     @StateObject private var favourites = FavouritesStore()
     @StateObject private var panes = DualPaneController()
     @StateObject private var secondaryModel = BrowserStore()
-    @State private var showSidebar = true
+    @State private var showSidebar = false
 
     var body: some View {
         HSplitView {
-            detailContent
-                .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
-
             if showSidebar {
                 SidebarView(favourites: favourites) { url in
                     activeModel.navigate(to: url)
@@ -34,6 +31,9 @@ struct ContentView: View {
                 }
                 .frame(minWidth: 180, idealWidth: 220, maxWidth: 320)
             }
+
+            detailContent
+                .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
         }
         .toolbar {
             MainToolbar(

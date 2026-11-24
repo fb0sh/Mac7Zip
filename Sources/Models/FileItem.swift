@@ -24,4 +24,9 @@ struct FileItem: Identifiable, Hashable, Sendable {
     let kind: String
     /// Present only for entries listed from inside an archive.
     var archiveMetadata: ArchiveEntryMetadata? = nil
+
+    /// `.app` is a directory but macOS shows the app's icon, not a folder icon.
+    var isApplicationBundle: Bool {
+        url.pathExtension.lowercased() == "app"
+    }
 }

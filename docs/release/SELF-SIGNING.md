@@ -32,3 +32,11 @@ The menu appears for the monitored folders (Downloads / Documents / Desktop).
   need to right-click ▸ Open or clear quarantine.
 - Finder Sync requires code signing; ad-hoc works for local testing. A properly
   distributed extension (other machines) needs a Developer ID.
+
+## Finder extension not showing? (troubleshooting)
+1. Move `Mac7Zip.app` to `/Applications` and launch it once.
+2. Run `scripts/enable-finder-extension.sh /Applications/Mac7Zip.app` (registers + enables via `pluginkit`).
+3. Enable **Mac7Zip Finder** in System Settings ▸ General ▸ Login Items & Extensions ▸ Finder Extensions.
+4. If it still doesn't load: Finder Sync extensions require a **code-signed** bundle; ad-hoc signing
+   works for local testing on the same machine, but macOS may refuse unsigned/adhoc extensions on
+   managed or newer systems. A Developer ID signature removes this limitation (M6-04/05).

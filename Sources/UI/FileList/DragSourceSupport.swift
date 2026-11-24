@@ -1,12 +1,12 @@
 import AppKit
 import Foundation
 
-import AppKit
-import Foundation
-import UniformTypeIdentifiers
-
-/// Extracts a single archive entry to a destination URL, synchronously, for use by
-/// `NSFilePromiseProvider` delegates (which are called on the main thread).
+/// Extracts a single archive entry for an `NSFilePromiseProvider` drop.
+///
+/// The extraction runs on a **detached** task (never the main actor) so blocking
+/// the promise callback on a semaphore cannot deadlock the main thread. The entry
+/// is extracted into a private temp dir, then the produced file is copied to the
+/// exact URL Finder requested (handles nested entry paths correctly).
 final class ArchiveEntryExporter: NSObject {
     private let archiveURL: URL
     private let entryPath: String
@@ -18,37 +18,56 @@ final class ArchiveEntryExporter: NSObject {
         self.engineFactory = engineFactory
     }
 
-    /// Performs the export. Returns `false` when the engine is unavailable.
     func export(to destination: URL) -> Bool {
         guard let engine = engineFactory() else { return false }
-        let semaphore = DispatchSemaphore(value: 0)
-        var succeeded = false
 
-        Task {
-            defer { semaphore.signal() }
+        let semaphore = DispatchSemaphore(value: 0)
+        let box = ResultBox()
+        let archiveURL = self.archiveURL
+        let entryPath = self.entryPath
+        let tempDir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("Mac7Zip-promise-\(UUID().uuidString)", isDirectory: true)
+
+        Task.detached {
+            defer {
+                try? FileManager.default.removeItem(at: tempDir)
+                semaphore.signal()
+            }
             do {
-                var options = ExtractOptions(destination: destination)
-                options.password = nil
+                try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+                var options = ExtractOptions(destination: tempDir)
                 options.entries = [entryPath]
-                // Extract into the destination's parent so the promised file lands
-                // exactly where Finder asked; the engine appends the entry name.
-                let parent = destination.deletingLastPathComponent()
-                try await engine.extract(archive: archiveURL, to: parent, options: {
-                    var adjusted = options
-                    adjusted.destination = parent
-                    adjusted.pathMode = .relative
-                    return adjusted
-                }())
-                succeeded = FileManager.default.fileExists(atPath: destination.path)
+                options.password = nil
+                try await engine.extract(archive: archiveURL, to: tempDir, options: options)
+
+                let name = DragExportPlanner.producedFileName(entryPath: entryPath)
+                let produced = tempDir.appendingPathComponent(name)
+                guard FileManager.default.fileExists(atPath: produced.path) else {
+                    box.value = false
+                    return
+                }
+                if FileManager.default.fileExists(atPath: destination.path) {
+                    try? FileManager.default.removeItem(at: destination)
+                }
+                try FileManager.default.copyItem(at: produced, to: destination)
+                box.value = true
             } catch {
-                succeeded = false
+                box.value = false
             }
         }
 
-        // Promise delegates must be synchronous; bound the wait so a pathological
-        // archive can't hang the drag session forever.
-        _ = semaphore.wait(timeout: .now() + 60)
-        return succeeded
+        _ = semaphore.wait(timeout: .now() + 120)
+        return box.value
+    }
+}
+
+/// Tiny thread-safe box for the export result.
+final class ResultBox: @unchecked Sendable {
+    private let lock = NSLock()
+    private var storage = false
+    var value: Bool {
+        get { lock.lock(); defer { lock.unlock() }; return storage }
+        set { lock.lock(); storage = newValue; lock.unlock() }
     }
 }
 
