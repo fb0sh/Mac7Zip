@@ -35,6 +35,8 @@ final class BrowserStore: ObservableObject {
 
     /// Set by the UI so transfers can be queued with visible progress (M4-07).
     private weak var tasksBridge: TaskCenterAdapter?
+    /// Stack of enclosing archives when browsing a nested archive (archive-in-archive).
+    private var archiveParentStack: [(url: URL, internalPath: String, temp: URL?)] = []
     private var history: [BrowserLocation]
     private var historyIndex: Int
 
@@ -126,6 +128,7 @@ final class BrowserStore: ObservableObject {
     func navigate(to url: URL) {
         let target = url.standardizedFileURL
         provider = RealFileSystemProvider()
+        discardNestedArchives()
         moveTo(.real(target))
     }
 
@@ -134,6 +137,7 @@ final class BrowserStore: ObservableObject {
             operationError = "The 7-Zip engine isn’t available, so archives can’t be opened."
             return
         }
+        discardNestedArchives()
         provider = archiveProvider
         moveTo(.archive(archiveURL: url.standardizedFileURL, internalPath: ""))
     }
@@ -170,9 +174,16 @@ final class BrowserStore: ObservableObject {
             if let parent = PathUtilities.parent(of: url) { navigate(to: parent) }
         case .archive(let url, let internalPath):
             if internalPath.isEmpty {
-                // Leave the archive: go to its enclosing real directory.
-                provider = RealFileSystemProvider()
-                if let parent = PathUtilities.parent(of: url) { moveTo(.real(parent)) }
+                if let parent = archiveParentStack.popLast() {
+                    // Return to the enclosing archive rather than the filesystem.
+                    provider = archiveProviderFactory(parent.url) ?? provider
+                    moveTo(.archive(archiveURL: parent.url, internalPath: parent.internalPath))
+                    if let temp = parent.temp { try? FileManager.default.removeItem(at: temp) }
+                } else {
+                    // Leave the archive: go to its enclosing real directory.
+                    provider = RealFileSystemProvider()
+                    if let parentURL = PathUtilities.parent(of: url) { moveTo(.real(parentURL)) }
+                }
             } else {
                 let parent = ArchiveFileSystemProvider.normalize(
                     (internalPath as NSString).deletingLastPathComponent
@@ -248,7 +259,9 @@ final class BrowserStore: ObservableObject {
             return
         }
         if isInsideArchive {
-            // Browsing inside an archive: files open through extraction in M2-07+.
+            if ArchiveFormat.detect(from: item.url) != nil {
+                openNestedArchive(entryName: item.name)
+            }
             return
         }
         NSWorkspace.shared.open(item.url)
@@ -405,6 +418,53 @@ final class BrowserStore: ObservableObject {
         lastOperationMessage = summary
         selection = []
         reload()
+    }
+
+    // MARK: - Nested archives
+
+    /// Opens an archive that lives **inside** the current archive by extracting it
+    /// to a private temp file, then browsing that file. `goUp` returns to the parent.
+    private func openNestedArchive(entryName: String) {
+        guard let currentArchive = archiveURL, let helper = SevenZipLocator.helperURL() else {
+            operationError = "The 7-Zip engine isn’t available."
+            return
+        }
+        let entryPath = ArchiveFileSystemProvider.normalize((archiveInternalPath ?? "") + "/" + entryName)
+        let tempDir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("Mac7Zip-nested-\(UUID().uuidString)", isDirectory: true)
+        let parentInternalPath = archiveInternalPath ?? ""
+
+        Task {
+            do {
+                try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+                let engine = SevenZipEngine(executableURL: helper)
+                var options = ExtractOptions(destination: tempDir)
+                options.entries = [entryPath]
+                options.password = nil
+                try await engine.extract(archive: currentArchive, to: tempDir, options: options)
+
+                let name = (entryPath as NSString).lastPathComponent
+                let produced = tempDir.appendingPathComponent(name)
+                guard FileManager.default.fileExists(atPath: produced.path) else {
+                    operationError = "Couldn’t extract the inner archive."
+                    return
+                }
+                archiveParentStack.append((currentArchive, parentInternalPath, tempDir))
+                if let nestedProvider = archiveProviderFactory(produced) {
+                    provider = nestedProvider
+                }
+                moveTo(.archive(archiveURL: produced, internalPath: ""))
+            } catch {
+                operationError = Self.archiveMessage(error)
+            }
+        }
+    }
+
+    private func discardNestedArchives() {
+        for entry in archiveParentStack {
+            if let temp = entry.temp { try? FileManager.default.removeItem(at: temp) }
+        }
+        archiveParentStack.removeAll()
     }
 
     // MARK: - Compression

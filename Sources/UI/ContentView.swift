@@ -69,9 +69,12 @@ struct ContentView: View {
             model.attachTasks(tasks)
             await tasks.start()
 
-            // Detect the Finder extension once per launch and nudge if not enabled.
-            if await FinderExtensionChecker.check() != .enabled {
+            // Nudge about the Finder extension at most once (never nag every launch).
+            let promptKey = "Mac7Zip.finderExtensionPromptShown"
+            if !UserDefaults.standard.bool(forKey: promptKey),
+               await FinderExtensionChecker.check() != .enabled {
                 showFinderExtensionPrompt = true
+                UserDefaults.standard.set(true, forKey: promptKey)
             }
         }
         .sheet(isPresented: infoSheetBinding) {
