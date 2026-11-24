@@ -12,3 +12,10 @@ Mac7Zip bundles the **7-Zip** command-line engine (`7zz`).
   archiver. Mac7Zip therefore only **extracts** RAR; it never creates RAR files.
 - Trademarks: 7-Zip is a trademark of Igor Pavlov. Mac7Zip is not affiliated with
   or endorsed by the 7-Zip project.
+
+## libarchive
+- License: BSD-2-Clause
+- Copyright: The libarchive project contributors
+- Used for: reading archive contents (zip, 7z, rar, tar, gz, bz2, xz, cab, iso, …) in the
+  app and the Quick Look preview/thumbnail extensions. Source fetched at build time by
+  `scripts/fetch-libarchive.sh`; license text: https://github.com/libarchive/libarchive/blob/master/COPYING

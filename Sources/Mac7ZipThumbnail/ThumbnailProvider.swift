@@ -12,7 +12,7 @@ final class ThumbnailProvider: QLThumbnailProvider {
     ) {
         let url = request.fileURL
         let maxSize = request.maximumSize
-        let entries = zipEntries(for: url)
+        let entries = LibArchiveReader.listEntries(at: url) ?? []
         let reply = QLThumbnailReply(contextSize: maxSize, currentContextDrawing: { () -> Bool in
             Self.draw(entries: entries, name: url.lastPathComponent, in: maxSize)
             return true
@@ -20,13 +20,7 @@ final class ThumbnailProvider: QLThumbnailProvider {
         handler(reply, nil)
     }
 
-    private func zipEntries(for url: URL) -> [ZipCentralDirectoryReader.Entry] {
-        let known: Set<String> = ["zip", "apk", "jar", "epub", "cbz", "docx", "xlsx", "pptx"]
-        guard known.contains(url.pathExtension.lowercased()) else { return [] }
-        return ZipCentralDirectoryReader.entries(inFileAt: url) ?? []
-    }
-
-    private static func draw(entries: [ZipCentralDirectoryReader.Entry], name: String, in size: CGSize) {
+    private static func draw(entries: [LibArchiveReader.Entry], name: String, in size: CGSize) {
         let bounds = CGRect(origin: .zero, size: size)
         NSColor.white.setFill()
         bounds.fill()

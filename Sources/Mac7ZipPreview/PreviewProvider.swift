@@ -21,9 +21,8 @@ final class PreviewProvider: NSViewController, QLPreviewingController {
     }
 
     private func previewBody(for url: URL) -> String {
-        switch url.pathExtension.lowercased() {
-        case "zip", "apk", "jar", "epub", "cbz", "docx", "xlsx", "pptx":
-            if let entries = ZipCentralDirectoryReader.entries(inFileAt: url), !entries.isEmpty {
+        if let entries = LibArchiveReader.listEntries(at: url), !entries.isEmpty {
+            do {
                 let files = entries.filter { !$0.isDirectory }.count
                 let folders = entries.count - files
                 var lines = ["\(entries.count) 个项目（\(folders) 文件夹 · \(files) 文件）", ""]
@@ -34,10 +33,8 @@ final class PreviewProvider: NSViewController, QLPreviewingController {
                 if entries.count > 500 { lines.append("… 仅显示前 500 项") }
                 return lines.joined(separator: "\n")
             }
-            return "无法读取该 ZIP 的目录。"
-        default:
-            return "请在 Mac7Zip 中打开以查看内容。"
         }
+        return "请在 Mac7Zip 中打开以查看内容。"
     }
 
     private func install(title: String, body: String) {

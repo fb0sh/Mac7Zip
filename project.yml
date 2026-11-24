@@ -335,6 +335,7 @@ targets:
       - path: Sources/Models
       - path: Sources/FileSystem
       - path: Sources/Archive
+      - path: Sources/ArchiveBridge/LibArchiveReader.swift
       - path: Sources/State
     settings:
       base:

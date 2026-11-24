@@ -119,6 +119,10 @@ struct SevenZipEngine: ArchiveEngine {
            let repaired = Self.repairZipNames(entries, archive: archive) {
             entries = repaired
         }
+        // Any format: if names still look garbled, rebuild from libarchive.
+        if Self.looksGarbled(entries), let repaired = Self.repairNamesWithLibArchive(entries, archive: archive) {
+            entries = repaired
+        }
         return entries
     }
 
@@ -136,6 +140,28 @@ struct SevenZipEngine: ArchiveEngine {
                 size: entry.size,
                 packedSize: entry.packedSize,
                 isDirectory: raw.isDirectory || entry.isDirectory,
+                modificationDate: entry.modificationDate,
+                crc: entry.crc,
+                isEncrypted: entry.isEncrypted,
+                method: entry.method,
+                linkTarget: entry.linkTarget
+            )
+        }
+    }
+
+    /// Rebuilds names from libarchive's listing (handles 7z/rar/gz/tar… and legacy
+    /// encodings via our decoder). Keeps 7-Zip metadata, overwrites path/isDirectory.
+    static func repairNamesWithLibArchive(_ entries: [ArchiveEntry], archive: URL) -> [ArchiveEntry]? {
+        guard let raw = LibArchiveReader.listEntries(at: archive), raw.count == entries.count else {
+            DiagnosticsLog.write("libarchiveRepair \(archive.lastPathComponent): list=\(entries.count) lib=\(LibArchiveReader.listEntries(at: archive)?.count ?? -1)")
+            return nil
+        }
+        return zip(entries, raw).map { entry, source in
+            ArchiveEntry(
+                path: source.path,
+                size: entry.size,
+                packedSize: entry.packedSize,
+                isDirectory: source.isDirectory || entry.isDirectory,
                 modificationDate: entry.modificationDate,
                 crc: entry.crc,
                 isEncrypted: entry.isEncrypted,
