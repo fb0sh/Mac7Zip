@@ -128,6 +128,7 @@ struct SevenZipProcessRunner: Sendable {
 
     /// Reads any buffered bytes left in a pipe after the child exited.
     private static func drainRemaining(_ handle: FileHandle, into collector: OutputCollector, isStdout: Bool) {
+        var emptyStreak = 0
         while true {
             let data: Data
             do {
@@ -135,7 +136,15 @@ struct SevenZipProcessRunner: Sendable {
             } catch {
                 return
             }
-            if data.isEmpty { return }
+            if data.isEmpty {
+                // The child may have exited microseconds before its final bytes
+                // reached the pipe; retry a couple of times before giving up.
+                emptyStreak += 1
+                if emptyStreak >= 3 { return }
+                usleep(5_000)
+                continue
+            }
+            emptyStreak = 0
             if isStdout {
                 collector.appendStdout(data)
             } else {
