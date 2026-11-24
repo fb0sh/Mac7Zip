@@ -296,7 +296,7 @@ targets:
     platform: macOS
     sources:
       - path: Sources/Mac7ZipPreview
-      - path: Sources/Archive/ZipCentralDirectoryReader.swift
+      - path: Sources/Archive/PreviewHTMLBuilder.swift
       - path: Sources/ArchiveBridge/LibArchiveReader.swift
     settings:
       base:
