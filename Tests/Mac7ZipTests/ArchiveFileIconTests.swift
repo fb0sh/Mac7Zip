@@ -53,3 +53,42 @@ final class ArchiveFileIconResourceTests: XCTestCase {
         XCTAssertTrue(yml.contains("CFBundleTypeIconFile: tar_gz"))
     }
 }
+
+final class ExtensionPackagingTests: XCTestCase {
+    private var repoRoot: URL {
+        var dir = URL(fileURLWithPath: #filePath)
+        for _ in 0..<8 {
+            dir = dir.deletingLastPathComponent()
+            if FileManager.default.fileExists(atPath: dir.appendingPathComponent("project.yml").path) { return dir }
+        }
+        return dir
+    }
+
+    private func yml() -> String {
+        (try? String(contentsOf: repoRoot.appendingPathComponent("project.yml"), encoding: .utf8)) ?? ""
+    }
+
+    func testThumbnailExtensionDeclaresQuickLookPoint() {
+        let text = yml()
+        XCTAssertTrue(text.contains("com.apple.quicklook.thumbnail"), "Thumbnail extension must declare its NSExtensionPointIdentifier in properties")
+        XCTAssertTrue(text.contains("Mac7ZipThumbnail"))
+    }
+
+    func testFinderSyncDeclaresItsPoint() {
+        XCTAssertTrue(yml().contains("com.apple.FinderSync"))
+    }
+
+    func testBothExtensionsAreEmbedded() {
+        let text = yml()
+        XCTAssertTrue(text.contains("- target: Mac7ZipFinderSync\n        embed: true"))
+        XCTAssertTrue(text.contains("- target: Mac7ZipThumbnail\n        embed: true"))
+    }
+
+    func testExtensionsHaveSandboxEntitlements() {
+        for name in ["Mac7ZipFinderSync", "Mac7ZipThumbnail"] {
+            let url = repoRoot.appendingPathComponent("Support/\(name).entitlements")
+            let text = (try? String(contentsOf: url, encoding: .utf8)) ?? ""
+            XCTAssertTrue(text.contains("com.apple.security.app-sandbox"), "\(name) must be sandboxed")
+        }
+    }
+}

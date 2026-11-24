@@ -245,6 +245,22 @@ targets:
         CODE_SIGN_ENTITLEMENTS: Support/Mac7ZipThumbnail.entitlements
     info:
       path: Support/Thumbnail-Info.plist
+      properties:
+        CFBundleDisplayName: Mac7Zip Thumbnail
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.quicklook.thumbnail
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ThumbnailProvider
+          NSExtensionAttributes:
+            QLSupportedContentTypes:
+              - public.zip-archive
+              - org.7-zip.7-zip-archive
+              - public.tar-archive
+              - org.gnu.gnu-zip-archive
+              - org.gnu.gnu-zip-tar-archive
+              - com.rarlab.rar-archive
+              - public.bzip2-archive
+              - org.tukaani.xz-archive
+            QLThumbnailMinimumDimension: 16
 
   Mac7ZipTests:
     type: bundle.unit-test
