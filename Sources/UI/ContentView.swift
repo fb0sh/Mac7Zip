@@ -42,6 +42,7 @@ struct ContentView: View {
                     .frame(minWidth: 220, idealWidth: 300, maxWidth: 480)
             }
         }
+        .environmentObject(tasks)
         .focusedSceneValue(\.browserStore, model)
         .toolbar {
             MainToolbar(
