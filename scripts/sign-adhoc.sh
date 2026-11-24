@@ -24,8 +24,12 @@ if [ -d "$APP/Contents/PlugIns" ]; then
       while IFS= read -r -d '' exe; do echo "sign ext exe: $exe"; sign "$exe"; done < <(find "$appex/Contents/MacOS" -type f -print0)
     fi
     echo "sign appex: $appex (with entitlements)"
-    if [ -f "$ROOT/Support/Mac7ZipFinderSync.entitlements" ]; then
-      /usr/bin/codesign --force --sign - --timestamp=none --entitlements "$ROOT/Support/Mac7ZipFinderSync.entitlements" "$appex"
+    ENT="$ROOT/Support/Mac7ZipFinderSync.entitlements"
+    case "$(basename "$appex")" in
+      *Thumbnail*) ENT="$ROOT/Support/Mac7ZipThumbnail.entitlements" ;;
+    esac
+    if [ -f "$ENT" ]; then
+      /usr/bin/codesign --force --sign - --timestamp=none --entitlements "$ENT" "$appex"
     else
       sign "$appex"
     fi

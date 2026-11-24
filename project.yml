@@ -36,6 +36,8 @@ targets:
     dependencies:
       - target: Mac7ZipFinderSync
         embed: true
+      - target: Mac7ZipThumbnail
+        embed: true
     info:
       path: Support/Info.plist
       properties:
@@ -228,6 +230,21 @@ targets:
         NSExtension:
           NSExtensionPointIdentifier: com.apple.FinderSync
           NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).FinderSync
+
+  Mac7ZipThumbnail:
+    type: app-extension
+    platform: macOS
+    sources:
+      - path: Sources/Mac7ZipThumbnail
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.mac7zip.Mac7Zip.Thumbnail
+        PRODUCT_NAME: Mac7ZipThumbnail
+        GENERATE_INFOPLIST_FILE: NO
+        SKIP_INSTALL: YES
+        CODE_SIGN_ENTITLEMENTS: Support/Mac7ZipThumbnail.entitlements
+    info:
+      path: Support/Thumbnail-Info.plist
 
   Mac7ZipTests:
     type: bundle.unit-test

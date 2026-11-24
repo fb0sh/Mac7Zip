@@ -14,6 +14,8 @@ enum FinderExtensionState: String, Sendable, Equatable {
 
 enum FinderExtensionChecker {
     static let bundleID = "com.mac7zip.Mac7Zip.FinderSync"
+    /// Quick Look thumbnail extension (Finder content thumbnails).
+    static let thumbnailBundleID = "com.mac7zip.Mac7Zip.Thumbnail"
 
     /// Parses `pluginkit -m -i <id>` output. Lines carry a leading flag:
     /// `+` = enabled, `-` = disabled. No line = not installed.
@@ -65,12 +67,22 @@ enum FinderExtensionChecker {
         try? process.run()
     }
 
+    /// Registers + enables the Quick Look thumbnail extension too.
+    static func enableThumbnail() {
+        guard let appex = Bundle.main.builtInPlugInsURL?
+            .appendingPathComponent("Mac7ZipThumbnail.appex"),
+            FileManager.default.fileExists(atPath: appex.path) else { return }
+        runPluginkit(["-a", appex.path])
+        runPluginkit(["-e", "use", "-i", thumbnailBundleID])
+    }
+
     /// Registers AND enables the bundled extension via `pluginkit` (macOS Sequoia+
     /// removed the System Settings list, so enabling programmatically is required).
     static func enable() {
         guard let appex = bundledExtensionURL else { return }
         runPluginkit(["-a", appex.path])
         runPluginkit(["-e", "use", "-i", bundleID])
+        enableThumbnail()
         // Ask LaunchServices to re-scan the containing app.
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister")
