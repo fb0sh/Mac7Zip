@@ -17,6 +17,9 @@ final class ArchiveFileSystemProvider: FileSystemProvider {
 
     var kind: FileSystemProviderKind { .archive }
 
+    /// The archive this provider is bound to (used to detect location switches).
+    var sourceArchiveURL: URL { archiveURL }
+
     /// Read-only: no write/rename/delete/create capability.
     var capabilities: FileSystemCapabilities { [.list, .readFile] }
 

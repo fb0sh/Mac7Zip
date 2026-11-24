@@ -143,4 +143,42 @@ final class BrowserStoreTests: XCTestCase {
         XCTAssertEqual(internalPath, "deep/nested")
         XCTAssertNil(store.location.realURL)
     }
+
+    // MARK: - Regression: back from archive must restore the real provider
+
+    func testGoingBackFromArchiveListsRealDirectory() async {
+        let realDir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("Mac7ZipBack-\(UUID().uuidString)", isDirectory: true)
+        try? FileManager.default.createDirectory(at: realDir, withIntermediateDirectories: true)
+        try? "x".write(to: realDir.appendingPathComponent("file.txt"), atomically: true, encoding: .utf8)
+        defer { try? FileManager.default.removeItem(at: realDir) }
+
+        let zipURL = URL(fileURLWithPath: "/tmp/a.zip")
+        let store = BrowserStore(
+            startingAt: realDir,
+            access: RealFileAccess(),
+            archiveProviderFactory: { _ in
+                ArchiveFileSystemProvider(engine: StubArchiveEngine(entries: []), archiveURL: zipURL)
+            }
+        )
+        store.reload()
+        await waitUntil { !store.items.isEmpty }
+
+        store.openArchive(zipURL)
+        XCTAssertTrue(store.isInsideArchive)
+
+        store.goBack()
+        XCTAssertFalse(store.isInsideArchive)
+        await waitUntil { !store.items.isEmpty }
+        XCTAssertNil(store.errorMessage, "Back to a real folder must not raise unsupported-location")
+        XCTAssertEqual(store.items.map(\.name), ["file.txt"])
+    }
+
+    private func waitUntil(timeout: TimeInterval = 2, _ condition: @escaping () -> Bool) async {
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            if condition() { return }
+            try? await Task.sleep(nanoseconds: 20_000_000)
+        }
+    }
 }

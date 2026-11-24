@@ -186,8 +186,18 @@ final class BrowserStore: ObservableObject {
         location = newLocation
         switch newLocation {
         case .real(let url):
+            // Returning to the filesystem from a history entry must use the real
+            // provider; otherwise an archive provider would reject the real path.
+            if !(provider is RealFileSystemProvider) {
+                provider = RealFileSystemProvider()
+            }
             currentDirectory = url
         case .archive(let url, _):
+            let alreadyOpen = (provider as? ArchiveFileSystemProvider)?.sourceArchiveURL.standardizedFileURL
+                == url.standardizedFileURL
+            if !alreadyOpen, let archiveProvider = archiveProviderFactory(url) {
+                provider = archiveProvider
+            }
             currentDirectory = url
         }
         selection = []
