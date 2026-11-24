@@ -178,19 +178,40 @@ targets:
         UTImportedTypeDeclarations:
           - UTTypeIdentifier: org.7-zip.7-zip-archive
             UTTypeDescription: 7-Zip Archive
+            UTTypeIconFile: 7z
             UTTypeConformsTo: [public.data, public.archive]
             UTTypeTagSpecification:
               public.filename-extension: [7z]
           - UTTypeIdentifier: org.gnu.gnu-zip-archive
             UTTypeDescription: Gzip Archive
+            UTTypeIconFile: gz
             UTTypeConformsTo: [public.data, public.archive]
             UTTypeTagSpecification:
               public.filename-extension: [gz]
           - UTTypeIdentifier: org.gnu.gnu-zip-tar-archive
             UTTypeDescription: Gzipped Tar Archive
+            UTTypeIconFile: tar_gz
             UTTypeConformsTo: [public.data, public.archive]
             UTTypeTagSpecification:
               public.filename-extension: [tgz]
+          - UTTypeIdentifier: org.tukaani.xz-archive
+            UTTypeDescription: XZ Archive
+            UTTypeIconFile: xz
+            UTTypeConformsTo: [public.data, public.archive]
+            UTTypeTagSpecification:
+              public.filename-extension: [xz]
+          - UTTypeIdentifier: public.bzip2-archive
+            UTTypeDescription: Bzip2 Archive
+            UTTypeIconFile: bz2
+            UTTypeConformsTo: [public.data, public.archive]
+            UTTypeTagSpecification:
+              public.filename-extension: [bz2]
+          - UTTypeIdentifier: com.rarlab.rar-archive
+            UTTypeDescription: RAR Archive
+            UTTypeIconFile: rar
+            UTTypeConformsTo: [public.data, public.archive]
+            UTTypeTagSpecification:
+              public.filename-extension: [rar]
         NSServices:
           - NSMenuItem: {default: Open Archive}
             NSMessage: openArchiveService

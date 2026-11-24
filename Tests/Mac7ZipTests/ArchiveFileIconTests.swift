@@ -91,4 +91,11 @@ final class ExtensionPackagingTests: XCTestCase {
             XCTAssertTrue(text.contains("com.apple.security.app-sandbox"), "\(name) must be sandboxed")
         }
     }
+
+    func testImportedTypesDeclareIcons() {
+        let yml = (try? String(contentsOf: repoRoot.appendingPathComponent("project.yml"), encoding: .utf8)) ?? ""
+        for icon in ["UTTypeIconFile: 7z", "UTTypeIconFile: gz", "UTTypeIconFile: tar_gz", "UTTypeIconFile: xz", "UTTypeIconFile: rar"] {
+            XCTAssertTrue(yml.contains(icon), "Missing \(icon)")
+        }
+    }
 }
