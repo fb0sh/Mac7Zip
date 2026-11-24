@@ -15,6 +15,7 @@ final class ThumbnailProvider: QLThumbnailProvider {
         let entries = zipEntries(for: url)
         let reply = QLThumbnailReply(contextSize: maxSize, currentContextDrawing: { () -> Bool in
             Self.draw(entries: entries, name: url.lastPathComponent, in: maxSize)
+            return true
         })
         handler(reply, nil)
     }
