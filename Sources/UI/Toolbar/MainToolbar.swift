@@ -6,6 +6,7 @@ struct MainToolbar: ToolbarContent {
     let model: BrowserStore
     @ObservedObject var tasks: TaskCenterAdapter
     @Binding var showSidebar: Bool
+    @Binding var showPreview: Bool
     var isDualPane: Bool = false
     var onToggleDualPane: (() -> Void)? = nil
     @State private var showingTasks = false
@@ -14,12 +15,14 @@ struct MainToolbar: ToolbarContent {
         model: BrowserStore,
         tasks: TaskCenterAdapter,
         showSidebar: Binding<Bool>,
+        showPreview: Binding<Bool>,
         isDualPane: Bool = false,
         onToggleDualPane: (() -> Void)? = nil
     ) {
         self.model = model
         self.tasks = tasks
         self._showSidebar = showSidebar
+        self._showPreview = showPreview
         self.isDualPane = isDualPane
         self.onToggleDualPane = onToggleDualPane
     }
@@ -63,6 +66,15 @@ struct MainToolbar: ToolbarContent {
                 .help(operation.title)
                 .disabled(!isEnabled(operation))
             }
+        }
+
+        ToolbarItem(placement: .primaryAction) {
+            Button {
+                showPreview.toggle()
+            } label: {
+                Image(systemName: showPreview ? "sidebar.squares.right" : "sidebar.squares.right")
+            }
+            .help("Show or Hide Preview")
         }
 
         ToolbarItem(placement: .primaryAction) {

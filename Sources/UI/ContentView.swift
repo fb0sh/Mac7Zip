@@ -11,6 +11,7 @@ struct ContentView: View {
     @StateObject private var panes = DualPaneController()
     @StateObject private var secondaryModel = BrowserStore()
     @State private var showSidebar = false
+    @State private var showPreview = true
     @State private var showFinderExtensionPrompt = false
 
     var body: some View {
@@ -35,6 +36,11 @@ struct ContentView: View {
 
             detailContent
                 .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
+
+            if showPreview {
+                PreviewPane(target: previewTarget)
+                    .frame(minWidth: 220, idealWidth: 300, maxWidth: 480)
+            }
         }
         .focusedSceneValue(\.browserStore, model)
         .toolbar {
@@ -42,6 +48,7 @@ struct ContentView: View {
                 model: model,
                 tasks: tasks,
                 showSidebar: $showSidebar,
+                showPreview: $showPreview,
                 isDualPane: panes.isDualPane,
                 onToggleDualPane: {
                     panes.toggle()
@@ -229,6 +236,16 @@ struct ContentView: View {
         } else {
             FilePane(model: model)
         }
+    }
+
+    /// What the preview pane should show for the current window.
+    private var previewTarget: PreviewTarget {
+        PreviewTarget.resolve(
+            item: model.selectedItems.first,
+            isInsideArchive: model.isInsideArchive,
+            archiveURL: model.archiveURL,
+            internalPath: model.archiveInternalPath ?? ""
+        )
     }
 
     private var activeModel: BrowserStore {
