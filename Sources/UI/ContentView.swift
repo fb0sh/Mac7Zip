@@ -126,7 +126,8 @@ struct ContentView: View {
                 FileOpenInbox.shared.enqueue(url)
             }
         }
-        .onReceive(FileOpenInbox.shared.$pendingURL.compactMap { $0 }) { url in
+        .onReceive(FileOpenInbox.shared.$pendingOpen.compactMap { $0 }) { item in
+            guard let url = FileOpenInbox.shared.claim(item.id) else { return }
             if ArchiveDocumentTypes.handles(pathExtension: url.pathExtension) {
                 model.openArchive(url)
             }

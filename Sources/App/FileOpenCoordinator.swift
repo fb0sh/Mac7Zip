@@ -21,9 +21,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard let archive = urls.first(where: { ArchiveDocumentTypes.handles(pathExtension: $0.pathExtension) })
             ?? urls.first else { return }
         Task { @MainActor in
-            // Each archive opens its own window.
+            // Enqueue once; the active window claims it exactly once (no duplicate open).
             FileOpenInbox.shared.enqueue(archive)
-            NSApp.sendAction(#selector(NSDocumentController.newDocument(_:)), to: nil, from: nil)
         }
     }
 
