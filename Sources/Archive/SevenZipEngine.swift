@@ -24,6 +24,27 @@ enum PasswordTransport: Sendable {
 }
 
 struct SevenZipEngine: ArchiveEngine {
+    /// ZIP-family code page for decoding legacy (non-UTF-8) file names, e.g. 936 = GBK.
+    /// `nil` = auto-detect by retrying common code pages when names look garbled.
+    static var zipCodePage: Int? = nil
+    /// Code pages tried during auto-detection, in order of likelihood for CN/legacy archives.
+    static let autoZipCodePages = [936, 950, 65001]
+    private static var resolvedZipCodePage: [String: Int] = [:]
+
+    static func isZipFamily(_ url: URL) -> Bool {
+        ["zip", "apk", "jar", "epub", "cbz", "docx", "xlsx", "pptx", "odt"]
+            .contains(url.pathExtension.lowercased())
+    }
+
+    private static func looksGarbled(_ entries: [ArchiveEntry]) -> Bool {
+        entries.contains { $0.path.contains("\u{FFFD}") || $0.path.contains("?") }
+    }
+
+    private static func garbleScore(_ entries: [ArchiveEntry]) -> Int {
+        entries.reduce(0) { partial, entry in
+            partial + entry.path.filter { $0 == "\u{FFFD}" || $0 == "?" }.count
+        }
+    }
     let runner: SevenZipProcessRunner
     let validator: SecurityValidator
     let passwordTransport: PasswordTransport
@@ -67,12 +88,42 @@ struct SevenZipEngine: ArchiveEngine {
     }
 
     func listContents(of archive: URL, password: String?) async throws -> [ArchiveEntry] {
+        let key = archive.path
+        let explicit = Self.zipCodePage
+        var codePage = explicit ?? Self.resolvedZipCodePage[key]
+        var entries = try await listOnce(archive: archive, password: password, codePage: codePage)
+
+        // Auto mode: if legacy ZIP names came out garbled, retry common code pages.
+        if explicit == nil, Self.isZipFamily(archive), Self.looksGarbled(entries) {
+            var best = entries
+            var bestScore = Self.garbleScore(entries)
+            var bestCodePage = codePage
+            for candidate in Self.autoZipCodePages {
+                if let attempt = try? await listOnce(archive: archive, password: password, codePage: candidate) {
+                    let score = Self.garbleScore(attempt)
+                    if score < bestScore {
+                        bestScore = score; best = attempt; bestCodePage = candidate
+                    }
+                }
+                if bestScore == 0 { break }
+            }
+            entries = best
+            if let resolved = bestCodePage { Self.resolvedZipCodePage[key] = resolved }
+        } else if let codePage {
+            Self.resolvedZipCodePage[key] = codePage
+        }
+        return entries
+    }
+
+    private func listOnce(archive: URL, password: String?, codePage: Int?) async throws -> [ArchiveEntry] {
         var arguments = ["l", "-slt", "-sccUTF-8"]
         arguments.append(contentsOf: try passwordArguments(password))
+        if let codePage, Self.isZipFamily(archive) {
+            arguments.append("-mcp=\(codePage)")
+        }
         arguments.append(archive.path)
         let result = try await runner.run(arguments: arguments)
         let diagnostic = result.combinedDiagnostic
-
         if let error = ArchiveError.from(exitCode: result.exitCode, diagnostic: diagnostic) {
             if case .engineFailure = error, diagnostic.lowercased().contains("is not archive") {
                 throw ArchiveError.corrupt(diagnostic)
@@ -178,6 +229,9 @@ struct SevenZipEngine: ArchiveEngine {
 
         var arguments = ["x", "-sccUTF-8", "-y", "-ao\(options.overwriteMode.switchValue)"]
         arguments.append(contentsOf: try passwordArguments(options.password))
+        if Self.isZipFamily(archive), let codePage = Self.zipCodePage ?? Self.resolvedZipCodePage[archive.path] {
+            arguments.append("-mcp=\(codePage)")
+        }
         if let entriesToExtract = options.entries, !entriesToExtract.isEmpty {
             arguments.append(contentsOf: entriesToExtract)
         }

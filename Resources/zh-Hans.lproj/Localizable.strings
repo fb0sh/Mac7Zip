@@ -147,3 +147,17 @@
 "Step 1: let the system learn Mac7Zip’s per-type icons. This changes NO default apps and shows NO dialogs." = "第一步：让系统认识 Mac7Zip 的各类型图标。此步不修改默认程序、不弹任何确认框。";
 "Step 2 (optional): macOS only shows a type’s icon from its default opener. Pick just the formats you want Mac7Zip to open by default — each adds ONE confirmation dialog." = "第二步（可选）：macOS 只对“默认打开程序”显示其图标。仅勾选你希望 Mac7Zip 默认打开的格式——每勾选一种会弹一次确认框。";
 "Set selected as default" = "设为默认（所选格式）";
+
+"ZIP file-name encoding" = "ZIP 文件名编码";
+"Auto-detect" = "自动识别";
+"GBK / GB2312 (936)" = "GBK / GB2312 (936)";
+"Big5 (950)" = "Big5 (950)";
+"UTF-8 (65001)" = "UTF-8 (65001)";
+"Finder 右键菜单" = "Finder 右键菜单";
+"状态" = "状态";
+"启用/注册扩展" = "启用/注册扩展";
+"重新检查" = "重新检查";
+"已启用" = "已启用";
+"已安装但未启用" = "已安装但未启用";
+"未注册" = "未注册";
+"未知" = "未知";
