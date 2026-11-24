@@ -2,55 +2,64 @@ import AppKit
 import Foundation
 import Quartz
 
-/// Quick Look **preview** extension (`com.apple.quicklook.preview`): shows an
-/// archive's contents list when the user presses Space in Finder.
+/// Quick Look preview extension (`com.apple.quicklook.preview`).
 ///
-/// The principal class must be an `NSViewController` conforming to
-/// `QLPreviewingController`.
+/// Defensive by design: Quick Look shows "扩展在预览此文稿期间失败" if the
+/// controller throws, so this never throws — it always builds a plain-text view and
+/// calls the completion handler. Running the bundled helper inside the sandbox may
+/// be denied; in that case it degrades to a short explanation instead of crashing.
 final class PreviewProvider: NSViewController, QLPreviewingController {
 
     override func loadView() {
-        view = NSView(frame: NSRect(x: 0, y: 0, width: 640, height: 480))
+        view = NSView(frame: NSRect(x: 0, y: 0, width: 720, height: 520))
     }
 
     func preparePreviewOfFile(at url: URL, completionHandler handler: @escaping (Error?) -> Void) {
-        let text = archiveListingText(for: url) ?? "无法读取该压缩包内容。"
-        let title = url.lastPathComponent
+        // Build UI on the main thread; never throw.
+        let finish: (String) -> Void = { [weak self] text in
+            let build = { self?.installTextView(title: url.lastPathComponent, body: text) }
+            if Thread.isMainThread { build() } else { DispatchQueue.main.async(execute: build) }
+            handler(nil)
+        }
 
-        let header = NSTextField(labelWithString: title)
-        header.font = .boldSystemFont(ofSize: 15)
-        header.lineBreakMode = .byTruncatingMiddle
-        header.translatesAutoresizingMaskIntoConstraints = false
-
-        let textView = NSTextView()
-        textView.isEditable = false
-        textView.isSelectable = true
-        textView.font = .monospacedSystemFont(ofSize: 12, weight: .regular)
-        textView.string = text
-        textView.textContainerInset = NSSize(width: 12, height: 10)
-
-        let scroll = NSScrollView()
-        scroll.hasVerticalScroller = true
-        scroll.documentView = textView
-        scroll.translatesAutoresizingMaskIntoConstraints = false
-
-        let container = NSView()
-        container.addSubview(header)
-        container.addSubview(scroll)
-        NSLayoutConstraint.activate([
-            header.topAnchor.constraint(equalTo: container.topAnchor, constant: 12),
-            header.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
-            header.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -16),
-            scroll.topAnchor.constraint(equalTo: header.bottomAnchor, constant: 8),
-            scroll.leadingAnchor.constraint(equalTo: container.leadingAnchor),
-            scroll.trailingAnchor.constraint(equalTo: container.trailingAnchor),
-            scroll.bottomAnchor.constraint(equalTo: container.bottomAnchor),
-        ])
-        view = container
-        handler(nil)
+        if let listing = archiveListingText(for: url) {
+            finish(listing)
+        } else {
+            finish("无法在 Quick Look 中读取该压缩包的内容（可能受系统沙盒限制）。\n请使用 Mac7Zip 打开查看。")
+        }
     }
 
-    // MARK: - Archive listing
+    /// Frame-based layout (no Auto Layout) — most robust inside Quick Look's host.
+    private func installTextView(title: String, body: String) {
+        let bounds = NSRect(x: 0, y: 0, width: 720, height: 520)
+        let container = NSView(frame: bounds)
+
+        let header = NSTextField(labelWithString: title)
+        header.frame = NSRect(x: 16, y: bounds.height - 34, width: bounds.width - 32, height: 22)
+        header.font = .boldSystemFont(ofSize: 15)
+        header.lineBreakMode = .byTruncatingMiddle
+        container.addSubview(header)
+
+        let scroll = NSScrollView(frame: NSRect(x: 0, y: 0, width: bounds.width, height: bounds.height - 44))
+        scroll.hasVerticalScroller = true
+        scroll.autohidesScrollers = true
+        scroll.borderType = .noBorder
+
+        let textView = NSTextView(frame: NSRect(x: 0, y: 0, width: bounds.width, height: bounds.height - 44))
+        textView.isEditable = false
+        textView.isSelectable = true
+        textView.isVerticallyResizable = true
+        textView.autoresizingMask = [.width]
+        textView.font = .monospacedSystemFont(ofSize: 12, weight: .regular)
+        textView.string = body
+        textView.textContainerInset = NSSize(width: 12, height: 10)
+        scroll.documentView = textView
+        container.addSubview(scroll)
+
+        view = container
+    }
+
+    // MARK: - Listing
 
     private func archiveListingText(for url: URL) -> String? {
         guard let helper = helperURL(),
@@ -58,33 +67,32 @@ final class PreviewProvider: NSViewController, QLPreviewingController {
             return nil
         }
         var lines: [String] = []
-        var currentPath: String?
-        var currentSize = ""
-        var isFolder = false
+        var path: String?
+        var size = ""
+        var folder = false
         func flush() {
-            guard let p = currentPath, !p.isEmpty else { return }
-            let suffix = isFolder ? "/" : ""
-            let size = currentSize.isEmpty ? "" : "  \(currentSize) B"
-            lines.append("\(p)\(suffix)\(size)")
-            currentPath = nil; currentSize = ""; isFolder = false
+            guard let p = path, !p.isEmpty else { path = nil; return }
+            let suffix = folder ? "/" : ""
+            let sizeText = size.isEmpty ? "" : "    \(size) B"
+            lines.append("\(p)\(suffix)\(sizeText)")
+            path = nil; size = ""; folder = false
         }
         for raw in output.split(separator: "\n") {
             let line = String(raw)
-            if line.hasPrefix("Path = ") { flush(); currentPath = String(line.dropFirst("Path = ".count)) }
-            else if line.hasPrefix("Size = ") { currentSize = String(line.dropFirst("Size = ".count)) }
-            else if line.hasPrefix("Folder = +") { isFolder = true }
-            else if line.hasPrefix("Attributes = "), line.dropFirst("Attributes = ".count).hasPrefix("D") { isFolder = true }
+            if line.hasPrefix("Path = ") { flush(); path = String(line.dropFirst("Path = ".count)) }
+            else if line.hasPrefix("Size = ") { size = String(line.dropFirst("Size = ".count)) }
+            else if line.hasPrefix("Folder = +") { folder = true }
         }
         flush()
-        if lines.isEmpty { return nil }
-        return lines.joined(separator: "\n")
+        return lines.isEmpty ? nil : lines.joined(separator: "\n")
     }
 
     private func helperURL() -> URL? {
+        // Extension bundle → .../Mac7ZipPreview.appex ; app is three levels up.
         let app = Bundle.main.bundleURL
-            .deletingLastPathComponent()   // PlugIns
-            .deletingLastPathComponent()   // Contents
-            .deletingLastPathComponent()   // .app
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
         let candidate = app.appendingPathComponent("Contents/Helpers/7zz")
         return FileManager.default.isExecutableFile(atPath: candidate.path) ? candidate : nil
     }
@@ -104,7 +112,7 @@ final class PreviewProvider: NSViewController, QLPreviewingController {
         let data = out.fileHandleForReading.readDataToEndOfFile()
         _ = err.fileHandleForReading.readDataToEndOfFile()
         process.waitUntilExit()
-        guard process.terminationStatus == 0 else { return nil }
+        guard process.terminationStatus == 0, !data.isEmpty else { return nil }
         return String(data: data, encoding: .utf8) ?? String(decoding: data, as: UTF8.self)
     }
 }
