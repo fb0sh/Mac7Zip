@@ -15,6 +15,29 @@ private struct SleepyOperation: TaskOperation {
     }
 }
 
+private actor Gate {
+    private var open = false
+    private var waiters: [CheckedContinuation<Void, Never>] = []
+    func wait() async {
+        if open { return }
+        await withCheckedContinuation { waiters.append($0) }
+    }
+    func openGate() {
+        open = true
+        for waiter in waiters { waiter.resume() }
+        waiters.removeAll()
+    }
+}
+
+private struct GatedOperation: TaskOperation {
+    let kind: TaskKind = .test
+    let title: String
+    let gate: Gate
+    func run(report: @Sendable (Double?, TaskMetrics) -> Void) async throws {
+        try await gate.wait()
+    }
+}
+
 final class TaskCenterTests: XCTestCase {
     func testOperationRunsAndSucceeds() async throws {
         let center = TaskCenter()
@@ -40,18 +63,29 @@ final class TaskCenterTests: XCTestCase {
 
     func testSerialQueueRunsOneAtATime() async throws {
         let center = TaskCenter(maxConcurrency: 1)
-        let a = await center.submit(SleepyOperation(title: "a", delay: 200_000_000, fail: false))
-        let b = await center.submit(SleepyOperation(title: "b", delay: 10_000_000, fail: false))
+        let gateA = Gate()
+        let a = await center.submit(GatedOperation(title: "a", gate: gateA))
+        let b = await center.submit(GatedOperation(title: "b", gate: Gate()))
 
-        try await Task.sleep(nanoseconds: 100_000_000)
-        var records = await center.allRecords
+        // Deterministic: A is blocked inside run(), so B must stay queued.
+        var records: [TaskRecord] = []
+        for _ in 0..<100 {
+            records = await center.allRecords
+            if records.first(where: { $0.id == a })?.state == .running,
+               records.first(where: { $0.id == b })?.state == .queued { break }
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
         XCTAssertEqual(records.first { $0.id == a }?.state, .running)
         XCTAssertEqual(records.first { $0.id == b }?.state, .queued)
 
-        try await Task.sleep(nanoseconds: 600_000_000)
-        records = await center.allRecords
+        await gateA.openGate()
+        for _ in 0..<200 {
+            records = await center.allRecords
+            if records.first(where: { $0.id == a })?.state == .succeeded,
+               records.first(where: { $0.id == b })?.state == .running { break }
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
         XCTAssertEqual(records.first { $0.id == a }?.state, .succeeded)
-        XCTAssertEqual(records.first { $0.id == b }?.state, .succeeded)
     }
 
     func testCancelQueuedTask() async throws {
