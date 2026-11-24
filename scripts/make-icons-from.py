@@ -105,6 +105,19 @@ def clean_card(w, h, px, white=225, dark=95):
         else:
             px[p + 3] = 0
 
+
+def composite_over_white(w, h, px):
+    """Flatten onto white so the rounded mask never reveals black (RGB=0) edge pixels."""
+    for i in range(w * h):
+        p = i * 4
+        a = px[p + 3] / 255.0
+        if a >= 1.0:
+            px[p + 3] = 255
+            continue
+        for k in range(3):
+            px[p + k] = int(px[p + k] * a + 255 * (1 - a))
+        px[p + 3] = 255
+
 def crop_to_alpha(w, h, px, threshold=8):
     """Crop to the bounding box of non-transparent pixels (removes blank margin)."""
     minx, miny, maxx, maxy = w, h, -1, -1
@@ -165,6 +178,7 @@ def main():
     src, outdir = sys.argv[1], sys.argv[2]
     w, h, px = decode_png(src)
     w, h, px = crop_to_alpha(w, h, px, threshold=200)
+    composite_over_white(w, h, px)
     apply_round_mask(w, h, px)
     slots = [(16, "icon_16x16.png"), (32, "icon_16x16@2x.png"), (32, "icon_32x32.png"),
              (64, "icon_32x32@2x.png"), (128, "icon_128x128.png"), (256, "icon_128x128@2x.png"),
