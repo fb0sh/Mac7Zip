@@ -220,6 +220,7 @@ targets:
         PRODUCT_NAME: Mac7ZipFinderSync
         GENERATE_INFOPLIST_FILE: NO
         SKIP_INSTALL: YES
+        CODE_SIGN_ENTITLEMENTS: Support/Mac7ZipFinderSync.entitlements
     info:
       path: Support/FinderSync-Info.plist
       properties:

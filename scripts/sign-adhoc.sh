@@ -5,6 +5,7 @@
 set -euo pipefail
 
 APP="${1:?usage: sign-adhoc.sh <app-path>}"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 if [ ! -d "$APP" ]; then echo "::error::App not found: $APP"; exit 1; fi
 
 sign() { /usr/bin/codesign --force --sign - --timestamp=none "$1"; }
@@ -22,7 +23,12 @@ if [ -d "$APP/Contents/PlugIns" ]; then
     if [ -d "$appex/Contents/MacOS" ]; then
       while IFS= read -r -d '' exe; do echo "sign ext exe: $exe"; sign "$exe"; done < <(find "$appex/Contents/MacOS" -type f -print0)
     fi
-    echo "sign appex: $appex"; sign "$appex"
+    echo "sign appex: $appex (with entitlements)"
+    if [ -f "$ROOT/Support/Mac7ZipFinderSync.entitlements" ]; then
+      /usr/bin/codesign --force --sign - --timestamp=none --entitlements "$ROOT/Support/Mac7ZipFinderSync.entitlements" "$appex"
+    else
+      sign "$appex"
+    fi
   done < <(find "$APP/Contents/PlugIns" -maxdepth 1 -name '*.appex' -print0)
 fi
 

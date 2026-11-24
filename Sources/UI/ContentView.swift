@@ -138,7 +138,7 @@ struct ContentView: View {
         }
         .alert("Finder 右键菜单未启用", isPresented: $showFinderExtensionPrompt) {
             Button("去启用") {
-                FinderExtensionChecker.registerBundledExtension()
+                FinderExtensionChecker.enable()
                 FinderExtensionChecker.openSettings()
             }
             Button("稍后", role: .cancel) {}

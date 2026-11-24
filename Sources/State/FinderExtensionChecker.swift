@@ -65,6 +65,27 @@ enum FinderExtensionChecker {
         try? process.run()
     }
 
+    /// Registers AND enables the bundled extension via `pluginkit` (macOS Sequoia+
+    /// removed the System Settings list, so enabling programmatically is required).
+    static func enable() {
+        guard let appex = bundledExtensionURL else { return }
+        runPluginkit(["-a", appex.path])
+        runPluginkit(["-e", "use", "-i", bundleID])
+        // Ask LaunchServices to re-scan the containing app.
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister")
+        process.arguments = ["-f", Bundle.main.bundleURL.path]
+        try? process.run()
+    }
+
+    private static func runPluginkit(_ args: [String]) {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/pluginkit")
+        process.arguments = args
+        try? process.run()
+        process.waitUntilExit()
+    }
+
     /// Opens the system UI where the user enables Finder extensions.
     static func openSettings() {
         let candidates = [

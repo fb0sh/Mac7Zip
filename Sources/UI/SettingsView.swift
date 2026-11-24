@@ -146,8 +146,11 @@ struct SettingsView: View {
                 }
                 HStack {
                     Button("启用/注册扩展") {
-                        FinderExtensionChecker.registerBundledExtension()
-                        FinderExtensionChecker.openSettings()
+                        FinderExtensionChecker.enable()
+                        Task {
+                            try? await Task.sleep(nanoseconds: 500_000_000)
+                            finderStatus = await FinderExtensionChecker.check()
+                        }
                     }
                     Button("重新检查") {
                         Task { finderStatus = await FinderExtensionChecker.check() }
