@@ -3,21 +3,30 @@ import XCTest
 
 @MainActor
 final class FileOpenInboxTests: XCTestCase {
-    func testEnqueueAndTake() {
+    @MainActor func testEnqueueAndClaimOnce() {
         let inbox = FileOpenInbox.shared
-        inbox.pendingURL = nil
+        inbox.pendingOpen = nil
         let url = URL(fileURLWithPath: "/tmp/a.zip")
         inbox.enqueue(url)
-        XCTAssertEqual(inbox.pendingURL, url)
-        XCTAssertEqual(inbox.take(), url)
-        XCTAssertNil(inbox.pendingURL)
+        let item = inbox.pendingOpen!
+        XCTAssertEqual(inbox.claim(item.id), url)
+        XCTAssertNil(inbox.claim(item.id), "second claim must not return the same request")
+        XCTAssertNil(inbox.pendingOpen)
     }
 
-    func testNonFileURLIgnored() {
+    @MainActor func testStaleIdDoesNotClaim() {
         let inbox = FileOpenInbox.shared
-        inbox.pendingURL = nil
+        inbox.pendingOpen = nil
+        inbox.enqueue(URL(fileURLWithPath: "/tmp/a.zip"))
+        XCTAssertNil(inbox.claim(UUID()))
+        XCTAssertNotNil(inbox.pendingOpen)
+    }
+
+    @MainActor func testNonFileURLIgnored() {
+        let inbox = FileOpenInbox.shared
+        inbox.pendingOpen = nil
         inbox.enqueue(URL(string: "https://example.com")!)
-        XCTAssertNil(inbox.pendingURL)
+        XCTAssertNil(inbox.pendingOpen)
     }
 }
 
