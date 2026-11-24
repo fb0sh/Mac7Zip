@@ -23,7 +23,9 @@ struct ExtractOperation: TaskOperation {
         // indeterminate rather than a fabricated percentage.
         report(nil, TaskMetrics(currentItem: archive.lastPathComponent))
         try Task.checkCancellation()
-        try await engine.extract(archive: archive, to: destination, options: options)
+        try await engine.extract(archive: archive, to: destination, options: options) { percent, item in
+            report(percent, TaskMetrics(currentItem: item ?? archive.lastPathComponent))
+        }
         report(1.0, TaskMetrics(currentItem: archive.lastPathComponent))
     }
 }
@@ -48,7 +50,9 @@ struct CreateArchiveOperation: TaskOperation {
     func run(report: @Sendable (Double?, TaskMetrics) -> Void) async throws {
         report(nil, TaskMetrics(currentItem: destination.lastPathComponent))
         try Task.checkCancellation()
-        try await engine.createArchive(at: destination, from: sources, options: options)
+        try await engine.createArchive(at: destination, from: sources, options: options) { percent, item in
+            report(percent, TaskMetrics(currentItem: item ?? destination.lastPathComponent))
+        }
         report(1.0, TaskMetrics(currentItem: destination.lastPathComponent))
     }
 }

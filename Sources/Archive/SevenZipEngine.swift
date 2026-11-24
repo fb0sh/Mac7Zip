@@ -149,6 +149,13 @@ struct SevenZipEngine: ArchiveEngine {
     // MARK: - Create
 
     func createArchive(at destination: URL, from sources: [URL], options: ArchiveOptions) async throws {
+        try await createArchive(at: destination, from: sources, options: options, progress: nil)
+    }
+
+    func createArchive(
+        at destination: URL, from sources: [URL], options: ArchiveOptions,
+        progress: (@Sendable (Double, String?) -> Void)?
+    ) async throws {
         guard options.format.canCreate else {
             throw ArchiveError.unsupportedFormat(options.format.displayName)
         }
@@ -177,6 +184,7 @@ struct SevenZipEngine: ArchiveEngine {
             advanced: options.advanced
         )
         var arguments = CompressionPlanner.arguments(for: request)
+        arguments.insert("-bsp1", at: 1)
         // Insert password switches immediately before the destination path.
         if !passwordArguments.isEmpty {
             arguments.insert(contentsOf: passwordArguments, at: arguments.count - sources.count - 1)
@@ -236,6 +244,13 @@ struct SevenZipEngine: ArchiveEngine {
     // MARK: - Extract
 
     func extract(archive: URL, to destination: URL, options: ExtractOptions) async throws {
+        try await extract(archive: archive, to: destination, options: options, progress: nil)
+    }
+
+    func extract(
+        archive: URL, to destination: URL, options: ExtractOptions,
+        progress: (@Sendable (Double, String?) -> Void)?
+    ) async throws {
         // 1. Validate before writing anything.
         let entries = try await listContents(of: archive, password: options.password)
         let violations = validator.validate(entries: entries, destination: destination)
@@ -252,7 +267,7 @@ struct SevenZipEngine: ArchiveEngine {
 
         let codePage = Self.isZipFamily(archive)
             ? (Self.zipCodePage ?? Self.resolvedZipCodePage[archive.path]) : nil
-        let arguments = Self.extractArguments(
+        var arguments = Self.extractArguments(
             archive: archive,
             entries: options.entries,
             overwriteMode: options.overwriteMode,
@@ -260,8 +275,11 @@ struct SevenZipEngine: ArchiveEngine {
             codePage: codePage,
             outputDirectory: staging.url
         )
+        arguments.insert("-bsp1", at: 1)
 
-        let result = try await runner.run(arguments: arguments)
+        let result = try await runner.run(arguments: arguments, onLine: { line in
+            if let percent = SevenZipOutputParser.parseProgressPercent(line) { progress?(percent, nil) }
+        })
         if let error = ArchiveError.from(exitCode: result.exitCode, diagnostic: result.combinedDiagnostic) {
             throw error
         }

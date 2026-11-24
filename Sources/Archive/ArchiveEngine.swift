@@ -167,6 +167,32 @@ protocol ArchiveEngine: Sendable {
     func extract(archive: URL, to destination: URL, options: ExtractOptions) async throws
     func listContents(of archive: URL) async throws -> [ArchiveEntry]
     func test(archive: URL) async throws -> ArchiveTestResult
+
+    /// Progress-aware variants. `progress` receives (0…1, currentItem).
+    func extract(
+        archive: URL, to destination: URL, options: ExtractOptions,
+        progress: (@Sendable (Double, String?) -> Void)?
+    ) async throws
+    func createArchive(
+        at destination: URL, from sources: [URL], options: ArchiveOptions,
+        progress: (@Sendable (Double, String?) -> Void)?
+    ) async throws
+}
+
+extension ArchiveEngine {
+    func extract(
+        archive: URL, to destination: URL, options: ExtractOptions,
+        progress: (@Sendable (Double, String?) -> Void)?
+    ) async throws {
+        try await extract(archive: archive, to: destination, options: options)
+    }
+
+    func createArchive(
+        at destination: URL, from sources: [URL], options: ArchiveOptions,
+        progress: (@Sendable (Double, String?) -> Void)?
+    ) async throws {
+        try await createArchive(at: destination, from: sources, options: options)
+    }
 }
 
 /// Locates the bundled 7zz helper.

@@ -217,9 +217,9 @@ final class OutputCollector: @unchecked Sendable {
     /// Splits complete lines (terminated by `\n`) out of the byte buffer.
     private static func drainLines(_ buffer: inout Data) -> [String] {
         var lines: [String] = []
-        while let newline = buffer.firstIndex(of: 0x0A) {
-            let lineData = buffer.subdata(in: buffer.startIndex..<newline)
-            buffer.removeSubrange(buffer.startIndex...newline)
+        while let breakIndex = buffer.firstIndex(where: { $0 == 0x0A || $0 == 0x0D }) {
+            let lineData = buffer.subdata(in: buffer.startIndex..<breakIndex)
+            buffer.removeSubrange(buffer.startIndex...breakIndex)
             lines.append(SubprocessTextDecoder.decode(lineData))
         }
         return lines
