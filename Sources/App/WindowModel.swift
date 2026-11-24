@@ -1,13 +1,14 @@
 import SwiftUI
 
-extension FocusedValueKey {
-    typealias BrowserStore = Mac7Zip.BrowserStore
+/// Focused-value plumbing so menu commands act on the frontmost browser window.
+struct BrowserStoreFocusKey: FocusedValueKey {
+    typealias Value = BrowserStore
 }
 
 extension FocusedValues {
     var browserStore: BrowserStore? {
-        get { self[FocusedValueKey.BrowserStore.self] }
-        set { self[FocusedValueKey.BrowserStore.self] = newValue }
+        get { self[BrowserStoreFocusKey.self] }
+        set { self[BrowserStoreFocusKey.self] = newValue }
     }
 }
 
