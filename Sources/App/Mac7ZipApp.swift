@@ -16,7 +16,7 @@ struct Mac7ZipApp: App {
             )
             .environmentObject(settings)
         } defaultValue: {
-            registry.windows.first?.id
+            registry.windows.first?.id ?? UUID()
         }
         .defaultSize(width: 1000, height: 660)
         .windowResizability(.contentMinSize)
