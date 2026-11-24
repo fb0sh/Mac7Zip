@@ -69,6 +69,42 @@ def squircle_mask(w, h, pad_frac=0.045, r_frac=0.2237):
     return alpha
 
 
+
+
+def apply_round_mask(w, h, px, radius_frac=0.235):
+    """Apply an antialiased rounded-rectangle alpha mask filling the image bounds."""
+    import math
+    r = min(w, h) * radius_frac
+    cx, cy = w / 2.0, h / 2.0
+    hx, hy = w / 2.0 - r, h / 2.0 - r
+    for y in range(h):
+        for x in range(w):
+            qx = abs((x + 0.5) - cx) - hx
+            qy = abs((y + 0.5) - cy) - hy
+            dx = max(qx, 0.0); dy = max(qy, 0.0)
+            d = math.sqrt(dx*dx + dy*dy) + min(max(qx, qy), 0.0) - r
+            cov = 0.5 - d
+            if cov <= 0: a = 0
+            elif cov >= 1: a = 255
+            else: a = int(cov * 255)
+            px[(y*w + x)*4 + 3] = a
+
+def clean_card(w, h, px, white=225, dark=95):
+    """Remove the source's outer white glow/shadow: keep only near-white card pixels
+    and near-black glyph pixels opaque; everything greyish becomes transparent."""
+    for i in range(w * h):
+        p = i * 4
+        a = px[p + 3]
+        if a == 0:
+            continue
+        r, g, b = px[p], px[p + 1], px[p + 2]
+        is_white = r >= white and g >= white and b >= white
+        is_dark = r <= dark and g <= dark and b <= dark
+        if is_white or is_dark:
+            px[p + 3] = 255
+        else:
+            px[p + 3] = 0
+
 def crop_to_alpha(w, h, px, threshold=8):
     """Crop to the bounding box of non-transparent pixels (removes blank margin)."""
     minx, miny, maxx, maxy = w, h, -1, -1
@@ -128,7 +164,8 @@ def write_png(path, size, rgba):
 def main():
     src, outdir = sys.argv[1], sys.argv[2]
     w, h, px = decode_png(src)
-    w, h, px = crop_to_alpha(w, h, px)
+    w, h, px = crop_to_alpha(w, h, px, threshold=200)
+    apply_round_mask(w, h, px)
     slots = [(16, "icon_16x16.png"), (32, "icon_16x16@2x.png"), (32, "icon_32x32.png"),
              (64, "icon_32x32@2x.png"), (128, "icon_128x128.png"), (256, "icon_128x128@2x.png"),
              (256, "icon_256x256.png"), (512, "icon_256x256@2x.png"), (512, "icon_512x512.png"),
