@@ -1,3 +1,4 @@
+import CoreFoundation
 import Foundation
 
 /// Thin Swift wrapper over libarchive for reading archive entries (any format
@@ -27,7 +28,7 @@ enum LibArchiveReader {
         var entry: OpaquePointer?
         while archive_read_next_header(archive, &entry) == ARCHIVE_OK {
             guard let entry else { break }
-            let path = archive_entry_pathname(entry).map { String(cString: $0) } ?? ""
+            let path = decodeName(archive_entry_pathname(entry))
             let size = Int64(archive_entry_size(entry))
             let isDirectory = archive_entry_filetype(entry) == mode_t(0o040000) // AE_IFDIR
             if !path.isEmpty {
@@ -36,6 +37,27 @@ enum LibArchiveReader {
             archive_read_data_skip(archive)
         }
         return entries
+    }
+
+    /// Decodes a C string of raw filename bytes: UTF-8 → GB18030 → Big5 → lossy.
+    /// libarchive returns raw bytes for legacy (non-UTF-8) names.
+    static func decodeName(_ pointer: UnsafePointer<CChar>?) -> String {
+        guard let pointer else { return "" }
+        let bytes = Data(bytes: pointer, count: strlen(pointer))
+        if let s = String(data: bytes, encoding: .utf8) { return s }
+        for encoding in [gb18030, big5].compactMap({ $0 }) {
+            if let s = String(data: bytes, encoding: encoding) { return s }
+        }
+        return String(decoding: bytes, as: UTF8.self)
+    }
+
+    private static var gb18030: String.Encoding? {
+        let raw = CFStringConvertEncodingToNSStringEncoding(CFStringEncoding(CFStringEncodings.GB_18030_2000.rawValue))
+        return raw == kCFStringEncodingInvalidId ? nil : String.Encoding(rawValue: raw)
+    }
+    private static var big5: String.Encoding? {
+        let raw = CFStringConvertEncodingToNSStringEncoding(CFStringEncoding(CFStringEncodings.big5.rawValue))
+        return raw == kCFStringEncodingInvalidId ? nil : String.Encoding(rawValue: raw)
     }
 
     /// Extracts a single entry's data into memory (for cover images / previews).
@@ -50,7 +72,7 @@ enum LibArchiveReader {
         var entry: OpaquePointer?
         while archive_read_next_header(archive, &entry) == ARCHIVE_OK {
             guard let entry else { break }
-            let path = archive_entry_pathname(entry).map { String(cString: $0) } ?? ""
+            let path = decodeName(archive_entry_pathname(entry))
             if path == target {
                 var data = Data()
                 var buffer = [UInt8](repeating: 0, count: 64 * 1024)
