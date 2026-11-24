@@ -20,7 +20,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func application(_ application: NSApplication, open urls: [URL]) {
         guard let archive = urls.first(where: { ArchiveDocumentTypes.handles(pathExtension: $0.pathExtension) })
             ?? urls.first else { return }
-        Task { @MainActor in FileOpenInbox.shared.enqueue(archive) }
+        Task { @MainActor in
+            // Each archive opens its own window.
+            FileOpenInbox.shared.enqueue(archive)
+            NSApp.sendAction(#selector(NSDocumentController.newDocument(_:)), to: nil, from: nil)
+        }
     }
 
     // MARK: - Finder Services

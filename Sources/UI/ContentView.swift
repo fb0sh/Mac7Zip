@@ -36,6 +36,7 @@ struct ContentView: View {
             detailContent
                 .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
         }
+        .focusedSceneValue(\.browserStore, model)
         .toolbar {
             MainToolbar(
                 model: model,
