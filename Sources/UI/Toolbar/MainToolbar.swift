@@ -72,7 +72,7 @@ struct MainToolbar: ToolbarContent {
             Button {
                 showPreview.toggle()
             } label: {
-                Image(systemName: showPreview ? "sidebar.squares.right" : "sidebar.squares.right")
+                Image(systemName: showPreview ? "sidebar.right" : "sidebar.squares.right")
             }
             .help("Show or Hide Preview")
         }

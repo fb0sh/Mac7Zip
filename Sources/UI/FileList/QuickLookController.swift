@@ -29,6 +29,13 @@ final class QuickLookController: NSObject, ObservableObject, QLPreviewPanelDataS
         return previewURL ?? dir
     }
 
+    /// Presents Quick Look for a real file on disk.
+    func presentFile(_ url: URL) {
+        workspace.cleanUp()
+        previewURL = url
+        present()
+    }
+
     func present() {
         guard let previewURL else { return }
         guard let panel = QLPreviewPanel.shared() else { return }

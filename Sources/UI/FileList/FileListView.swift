@@ -45,6 +45,9 @@ struct FileListView: NSViewRepresentable {
         tableView.onReturn = { [weak coordinator = context.coordinator] in
             coordinator?.openSelection()
         }
+        tableView.onQuickLook = {
+            NotificationCenter.default.post(name: .mac7zipQuickLook, object: nil)
+        }
 
         addColumn(to: tableView, column: .name, title: "Name", width: 320)
         addColumn(to: tableView, column: .size, title: "Size", width: 100, alignment: .right)
@@ -460,10 +463,15 @@ extension FileListView {
 /// Table view that maps the Return / Enter keys to "open the selection".
 final class FileNSTableView: NSTableView {
     var onReturn: (() -> Void)?
+    var onQuickLook: (() -> Void)?
 
     override func keyDown(with event: NSEvent) {
-        if event.keyCode == 36 || event.keyCode == 76 {
+        if event.keyCode == 36 || event.keyCode == 76 { // Return / Enter
             onReturn?()
+            return
+        }
+        if event.keyCode == 49 { // Space → Quick Look (Finder-like)
+            onQuickLook?()
             return
         }
         super.keyDown(with: event)

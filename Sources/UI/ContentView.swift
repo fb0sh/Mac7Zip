@@ -11,7 +11,7 @@ struct ContentView: View {
     @StateObject private var panes = DualPaneController()
     @StateObject private var secondaryModel = BrowserStore()
     @State private var showSidebar = false
-    @State private var showPreview = true
+    @State private var showPreview = false
     @State private var showFinderExtensionPrompt = false
 
     var body: some View {
@@ -209,16 +209,18 @@ struct ContentView: View {
     }
 
     private func previewSelection() async {
-        guard let archiveURL = model.archiveURL,
-              let helper = SevenZipLocator.helperURL(),
-              let item = model.selectedItems.first,
-              !item.isDirectory else { return }
-        do {
-            let engine = SevenZipEngine(executableURL: helper)
-            _ = try await quickLook.prepare(entryPath: item.name, archiveURL: archiveURL, engine: engine)
-            quickLook.present()
-        } catch {
-            model.operationError = error.localizedDescription
+        guard let item = model.selectedItems.first, !item.isDirectory else { return }
+        if let archiveURL = model.archiveURL {
+            guard let helper = SevenZipLocator.helperURL() else { return }
+            do {
+                let engine = SevenZipEngine(executableURL: helper)
+                _ = try await quickLook.prepare(entryPath: item.name, archiveURL: archiveURL, engine: engine)
+                quickLook.present()
+            } catch {
+                model.operationError = error.localizedDescription
+            }
+        } else {
+            quickLook.presentFile(item.url)
         }
     }
 
