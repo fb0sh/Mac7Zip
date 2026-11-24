@@ -3,10 +3,10 @@ import Foundation
 
 /// Extracts a single archive entry for an `NSFilePromiseProvider` drop.
 ///
-/// The extraction runs on a **detached** task (never the main actor) so blocking
-/// the promise callback on a semaphore cannot deadlock the main thread. The entry
-/// is extracted into a private temp dir, then the produced file is copied to the
-/// exact URL Finder requested (handles nested entry paths correctly).
+/// `NSFilePromiseProvider` callbacks are synchronous, so we must not block the main
+/// thread on the extraction (that froze the UI and showed no progress). Instead the
+/// work runs on a background queue and we pump the run loop while waiting, which
+/// keeps the app responsive and lets progress/UI updates render.
 final class ArchiveEntryExporter: NSObject {
     private let archiveURL: URL
     private let entryPath: String
@@ -20,58 +20,70 @@ final class ArchiveEntryExporter: NSObject {
         self.engineFactory = engineFactory
     }
 
-    private static func findItem(named name: String, under root: URL) -> URL? {
-        let enumerator = FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil)
-        while let url = enumerator?.nextObject() as? URL {
-            if url.lastPathComponent == name { return url }
-        }
-        return nil
-    }
-
     func export(to destination: URL) -> Bool {
         guard let engine = engineFactory() else { return false }
 
-        let semaphore = DispatchSemaphore(value: 0)
         let box = ResultBox()
+        let finished = DispatchSemaphore(value: 0)
         let archiveURL = self.archiveURL
         let entryPath = self.entryPath
         let tempDir = FileManager.default.temporaryDirectory
             .appendingPathComponent("Mac7Zip-promise-\(UUID().uuidString)", isDirectory: true)
 
-        Task.detached {
+        DispatchQueue.global(qos: .userInitiated).async {
             defer {
                 try? FileManager.default.removeItem(at: tempDir)
-                semaphore.signal()
+                finished.signal()
             }
             do {
                 try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
                 var options = ExtractOptions(destination: tempDir)
                 options.entries = [entryPath]
                 options.password = nil
-                try await engine.extract(archive: archiveURL, to: tempDir, options: options)
 
-                let name = DragExportPlanner.producedFileName(entryPath: entryPath)
-                var produced = tempDir.appendingPathComponent(name)
-                if !FileManager.default.fileExists(atPath: produced.path) {
-                    // Fallback: locate the produced item by name anywhere in temp.
-                    if let found = Self.findItem(named: name, under: tempDir) { produced = found }
+                let done = DispatchSemaphore(value: 0)
+                Task.detached {
+                    defer { done.signal() }
+                    do {
+                        try await engine.extract(archive: archiveURL, to: tempDir, options: options)
+                        let name = DragExportPlanner.producedFileName(entryPath: entryPath)
+                        var produced = tempDir.appendingPathComponent(name)
+                        if !FileManager.default.fileExists(atPath: produced.path),
+                           let found = Self.findItem(named: name, under: tempDir) {
+                            produced = found
+                        }
+                        guard FileManager.default.fileExists(atPath: produced.path) else { return }
+                        if FileManager.default.fileExists(atPath: destination.path) {
+                            try? FileManager.default.removeItem(at: destination)
+                        }
+                        try FileManager.default.copyItem(at: produced, to: destination)
+                        box.value = true
+                    } catch {
+                        box.value = false
+                    }
                 }
-                guard FileManager.default.fileExists(atPath: produced.path) else {
-                    box.value = false
-                    return
-                }
-                if FileManager.default.fileExists(atPath: destination.path) {
-                    try? FileManager.default.removeItem(at: destination)
-                }
-                try FileManager.default.copyItem(at: produced, to: destination)
-                box.value = true
+                done.wait()
             } catch {
                 box.value = false
             }
         }
 
-        _ = semaphore.wait(timeout: .now() + 120)
+        // Pump the run loop instead of hard-blocking so the UI stays responsive
+        // (spinning cursor rather than a beachball) and progress can render.
+        let deadline = Date().addingTimeInterval(180)
+        while finished.wait(timeout: .now()) == .timedOut {
+            if Date() > deadline { break }
+            RunLoop.current.run(mode: .default, before: Date().addingTimeInterval(0.02))
+        }
         return box.value
+    }
+
+    private static func findItem(named name: String, under root: URL) -> URL? {
+        let enumerator = FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil)
+        while let url = enumerator?.nextObject() as? URL {
+            if url.lastPathComponent == name { return url }
+        }
+        return nil
     }
 }
 
