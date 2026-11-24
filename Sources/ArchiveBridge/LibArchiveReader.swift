@@ -29,7 +29,7 @@ enum LibArchiveReader {
             guard let entry else { break }
             let path = archive_entry_pathname(entry).map { String(cString: $0) } ?? ""
             let size = Int64(archive_entry_size(entry))
-            let isDirectory = archive_entry_filetype(entry) == mode_t(AE_IFDIR)
+            let isDirectory = archive_entry_filetype(entry) == mode_t(0o040000) // AE_IFDIR
             if !path.isEmpty {
                 entries.append(Entry(path: path, size: size, isDirectory: isDirectory))
             }
