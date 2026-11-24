@@ -11,6 +11,7 @@ struct ContentView: View {
     @StateObject private var panes = DualPaneController()
     @StateObject private var secondaryModel = BrowserStore()
     @State private var showSidebar = false
+    @State private var showFinderExtensionPrompt = false
 
     var body: some View {
         HSplitView {
@@ -67,6 +68,11 @@ struct ContentView: View {
             }
             model.attachTasks(tasks)
             await tasks.start()
+
+            // Detect the Finder extension once per launch and nudge if not enabled.
+            if await FinderExtensionChecker.check() != .enabled {
+                showFinderExtensionPrompt = true
+            }
         }
         .sheet(isPresented: infoSheetBinding) {
             if let url = model.infoRequestedURL {
@@ -126,6 +132,15 @@ struct ContentView: View {
         }
         .onChange(of: model.currentDirectory) { _, newValue in
             if !model.isInsideArchive { RestorationStore().record(newValue) }
+        }
+        .alert("Finder 右键菜单未启用", isPresented: $showFinderExtensionPrompt) {
+            Button("去启用") {
+                FinderExtensionChecker.registerBundledExtension()
+                FinderExtensionChecker.openSettings()
+            }
+            Button("稍后", role: .cancel) {}
+        } message: {
+            Text("Mac7Zip 的 Finder 扩展还没启用，右键菜单里不会出现“打开/解压/添加到压缩包”。可在“系统设置 ▸ 通用 ▸ 登录项与扩展 ▸ 访达扩展”中勾选 Mac7Zip Finder。")
         }
         .alert("Archive Test", isPresented: testResultBinding) {
             Button("OK", role: .cancel) { model.testResultMessage = nil }
