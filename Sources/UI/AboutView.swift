@@ -5,6 +5,9 @@ struct AboutView: View {
     private var version: String {
         (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "0.1.0"
     }
+    private var buildNumber: String {
+        (Bundle.main.infoDictionary?["CFBundleVersion"] as? String) ?? "?"
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -14,7 +17,7 @@ struct AboutView: View {
                     .foregroundStyle(.tint)
                 VStack(alignment: .leading) {
                     Text("Mac7Zip").font(.title2).bold()
-                    Text("Version \(version)").font(.caption).foregroundStyle(.secondary)
+                    Text("Version \(version) (\(buildNumber))").font(.caption).foregroundStyle(.secondary)
                 }
             }
 

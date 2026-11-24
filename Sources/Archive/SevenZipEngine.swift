@@ -124,7 +124,10 @@ struct SevenZipEngine: ArchiveEngine {
 
     /// Rebuilds entry paths from the ZIP central directory (authoritative names).
     static func repairZipNames(_ entries: [ArchiveEntry], archive: URL) -> [ArchiveEntry]? {
-        guard let cd = ZipCentralDirectoryReader.entries(inFileAt: archive), cd.count == entries.count else {
+        let cd = ZipCentralDirectoryReader.entries(inFileAt: archive)
+        DiagnosticsLog.write("zipRepair \(archive.lastPathComponent): list=\(entries.count) cd=\(cd?.count ?? -1) garbled=\(entries.filter { $0.path.contains("?") || $0.path.contains("\u{FFFD}") }.count)")
+        guard let cd, cd.count == entries.count else {
+            DiagnosticsLog.write("zipRepair skipped (count mismatch or no CD)")
             return nil
         }
         return zip(entries, cd).map { entry, raw in
