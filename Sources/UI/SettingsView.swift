@@ -155,8 +155,8 @@ struct SettingsView: View {
                     Button("重新检查") {
                         Task { finderStatus = await FinderExtensionChecker.check() }
                     }
-                    Button("启用缩略图扩展") {
-                        FinderExtensionChecker.enableThumbnail()
+                    Button("启用预览扩展") {
+                        FinderExtensionChecker.enablePreview()
                     }
                 }
             }

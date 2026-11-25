@@ -14,8 +14,6 @@ enum FinderExtensionState: String, Sendable, Equatable {
 
 enum FinderExtensionChecker {
     static let bundleID = "com.fb0sh.Mac7Zip.FinderSync"
-    /// Quick Look thumbnail extension (Finder content thumbnails).
-    static let thumbnailBundleID = "com.fb0sh.Mac7Zip.Thumbnail"
     /// Quick Look preview extension (Space preview content).
     static let previewBundleID = "com.fb0sh.Mac7Zip.Preview"
 
@@ -69,18 +67,12 @@ enum FinderExtensionChecker {
         try? process.run()
     }
 
-    /// Registers + enables the Quick Look thumbnail extension too.
-    static func enableThumbnail() {
-        guard let appex = Bundle.main.builtInPlugInsURL?
-            .appendingPathComponent("Mac7ZipThumbnail.appex"),
-            FileManager.default.fileExists(atPath: appex.path) else { return }
-        runPluginkit(["-a", appex.path])
-        runPluginkit(["-e", "use", "-i", thumbnailBundleID])
-        if let previewAppex = Bundle.main.builtInPlugInsURL?.appendingPathComponent("Mac7ZipPreview.appex"),
-           FileManager.default.fileExists(atPath: previewAppex.path) {
-            runPluginkit(["-a", previewAppex.path])
-            runPluginkit(["-e", "use", "-i", previewBundleID])
-        }
+    /// Registers + enables the Quick Look preview extension.
+    static func enablePreview() {
+        guard let previewAppex = Bundle.main.builtInPlugInsURL?.appendingPathComponent("Mac7ZipPreview.appex"),
+              FileManager.default.fileExists(atPath: previewAppex.path) else { return }
+        runPluginkit(["-a", previewAppex.path])
+        runPluginkit(["-e", "use", "-i", previewBundleID])
     }
 
     /// Registers AND enables the bundled extension via `pluginkit` (macOS Sequoia+
@@ -89,7 +81,7 @@ enum FinderExtensionChecker {
         guard let appex = bundledExtensionURL else { return }
         runPluginkit(["-a", appex.path])
         runPluginkit(["-e", "use", "-i", bundleID])
-        enableThumbnail()
+        enablePreview()
         // Ask LaunchServices to re-scan the containing app.
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister")

@@ -68,10 +68,10 @@ final class ExtensionPackagingTests: XCTestCase {
         (try? String(contentsOf: repoRoot.appendingPathComponent("project.yml"), encoding: .utf8)) ?? ""
     }
 
-    func testThumbnailExtensionDeclaresQuickLookPoint() {
+    func testPreviewExtensionDeclaresQuickLookPoint() {
         let text = yml()
-        XCTAssertTrue(text.contains("com.apple.quicklook.thumbnail"), "Thumbnail extension must declare its NSExtensionPointIdentifier in properties")
-        XCTAssertTrue(text.contains("Mac7ZipThumbnail"))
+        XCTAssertTrue(text.contains("com.apple.quicklook.preview"), "Preview extension must declare its NSExtensionPointIdentifier in properties")
+        XCTAssertTrue(text.contains("Mac7ZipPreview"))
     }
 
     func testFinderSyncDeclaresItsPoint() {
@@ -81,11 +81,11 @@ final class ExtensionPackagingTests: XCTestCase {
     func testBothExtensionsAreEmbedded() {
         let text = yml()
         XCTAssertTrue(text.contains("- target: Mac7ZipFinderSync\n        embed: true"))
-        XCTAssertTrue(text.contains("- target: Mac7ZipThumbnail\n        embed: true"))
+        XCTAssertTrue(text.contains("- target: Mac7ZipPreview\n        embed: true"))
     }
 
     func testExtensionsHaveSandboxEntitlements() {
-        for name in ["Mac7ZipFinderSync", "Mac7ZipThumbnail"] {
+        for name in ["Mac7ZipFinderSync", "Mac7ZipPreview"] {
             let url = repoRoot.appendingPathComponent("Support/\(name).entitlements")
             let text = (try? String(contentsOf: url, encoding: .utf8)) ?? ""
             XCTAssertTrue(text.contains("com.apple.security.app-sandbox"), "\(name) must be sandboxed")

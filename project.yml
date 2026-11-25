@@ -40,8 +40,6 @@ targets:
     dependencies:
       - target: Mac7ZipFinderSync
         embed: true
-      - target: Mac7ZipThumbnail
-        embed: true
       - target: Mac7ZipPreview
         embed: true
     info:
@@ -257,39 +255,6 @@ targets:
         NSExtension:
           NSExtensionPointIdentifier: com.apple.FinderSync
           NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).FinderSync
-
-  Mac7ZipThumbnail:
-    type: app-extension
-    platform: macOS
-    sources:
-      - path: Sources/Mac7ZipThumbnail
-      - path: Sources/Archive/ZipCentralDirectoryReader.swift
-      - path: Sources/ArchiveBridge/LibArchiveReader.swift
-    settings:
-      base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.fb0sh.Mac7Zip.Thumbnail
-        PRODUCT_NAME: Mac7ZipThumbnail
-        GENERATE_INFOPLIST_FILE: NO
-        SKIP_INSTALL: YES
-        CODE_SIGN_ENTITLEMENTS: Support/Mac7ZipThumbnail.entitlements
-    info:
-      path: Support/Thumbnail-Info.plist
-      properties:
-        CFBundleDisplayName: Mac7Zip Thumbnail
-        NSExtension:
-          NSExtensionPointIdentifier: com.apple.quicklook.thumbnail
-          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ThumbnailProvider
-          NSExtensionAttributes:
-            QLSupportedContentTypes:
-              - public.zip-archive
-              - org.7-zip.7-zip-archive
-              - public.tar-archive
-              - org.gnu.gnu-zip-archive
-              - org.gnu.gnu-zip-tar-archive
-              - com.rarlab.rar-archive
-              - public.bzip2-archive
-              - org.tukaani.xz-archive
-            QLThumbnailMinimumDimension: 16
 
   Mac7ZipPreview:
     type: app-extension
