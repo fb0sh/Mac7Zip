@@ -261,6 +261,8 @@ final class BrowserStore: ObservableObject {
         if isInsideArchive {
             if ArchiveFormat.detect(from: item.url) != nil {
                 openNestedArchive(entryName: item.name)
+            } else {
+                openEntryWithSystemDefault(item)
             }
             return
         }
@@ -454,6 +456,42 @@ final class BrowserStore: ObservableObject {
                     provider = nestedProvider
                 }
                 moveTo(.archive(archiveURL: produced, internalPath: ""))
+            } catch {
+                operationError = Self.archiveMessage(error)
+            }
+        }
+    }
+
+    /// Extracts a single archive entry to a temp folder and hands it to its default
+    /// app, so files that are neither archives nor folders behave like real files.
+    /// The temp copy is deliberately left in place: the receiving app may still be
+    /// reading it, and macOS reclaims the temp directory.
+    private func openEntryWithSystemDefault(_ item: FileItem) {
+        guard let currentArchive = archiveURL, let helper = SevenZipLocator.helperURL() else {
+            operationError = "The 7-Zip engine isn’t available."
+            return
+        }
+        let entryPath = ArchiveFileSystemProvider.normalize((archiveInternalPath ?? "") + "/" + item.name)
+        let tempDir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("Mac7Zip-open-\(UUID().uuidString)", isDirectory: true)
+
+        Task {
+            do {
+                try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+                let engine = SevenZipEngine(executableURL: helper)
+                var options = ExtractOptions(destination: tempDir)
+                options.entries = [entryPath]
+                options.password = nil
+                options.overwriteMode = .overwrite
+                try await engine.extract(archive: currentArchive, to: tempDir, options: options)
+
+                // Extraction preserves the entry's internal path.
+                let produced = tempDir.appendingPathComponent(entryPath)
+                guard FileManager.default.fileExists(atPath: produced.path) else {
+                    operationError = "Couldn’t extract the file to open it."
+                    return
+                }
+                NSWorkspace.shared.open(produced)
             } catch {
                 operationError = Self.archiveMessage(error)
             }
