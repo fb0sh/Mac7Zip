@@ -75,6 +75,18 @@ enum FinderExtensionChecker {
         runPluginkit(["-e", "use", "-i", previewBundleID])
     }
 
+    /// Removes both bundled extensions from the system plugin registry
+    /// (`pluginkit -r`), so Finder menus / Quick Look stop offering them.
+    /// They come back on the next `enable()`.
+    static func unregister() {
+        for name in ["Mac7ZipFinderSync.appex", "Mac7ZipPreview.appex"] {
+            guard let appex = Bundle.main.builtInPlugInsURL?.appendingPathComponent(name),
+                  FileManager.default.fileExists(atPath: appex.path) else { continue }
+            runPluginkit(["-r", appex.path])
+        }
+        refreshLaunchServices()
+    }
+
     /// Registers AND enables the bundled extension via `pluginkit` (macOS Sequoia+
     /// removed the System Settings list, so enabling programmatically is required).
     static func enable() {
@@ -82,19 +94,38 @@ enum FinderExtensionChecker {
         runPluginkit(["-a", appex.path])
         runPluginkit(["-e", "use", "-i", bundleID])
         enablePreview()
-        // Ask LaunchServices to re-scan the containing app.
+        refreshLaunchServices()
+    }
+
+    /// Asks LaunchServices to re-scan the containing app, so icon/handler
+    /// changes take effect without a logout.
+    static func refreshLaunchServices() {
+        run(launchServicesPath, ["-f", Bundle.main.bundleURL.path])
+    }
+
+    /// Rebuilds the LaunchServices database and drops the Quick Look icon cache.
+    /// Used when Finder keeps showing a stale icon after the app was updated.
+    static func resetIconCache() {
+        run(launchServicesPath, ["-f", "-R", "-domain", "local", "-domain", "system", "-domain", "user"])
+        run("/usr/bin/qlmanage", ["-r", "cache"])
+        run("/usr/bin/qlmanage", ["-r"])
+        run("/usr/bin/killall", ["Finder"])
+    }
+
+    private static var launchServicesPath: String {
+        "/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
+    }
+
+    private static func run(_ path: String, _ arguments: [String]) {
         let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister")
-        process.arguments = ["-f", Bundle.main.bundleURL.path]
+        process.executableURL = URL(fileURLWithPath: path)
+        process.arguments = arguments
         try? process.run()
+        process.waitUntilExit()
     }
 
     private static func runPluginkit(_ args: [String]) {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/pluginkit")
-        process.arguments = args
-        try? process.run()
-        process.waitUntilExit()
+        run("/usr/bin/pluginkit", args)
     }
 
     /// Opens the system UI where the user enables Finder extensions.

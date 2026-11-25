@@ -59,6 +59,7 @@ targets:
             LSHandlerRank: Alternate
             CFBundleTypeIconFile: 7z
             CFBundleTypeExtensions: ["7z"]
+            LSItemContentTypes: [org.7-zip.7-zip-archive]
           - CFBundleTypeName: "apk archive"
             CFBundleTypeRole: Viewer
             LSHandlerRank: Alternate
@@ -74,6 +75,7 @@ targets:
             LSHandlerRank: Alternate
             CFBundleTypeIconFile: bz2
             CFBundleTypeExtensions: ["bz2"]
+            LSItemContentTypes: [public.bzip2-archive]
           - CFBundleTypeName: "cab archive"
             CFBundleTypeRole: Viewer
             LSHandlerRank: Alternate
@@ -84,6 +86,7 @@ targets:
             LSHandlerRank: Alternate
             CFBundleTypeIconFile: gz
             CFBundleTypeExtensions: ["gz"]
+            LSItemContentTypes: [org.gnu.gnu-zip-archive]
           - CFBundleTypeName: "img archive"
             CFBundleTypeRole: Viewer
             LSHandlerRank: Alternate
@@ -114,11 +117,13 @@ targets:
             LSHandlerRank: Alternate
             CFBundleTypeIconFile: rar
             CFBundleTypeExtensions: ["rar"]
+            LSItemContentTypes: [com.rarlab.rar-archive]
           - CFBundleTypeName: "tar archive"
             CFBundleTypeRole: Viewer
             LSHandlerRank: Alternate
             CFBundleTypeIconFile: tar
             CFBundleTypeExtensions: ["tar"]
+            LSItemContentTypes: [public.tar-archive]
           - CFBundleTypeName: "tar.gz archive"
             CFBundleTypeRole: Viewer
             LSHandlerRank: Alternate
@@ -159,26 +164,18 @@ targets:
             LSHandlerRank: Alternate
             CFBundleTypeIconFile: xz
             CFBundleTypeExtensions: ["xz"]
+            LSItemContentTypes: [org.tukaani.xz-archive]
           - CFBundleTypeName: "zip archive"
             CFBundleTypeRole: Viewer
             LSHandlerRank: Alternate
             CFBundleTypeIconFile: zip
             CFBundleTypeExtensions: ["zip"]
+            LSItemContentTypes: [public.zip-archive]
           - CFBundleTypeName: "zst archive"
             CFBundleTypeRole: Viewer
             LSHandlerRank: Alternate
             CFBundleTypeIconFile: zst
             CFBundleTypeExtensions: ["zst"]
-          - CFBundleTypeName: Archive
-            CFBundleTypeRole: Viewer
-            LSHandlerRank: Alternate
-            CFBundleTypeIconFile: zip
-            LSItemContentTypes:
-              - org.7-zip.7-zip-archive
-              - public.zip-archive
-              - public.tar-archive
-              - org.gnu.gnu-zip-archive
-              - org.gnu.gnu-zip-tar-archive
         UTImportedTypeDeclarations:
           - UTTypeIdentifier: org.7-zip.7-zip-archive
             UTTypeDescription: 7-Zip Archive
@@ -278,6 +275,7 @@ targets:
           NSExtensionPointIdentifier: com.apple.quicklook.preview
           NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).PreviewProvider
           NSExtensionAttributes:
+            QLIsDataBasedPreview: true
             QLSupportedContentTypes:
               - public.zip-archive
               - org.7-zip.7-zip-archive

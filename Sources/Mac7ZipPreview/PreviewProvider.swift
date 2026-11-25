@@ -4,10 +4,11 @@ import Quartz
 import UniformTypeIdentifiers
 
 /// Quick Look preview extension (`com.apple.quicklook.preview`).
-/// Uses the data-based reply API: returns an HTML table. No AppKit view controller
-/// hierarchy, so it is far more robust inside Quick Look's host. Sandboxed, and reads
-/// names via libarchive (no subprocess).
-final class PreviewProvider: NSViewController, QLPreviewingController {
+/// Data-based preview: returns an HTML table via `QLPreviewReply`. Apple requires
+/// the principal class to subclass `QLPreviewProvider` (not `NSViewController`)
+/// and the Info.plist to set `QLIsDataBasedPreview`, otherwise Quick Look rejects
+/// it with "Principal object for extension invalid".
+final class PreviewProvider: QLPreviewProvider, QLPreviewingController {
 
     func providePreview(for request: QLFilePreviewRequest,
                         completionHandler handler: @escaping (QLPreviewReply?, Error?) -> Void) {

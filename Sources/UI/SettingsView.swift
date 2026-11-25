@@ -159,6 +159,21 @@ struct SettingsView: View {
                         FinderExtensionChecker.enablePreview()
                     }
                 }
+                HStack {
+                    Button("卸载扩展") {
+                        FinderExtensionChecker.unregister()
+                        Task {
+                            try? await Task.sleep(nanoseconds: 500_000_000)
+                            finderStatus = await FinderExtensionChecker.check()
+                        }
+                    }
+                    Button("重置图标缓存") {
+                        FinderExtensionChecker.resetIconCache()
+                    }
+                }
+                Text("卸载会移除 Finder 菜单与 Quick Look 注册，下次启用时恢复；重置图标缓存会重建 LaunchServices 并重启访达。")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
             Section {
                 Toggle("Notify me when a task finishes", isOn: $store.settings.sendCompletionNotifications)

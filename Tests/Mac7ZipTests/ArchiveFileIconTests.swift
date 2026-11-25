@@ -105,4 +105,26 @@ final class ExtensionPackagingTests: XCTestCase {
         XCTAssertTrue(yml.contains("Mac7ZipPreview"))
         XCTAssertTrue(yml.contains("- target: Mac7ZipPreview\n        embed: true"))
     }
+
+    /// Regression: a catch-all document type used to claim `org.7-zip.7-zip-archive`
+    /// with the `zip` icon, so LaunchServices resolved .7z to zip. Each UTI must be
+    /// claimed by at most one document type, and that type's icon must be the one
+    /// declared for the UTI.
+    func testNoDocumentTypeClaimsAnotherTypesUTIWithADifferentIcon() {
+        let yml = (try? String(contentsOf: repoRoot.appendingPathComponent("project.yml"), encoding: .utf8)) ?? ""
+        XCTAssertFalse(
+            yml.contains("CFBundleTypeIconFile: zip\n            LSItemContentTypes:\n              - org.7-zip.7-zip-archive"),
+            "The zip catch-all must not claim the 7z UTI"
+        )
+        XCTAssertTrue(yml.contains("CFBundleTypeIconFile: 7z\n            CFBundleTypeExtensions: [\"7z\"]\n            LSItemContentTypes: [org.7-zip.7-zip-archive]"))
+    }
+
+    /// Data-based Quick Look previews must declare the flag and subclass
+    /// QLPreviewProvider, otherwise Quick Look reports "Principal object invalid".
+    func testPreviewExtensionIsDataBased() {
+        let yml = (try? String(contentsOf: repoRoot.appendingPathComponent("project.yml"), encoding: .utf8)) ?? ""
+        XCTAssertTrue(yml.contains("QLIsDataBasedPreview: true"), "Preview extension must set QLIsDataBasedPreview")
+        let source = (try? String(contentsOf: repoRoot.appendingPathComponent("Sources/Mac7ZipPreview/PreviewProvider.swift"), encoding: .utf8)) ?? ""
+        XCTAssertTrue(source.contains("QLPreviewProvider"), "PreviewProvider must subclass QLPreviewProvider")
+    }
 }
