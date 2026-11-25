@@ -81,11 +81,12 @@ enum OverwriteMode: Sendable {
     case skip
     case rename
 
-    /// 7zz `-ao` value.
+    /// 7zz `-ao` value. 7-Zip only accepts `a|s|t|u`: there is no `o`, so
+    /// "overwrite" means "overwrite all" (`a`) with prompts disabled by `-y`.
     var switchValue: String {
         switch self {
         case .ask: return "a"
-        case .overwrite: return "o"
+        case .overwrite: return "a"
         case .skip: return "s"
         case .rename: return "u"
         }

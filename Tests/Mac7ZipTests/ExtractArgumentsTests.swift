@@ -35,4 +35,16 @@ final class ExtractArgumentsTests: XCTestCase {
         )
         XCTAssertEqual(args.suffix(2), ["/tmp/a.zip", "-o/tmp/out"])
     }
+
+    /// 7-Zip only accepts `-ao{a|s|t|u}`; emitting `-aoo` makes 7zz fail with
+    /// "Incorrect switch postfix".
+    func testOverwriteModeSwitchValuesAreAcceptedBy7Zip() {
+        let accepted = Set(["a", "s", "t", "u"])
+        for mode in [OverwriteMode.ask, .overwrite, .skip, .rename] {
+            XCTAssertTrue(
+                accepted.contains(mode.switchValue),
+                "-ao\(mode.switchValue) is not a valid 7-Zip overwrite postfix"
+            )
+        }
+    }
 }
