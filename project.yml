@@ -179,37 +179,37 @@ targets:
         UTImportedTypeDeclarations:
           - UTTypeIdentifier: org.7-zip.7-zip-archive
             UTTypeDescription: 7-Zip Archive
-            UTTypeIconFile: 7z
+            UTTypeIconFile: 7z.icns
             UTTypeConformsTo: [public.data, public.archive]
             UTTypeTagSpecification:
               public.filename-extension: [7z]
           - UTTypeIdentifier: org.gnu.gnu-zip-archive
             UTTypeDescription: Gzip Archive
-            UTTypeIconFile: gz
+            UTTypeIconFile: gz.icns
             UTTypeConformsTo: [public.data, public.archive]
             UTTypeTagSpecification:
               public.filename-extension: [gz]
           - UTTypeIdentifier: org.gnu.gnu-zip-tar-archive
             UTTypeDescription: Gzipped Tar Archive
-            UTTypeIconFile: tar_gz
+            UTTypeIconFile: tar_gz.icns
             UTTypeConformsTo: [public.data, public.archive]
             UTTypeTagSpecification:
               public.filename-extension: [tgz]
           - UTTypeIdentifier: org.tukaani.xz-archive
             UTTypeDescription: XZ Archive
-            UTTypeIconFile: xz
+            UTTypeIconFile: xz.icns
             UTTypeConformsTo: [public.data, public.archive]
             UTTypeTagSpecification:
               public.filename-extension: [xz]
           - UTTypeIdentifier: public.bzip2-archive
             UTTypeDescription: Bzip2 Archive
-            UTTypeIconFile: bz2
+            UTTypeIconFile: bz2.icns
             UTTypeConformsTo: [public.data, public.archive]
             UTTypeTagSpecification:
               public.filename-extension: [bz2]
           - UTTypeIdentifier: com.rarlab.rar-archive
             UTTypeDescription: RAR Archive
-            UTTypeIconFile: rar
+            UTTypeIconFile: rar.icns
             UTTypeConformsTo: [public.data, public.archive]
             UTTypeTagSpecification:
               public.filename-extension: [rar]

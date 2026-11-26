@@ -92,10 +92,13 @@ final class ExtensionPackagingTests: XCTestCase {
         }
     }
 
+    /// `UTTypeIconFile` must name the `.icns` file itself; a bare resource name is
+    /// not resolved and macOS falls back to the conforming type's icon (which is
+    /// why .7z used to show the ZIP icon).
     func testImportedTypesDeclareIcons() {
         let yml = (try? String(contentsOf: repoRoot.appendingPathComponent("project.yml"), encoding: .utf8)) ?? ""
-        for icon in ["UTTypeIconFile: 7z", "UTTypeIconFile: gz", "UTTypeIconFile: tar_gz", "UTTypeIconFile: xz", "UTTypeIconFile: rar"] {
-            XCTAssertTrue(yml.contains(icon), "Missing \(icon)")
+        for icon in ["7z.icns", "gz.icns", "tar_gz.icns", "xz.icns", "rar.icns", "bz2.icns"] {
+            XCTAssertTrue(yml.contains("UTTypeIconFile: \(icon)"), "Missing UTTypeIconFile: \(icon)")
         }
     }
 
