@@ -32,6 +32,7 @@ final class PreviewProvider: QLPreviewProvider, QLPreviewingController {
                 sizeText: entry.isDirectory ? "--" : sizeFormatter.string(fromByteCount: entry.size),
                 dateText: entry.modified.map { dateFormatter.string(from: $0) } ?? "",
                 isDirectory: entry.isDirectory,
+                kindText: Self.kindText(forPath: entry.path, isDirectory: entry.isDirectory),
                 iconDataURL: Self.iconDataURL(forPath: entry.path, isDirectory: entry.isDirectory)
             )
         }
@@ -43,6 +44,20 @@ final class PreviewProvider: QLPreviewProvider, QLPreviewingController {
         }
         reply.title = url.lastPathComponent
         handler(reply, nil)
+    }
+
+    /// Finder's "Kind" text for an entry, derived from its UTType so a `.xlsx`
+    /// reads "XLSX document" and a `.pdf` "PDF document". Folder and unknown-type
+    /// labels come from the system too, so the column stays consistent.
+    private static func kindText(forPath path: String, isDirectory: Bool) -> String {
+        if isDirectory {
+            return UTType.folder.localizedDescription ?? "Folder"
+        }
+        let ext = (path as NSString).pathExtension.lowercased()
+        guard !ext.isEmpty, let type = UTType(filenameExtension: ext) else {
+            return UTType.data.localizedDescription ?? "Document"
+        }
+        return type.localizedDescription ?? ext.uppercased() + " document"
     }
 
     /// The system's icon for the entry's type, as a base64 PNG data URL.

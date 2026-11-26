@@ -11,12 +11,21 @@ enum PreviewHTMLBuilder {
         let sizeText: String
         let dateText: String
         let isDirectory: Bool
+        /// Finder-style kind ("ZIP document", "Folder", …). Shown in the Kind column.
+        let kindText: String
         /// `data:image/png;base64,…` for the entry's real icon. When nil the row
         /// falls back to a plain glyph.
         let iconDataURL: String?
-        init(path: String, sizeText: String, dateText: String, isDirectory: Bool, iconDataURL: String? = nil) {
+        init(
+            path: String,
+            sizeText: String,
+            dateText: String,
+            isDirectory: Bool,
+            kindText: String = "",
+            iconDataURL: String? = nil
+        ) {
             self.path = path; self.sizeText = sizeText; self.dateText = dateText
-            self.isDirectory = isDirectory; self.iconDataURL = iconDataURL
+            self.isDirectory = isDirectory; self.kindText = kindText; self.iconDataURL = iconDataURL
         }
     }
 
@@ -25,6 +34,7 @@ enum PreviewHTMLBuilder {
         let isDirectory: Bool
         let sizeText: String
         let dateText: String
+        let kindText: String
         let iconDataURL: String?
         let children: [Node]
     }
@@ -32,9 +42,11 @@ enum PreviewHTMLBuilder {
     static func html(title: String, items: [Item], summary: String) -> String {
         let nodes = tree(from: items)
         var body = ""
-        render(nodes, depth: 0, into: &body)
         if items.isEmpty {
             body = "<div class=\"empty\">无法读取内容</div>"
+        } else {
+            body = header()
+            render(nodes, depth: 0, into: &body)
         }
         return """
         <!DOCTYPE html><html><head><meta charset="utf-8">
@@ -42,13 +54,16 @@ enum PreviewHTMLBuilder {
         body{font:13px -apple-system,Helvetica,sans-serif;color:#1d1d1f;margin:0;padding:14px;background:#fff}
         h2{font:600 14px -apple-system;margin:0 0 2px}
         .sum{color:#8a8a8e;font-size:12px;margin-bottom:10px}
-        .row{display:grid;grid-template-columns:1fr 100px 78px;gap:10px;align-items:center;
-             padding:4px 6px;border-bottom:1px solid #f2f2f7;font-size:12px}
+        .row{display:grid;grid-template-columns:1fr 82px 150px 128px;gap:10px;align-items:center;
+             padding:5px 6px;border-bottom:1px solid #f2f2f7;font-size:12px}
+        .hdr{color:#6e6e73;font-weight:600;border-bottom:1px solid #e5e5ea}
         summary.row{list-style:none;cursor:default}
         summary.row::-webkit-details-marker{display:none}
         .n{word-break:break-all}
+        .k{color:#3a3a3c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
         .d{color:#6e6e73;white-space:nowrap}
         .s{color:#6e6e73;text-align:right;white-space:nowrap}
+        .hdr .s{text-align:right}
         .tw{display:inline-block;width:11px;color:#8a8a8e;font-size:9px;vertical-align:1px}
         details[open]>summary .tw::before{content:"▼"}
         .tw::before{content:"▶"}
@@ -60,6 +75,13 @@ enum PreviewHTMLBuilder {
         <h2>\(escape(title))</h2><div class="sum">\(escape(summary))</div>
         \(body)
         </body></html>
+        """
+    }
+
+    /// Column headings, matching Finder's list view order.
+    private static func header() -> String {
+        """
+        <div class="row hdr"><span>名称</span><span class="s">大小</span><span>种类</span><span>修改时间</span></div>
         """
     }
 
@@ -81,6 +103,7 @@ enum PreviewHTMLBuilder {
                     child.isDirectory = item.isDirectory
                     child.sizeText = item.sizeText
                     child.dateText = item.dateText
+                    child.kindText = item.kindText
                     child.iconDataURL = item.iconDataURL
                 } else {
                     child.isDirectory = true
@@ -96,6 +119,7 @@ enum PreviewHTMLBuilder {
         var isDirectory = false
         var sizeText = "--"
         var dateText = ""
+        var kindText = ""
         var iconDataURL: String?
         var children: [String: MutableNode] = [:]
 
@@ -114,6 +138,7 @@ enum PreviewHTMLBuilder {
                     isDirectory: child.isDirectory,
                     sizeText: child.sizeText,
                     dateText: child.dateText,
+                    kindText: child.kindText,
                     iconDataURL: child.iconDataURL,
                     children: sortedChildren(of: child)
                 )
@@ -132,8 +157,11 @@ enum PreviewHTMLBuilder {
             } else {
                 icon = ""
             }
+            // Finder's column order: Name, Size, Kind, Date Modified.
             let cells = """
-            <span class="d">\(escape(node.dateText))</span><span class="s">\(escape(node.sizeText))</span>
+            <span class="s">\(escape(node.sizeText))</span>\
+            <span class="k">\(escape(node.kindText))</span>\
+            <span class="d">\(escape(node.dateText))</span>
             """
 
             if node.isDirectory, !node.children.isEmpty {

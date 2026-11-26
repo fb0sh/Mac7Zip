@@ -65,6 +65,17 @@ final class PreviewHTMLBuilderTests: XCTestCase {
         XCTAssertTrue(html.contains("<details open>"))
     }
 
+    func testRendersFinderColumns() {
+        let items = [
+            PreviewHTMLBuilder.Item(path: "a.zip", sizeText: "1 KB", dateText: "2026-01-01", isDirectory: false, kindText: "ZIP document"),
+        ]
+        let html = PreviewHTMLBuilder.html(title: "x.zip", items: items, summary: "")
+        for column in ["名称", "大小", "种类", "修改时间"] {
+            XCTAssertTrue(html.contains(column), "Missing column \(column)")
+        }
+        XCTAssertTrue(html.contains("ZIP document"), "Kind text must be rendered")
+    }
+
     func testFoldersSortBeforeFiles() {
         let nodes = PreviewHTMLBuilder.tree(from: [item("b.txt"), item("a/", dir: true)])
         XCTAssertEqual(nodes.map(\.name), ["a", "b.txt"])
