@@ -207,6 +207,7 @@ final class SevenZipEngineIntegrationTests: XCTestCase {
 final class CompressionIntegrationTests: XCTestCase {
     private var workDir: URL!
     private var engine: SevenZipEngine!
+    private var engineRefusingPasswords: SevenZipEngine!
 
     private static var helperURL: URL? {
         var dir = URL(fileURLWithPath: #filePath)
@@ -224,6 +225,7 @@ final class CompressionIntegrationTests: XCTestCase {
             .appendingPathComponent("Mac7ZipCompTests-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: workDir, withIntermediateDirectories: true)
         engine = SevenZipEngine(executableURL: helper, timeout: 30)
+        engineRefusingPasswords = SevenZipEngine(executableURL: helper, timeout: 30, passwordTransport: .unavailable)
     }
 
     override func tearDownWithError() throws {
