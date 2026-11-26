@@ -6,10 +6,12 @@ final class PreviewHTMLBuilderTests: XCTestCase {
         PreviewHTMLBuilder.Item(path: path, sizeText: dir ? "--" : "1 KB", dateText: "2026-01-01 00:00", isDirectory: dir)
     }
 
-    func testRendersRowsAndSummary() {
-        let html = PreviewHTMLBuilder.html(title: "a.zip", items: [item("docs/"), item("docs/x.txt")], summary: "2 项")
-        XCTAssertTrue(html.contains("docs/x.txt"))
-        XCTAssertTrue(html.contains("<table>"))
+    func testRendersTreeWithSummary() {
+        let html = PreviewHTMLBuilder.html(
+            title: "a.zip", items: [item("docs/", dir: true), item("docs/x.txt")], summary: "2 项"
+        )
+        XCTAssertTrue(html.contains("x.txt"))
+        XCTAssertTrue(html.contains("<details"))
         XCTAssertTrue(html.contains("2 项"))
     }
 
@@ -33,12 +35,39 @@ final class PreviewHTMLBuilderTests: XCTestCase {
         let html = PreviewHTMLBuilder.html(title: "x.zip", items: [iconItem], summary: "")
         XCTAssertTrue(html.contains("src=\"\(dataURL)\""))
         XCTAssertTrue(html.contains("class=\"i\""))
-        XCTAssertFalse(html.contains("📄"), "No glyph fallback when a real icon is present")
     }
 
-    func testFallsBackToGlyphWithoutIcon() {
+    func testOmitsImageWithoutIcon() {
         let html = PreviewHTMLBuilder.html(title: "x.zip", items: [item("a.txt")], summary: "")
-        XCTAssertTrue(html.contains("class=\"g\""))
         XCTAssertFalse(html.contains("data:image/png"))
+        XCTAssertTrue(html.contains("a.txt"))
+    }
+
+    // MARK: - Tree shape
+
+    func testNestedFoldersBecomeNestedDetails() {
+        let items = [
+            item("extensions/", dir: true),
+            item("extensions/Burp/", dir: true),
+            item("extensions/Burp/a.jar"),
+        ]
+        let html = PreviewHTMLBuilder.html(title: "x.7z", items: items, summary: "")
+        // Outer folder opens by default; the nested one must stay collapsed.
+        XCTAssertTrue(html.contains("<details open>"))
+        XCTAssertTrue(html.contains("<details>"))
+        XCTAssertTrue(html.contains("a.jar"))
+    }
+
+    func testImplicitParentFoldersAreSynthesised() {
+        // Only the leaf is listed; "docs/" must still appear as a folder.
+        let html = PreviewHTMLBuilder.html(title: "x.zip", items: [item("docs/x.txt")], summary: "")
+        XCTAssertTrue(html.contains("docs/"))
+        XCTAssertTrue(html.contains("<details open>"))
+    }
+
+    func testFoldersSortBeforeFiles() {
+        let nodes = PreviewHTMLBuilder.tree(from: [item("b.txt"), item("a/", dir: true)])
+        XCTAssertEqual(nodes.map(\.name), ["a", "b.txt"])
+        XCTAssertTrue(nodes[0].isDirectory)
     }
 }
