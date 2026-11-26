@@ -67,7 +67,9 @@ enum ServiceActionPlanner {
         }
     }
 
+    /// Content first; the extension is the fallback for callers that pass paths
+    /// which cannot be read in this process (e.g. not yet materialised).
     private static func isArchive(_ url: URL) -> Bool {
-        ArchiveFormat.detect(from: url) != nil
+        ArchiveFormat.detect(from: url) != nil || ArchiveFormat.detectFromName(url) != nil
     }
 }

@@ -52,7 +52,7 @@ enum ArchiveFormat: String, Sendable, CaseIterable {
         if name.hasSuffix(".tar.gz") || name.hasSuffix(".tgz") { return .gzip }
         switch url.pathExtension.lowercased() {
         case "7z": return .sevenZip
-        case "zip", "jar", "xpi", "epub", "docx", "xlsx", "pptx", "odt": return .zip
+        case "zip", "jar", "xpi", "apk", "epub", "docx", "xlsx", "pptx", "odt": return .zip
         case "tar": return .tar
         case "gz", "gzip": return .gzip
         case "bz2", "bzip2", "tbz2": return .bzip2
@@ -129,11 +129,15 @@ enum ArchiveFormat: String, Sendable, CaseIterable {
         // something printable and end in NULs.
         guard bytes[0] != 0 else { return false }
 
-        let checksumField = bytes[148..<156]
-        let text = checksumField.compactMap { $0 == 0 || $0 == 0x20 ? nil : Character(UnicodeScalar($0)) }
-        guard let stored = Int(String(text).trimmingCharacters(in: .whitespaces).prefix(7), radix: 8) else {
-            return false
+        // The field is octal ASCII, conventionally "%06o\0 " but some writers use
+        // spaces; stop at the first NUL or space.
+        var octal = ""
+        for byte in bytes[148..<156] {
+            if byte == 0 || byte == 0x20 { break }
+            guard (0x30...0x37).contains(byte) else { return false }
+            octal.append(Character(UnicodeScalar(byte)))
         }
+        guard !octal.isEmpty, let stored = Int(octal, radix: 8) else { return false }
 
         var sum = 0
         for (index, byte) in bytes[0..<512].enumerated() {

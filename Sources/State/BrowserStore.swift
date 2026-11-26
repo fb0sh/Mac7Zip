@@ -287,13 +287,15 @@ final class BrowserStore: ObservableObject {
             return
         }
 
-        if !isInsideArchive, ArchiveFormat.detect(from: item.url) != nil {
+        // Content first; entries inside an archive have virtual URLs that cannot
+        // be read as files, so the name is the only signal there.
+        if !isInsideArchive, isArchiveURL(item.url) {
             if let handler = archiveActivationHandler, handler(item.url) { return }
             openArchive(item.url)
             return
         }
         if isInsideArchive {
-            if ArchiveFormat.detect(from: item.url) != nil {
+            if isArchiveURL(item.url) {
                 openNestedArchive(entryName: item.name)
             } else {
                 openEntryWithSystemDefault(item)
@@ -305,6 +307,12 @@ final class BrowserStore: ObservableObject {
 
     func openSelected() {
         if let first = selectedItems.first { open(first) }
+    }
+
+    /// True when the URL looks like an archive by content, falling back to the
+    /// name for paths that cannot be read (entries inside an open archive).
+    private func isArchiveURL(_ url: URL) -> Bool {
+        ArchiveFormat.detect(from: url) != nil || ArchiveFormat.detectFromName(url) != nil
     }
 
     // MARK: - Extraction
