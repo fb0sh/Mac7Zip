@@ -1,3 +1,4 @@
+import CoreFoundation
 import XCTest
 @testable import Mac7Zip
 
@@ -162,7 +163,7 @@ final class SevenZipEngineIntegrationTests: XCTestCase {
         var central: [(raw: Data, crc: UInt32, size: Int, mode: Int, offset: Int)] = []
 
         for (name, payload) in entries {
-            guard let raw = name.data(using: .gb18030) else { continue }
+            guard let gb18030 = Self.gb18030, let raw = name.data(using: gb18030) else { continue }
             let offset = body.count
             let crc = Self.crc32(payload)
             let isDir = name.hasSuffix("/")
@@ -215,6 +216,14 @@ final class SevenZipEngineIntegrationTests: XCTestCase {
         body.append(Self.le32(UInt32(cdOffset)))
         body.append(Self.le16(0))
         try body.write(to: url)
+    }
+
+    /// GB18030, matching the decoder used by `LibArchiveReader`.
+    private static var gb18030: String.Encoding? {
+        let raw = CFStringConvertEncodingToNSStringEncoding(
+            CFStringEncoding(CFStringEncodings.GB_18030_2000.rawValue)
+        )
+        return raw == kCFStringEncodingInvalidId ? nil : String.Encoding(rawValue: raw)
     }
 
     private static func le16(_ value: UInt16) -> Data {
