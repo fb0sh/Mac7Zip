@@ -18,7 +18,7 @@ struct Mac7ZipApp: App {
         } defaultValue: {
             registry.windows.first?.id ?? UUID()
         }
-        .defaultSize(width: 1000, height: 660)
+        .defaultSize(width: 900, height: 560)
         .windowResizability(.contentMinSize)
         .commands {
             Mac7ZipCommands()

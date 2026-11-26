@@ -11,16 +11,17 @@ import Foundation
 /// Multi-file extraction is deliberately **not** whole-operation atomic.
 /// How a password may reach 7zz.
 ///
-/// **Verified 2026-11-23 on macOS 26 / 7-Zip 26.06:** the `-p` prompt reads from
-/// the console and ignores piped stdin *and* a `script(1)` pseudo-terminal. There
-/// is therefore no non-argv transport available. Mac7Zip refuses password
-/// operations by default rather than silently exposing the password in `ps`.
+/// **Note on transport:** 7-Zip 26.06's `-p` prompt is console-bound and ignores
+/// piped stdin *and* `script(1)` pseudo-terminals (verified 2026-11-23), so the
+/// password has to travel in argv. `argvExplicit` is therefore the default: the
+/// password is visible to other local processes via `ps` for the lifetime of the
+/// extraction, which was accepted as a deliberate tradeoff to make encrypted
+/// archives usable at all.
 enum PasswordTransport: Sendable {
-    /// Fail closed (default). No insecure fallback.
-    case unavailable
-    /// Explicit opt-in: pass `-p<password>` in argv. Visible to other processes
-    /// via `ps`; must only be used with the user's informed consent.
+    /// Pass `-p<password>` in argv (default). Visible to other processes via `ps`.
     case argvExplicit
+    /// Refuse password operations outright.
+    case unavailable
 }
 
 struct SevenZipEngine: ArchiveEngine {
@@ -40,6 +41,23 @@ struct SevenZipEngine: ArchiveEngine {
         entries.contains { $0.path.contains("\u{FFFD}") || $0.path.contains("?") }
     }
 
+    /// True when 7-Zip's names disagree with libarchive's decoding of the same
+    /// archive.
+    ///
+    /// `looksGarbled` only catches replacement characters. A legacy ZIP whose
+    /// bytes 7zz decoded with the wrong single-byte code page produces plausible
+    /// look-alike CJK text (`╧ε─┐╔Ω▒¿`) with no `?` at all, so that check misses it
+    /// and the repair chain never runs. libarchive decodes the original bytes with
+    /// our UTF-8 → GB18030 → Big5 chain, so a mismatch means 7zz got it wrong.
+    static func namesDisagreeWithLibArchive(_ entries: [ArchiveEntry], archive: URL) -> Bool {
+        guard let raw = LibArchiveReader.listEntries(at: archive), raw.count == entries.count else {
+            return false
+        }
+        return zip(entries, raw).contains { entry, source in
+            entry.path != source.path && !entry.path.isEmpty && !source.path.isEmpty
+        }
+    }
+
     private static func garbleScore(_ entries: [ArchiveEntry]) -> Int {
         entries.reduce(0) { partial, entry in
             partial + entry.path.filter { $0 == "\u{FFFD}" || $0 == "?" }.count
@@ -52,7 +70,7 @@ struct SevenZipEngine: ArchiveEngine {
     init(
         runner: SevenZipProcessRunner,
         validator: SecurityValidator = SecurityValidator(),
-        passwordTransport: PasswordTransport = .unavailable
+        passwordTransport: PasswordTransport = .argvExplicit
     ) {
         self.runner = runner
         self.validator = validator
@@ -63,7 +81,7 @@ struct SevenZipEngine: ArchiveEngine {
         executableURL: URL,
         limits: ExtractionLimits = ExtractionLimits(),
         timeout: TimeInterval = 300,
-        passwordTransport: PasswordTransport = .unavailable
+        passwordTransport: PasswordTransport = .argvExplicit
     ) {
         self.runner = SevenZipProcessRunner(executableURL: executableURL, timeout: timeout)
         self.validator = SecurityValidator(limits: limits)
@@ -121,6 +139,13 @@ struct SevenZipEngine: ArchiveEngine {
         }
         // Any format: if names still look garbled, rebuild from libarchive.
         if Self.looksGarbled(entries), let repaired = Self.repairNamesWithLibArchive(entries, archive: archive) {
+            entries = repaired
+        }
+        // 7-Zip can also emit look-alike CJK (no '?' at all) when it decodes a
+        // legacy name with the wrong single-byte code page. libarchive reads the
+        // original bytes, so use its names whenever the two disagree.
+        if Self.namesDisagreeWithLibArchive(entries, archive: archive),
+           let repaired = Self.repairNamesWithLibArchive(entries, archive: archive) {
             entries = repaired
         }
         return entries

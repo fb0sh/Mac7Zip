@@ -68,10 +68,10 @@ final class ExtensionPackagingTests: XCTestCase {
         (try? String(contentsOf: repoRoot.appendingPathComponent("project.yml"), encoding: .utf8)) ?? ""
     }
 
-    func testThumbnailExtensionDeclaresQuickLookPoint() {
+    func testPreviewExtensionDeclaresQuickLookPoint() {
         let text = yml()
-        XCTAssertTrue(text.contains("com.apple.quicklook.thumbnail"), "Thumbnail extension must declare its NSExtensionPointIdentifier in properties")
-        XCTAssertTrue(text.contains("Mac7ZipThumbnail"))
+        XCTAssertTrue(text.contains("com.apple.quicklook.preview"), "Preview extension must declare its NSExtensionPointIdentifier in properties")
+        XCTAssertTrue(text.contains("Mac7ZipPreview"))
     }
 
     func testFinderSyncDeclaresItsPoint() {
@@ -81,29 +81,53 @@ final class ExtensionPackagingTests: XCTestCase {
     func testBothExtensionsAreEmbedded() {
         let text = yml()
         XCTAssertTrue(text.contains("- target: Mac7ZipFinderSync\n        embed: true"))
-        XCTAssertTrue(text.contains("- target: Mac7ZipThumbnail\n        embed: true"))
+        XCTAssertTrue(text.contains("- target: Mac7ZipPreview\n        embed: true"))
     }
 
     func testExtensionsHaveSandboxEntitlements() {
-        for name in ["Mac7ZipFinderSync", "Mac7ZipThumbnail"] {
+        for name in ["Mac7ZipFinderSync", "Mac7ZipPreview"] {
             let url = repoRoot.appendingPathComponent("Support/\(name).entitlements")
             let text = (try? String(contentsOf: url, encoding: .utf8)) ?? ""
             XCTAssertTrue(text.contains("com.apple.security.app-sandbox"), "\(name) must be sandboxed")
         }
     }
 
+    /// `UTTypeIconFile` must name the `.icns` file itself; a bare resource name is
+    /// not resolved and macOS falls back to the conforming type's icon (which is
+    /// why .7z used to show the ZIP icon).
     func testImportedTypesDeclareIcons() {
         let yml = (try? String(contentsOf: repoRoot.appendingPathComponent("project.yml"), encoding: .utf8)) ?? ""
-        for icon in ["UTTypeIconFile: 7z", "UTTypeIconFile: gz", "UTTypeIconFile: tar_gz", "UTTypeIconFile: xz", "UTTypeIconFile: rar"] {
-            XCTAssertTrue(yml.contains(icon), "Missing \(icon)")
+        for icon in ["7z.icns", "gz.icns", "tar_gz.icns", "xz.icns", "rar.icns", "bz2.icns"] {
+            XCTAssertTrue(yml.contains("UTTypeIconFile: \(icon)"), "Missing UTTypeIconFile: \(icon)")
         }
     }
 
     func testQuickLookExtensionsDeclared() {
         let yml = (try? String(contentsOf: repoRoot.appendingPathComponent("project.yml"), encoding: .utf8)) ?? ""
-        XCTAssertTrue(yml.contains("com.apple.quicklook.thumbnail"))
         XCTAssertTrue(yml.contains("com.apple.quicklook.preview"))
         XCTAssertTrue(yml.contains("Mac7ZipPreview"))
         XCTAssertTrue(yml.contains("- target: Mac7ZipPreview\n        embed: true"))
+    }
+
+    /// Regression: a catch-all document type used to claim `org.7-zip.7-zip-archive`
+    /// with the `zip` icon, so LaunchServices resolved .7z to zip. Each UTI must be
+    /// claimed by at most one document type, and that type's icon must be the one
+    /// declared for the UTI.
+    func testNoDocumentTypeClaimsAnotherTypesUTIWithADifferentIcon() {
+        let yml = (try? String(contentsOf: repoRoot.appendingPathComponent("project.yml"), encoding: .utf8)) ?? ""
+        XCTAssertFalse(
+            yml.contains("CFBundleTypeIconFile: zip\n            LSItemContentTypes:\n              - org.7-zip.7-zip-archive"),
+            "The zip catch-all must not claim the 7z UTI"
+        )
+        XCTAssertTrue(yml.contains("CFBundleTypeIconFile: 7z\n            CFBundleTypeExtensions: [\"7z\"]\n            LSItemContentTypes: [org.7-zip.7-zip-archive]"))
+    }
+
+    /// Data-based Quick Look previews must declare the flag and subclass
+    /// QLPreviewProvider, otherwise Quick Look reports "Principal object invalid".
+    func testPreviewExtensionIsDataBased() {
+        let yml = (try? String(contentsOf: repoRoot.appendingPathComponent("project.yml"), encoding: .utf8)) ?? ""
+        XCTAssertTrue(yml.contains("QLIsDataBasedPreview: true"), "Preview extension must set QLIsDataBasedPreview")
+        let source = (try? String(contentsOf: repoRoot.appendingPathComponent("Sources/Mac7ZipPreview/PreviewProvider.swift"), encoding: .utf8)) ?? ""
+        XCTAssertTrue(source.contains("QLPreviewProvider"), "PreviewProvider must subclass QLPreviewProvider")
     }
 }

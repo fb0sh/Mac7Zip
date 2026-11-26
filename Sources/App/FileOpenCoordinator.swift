@@ -1,7 +1,4 @@
 import AppKit
-import Foundation
-
-import AppKit
 import Combine
 import Foundation
 
@@ -9,6 +6,12 @@ import Foundation
 /// launches and route them into `FileOpenInbox`.
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Publish the Finder Service handlers. Info.plist declares them, but
+        // AppKit only routes the menu items to us once a services provider is
+        // registered - without this the Services submenu stays empty.
+        NSApp.servicesProvider = self
+        NSUpdateDynamicServices()
+
         // Show icon + text in the toolbar so the actions are self-explanatory.
         DispatchQueue.main.async {
             for window in NSApp.windows {

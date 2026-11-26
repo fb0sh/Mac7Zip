@@ -26,7 +26,6 @@ if [ -d "$APP/Contents/PlugIns" ]; then
     echo "sign appex: $appex (with entitlements)"
     ENT="$ROOT/Support/Mac7ZipFinderSync.entitlements"
     case "$(basename "$appex")" in
-      *Thumbnail*) ENT="$ROOT/Support/Mac7ZipThumbnail.entitlements" ;;
       *Preview*) ENT="$ROOT/Support/Mac7ZipPreview.entitlements" ;;
     esac
     if [ -f "$ENT" ]; then

@@ -7,6 +7,7 @@ struct SettingsView: View {
     @StateObject private var iconRegistrar = FileIconRegistrar()
     @State private var selectedDefaultExtensions: Set<String> = []
     @State private var finderStatus: FinderExtensionState = .unknown
+    @State private var previewStatus: FinderExtensionState = .unknown
 
     var body: some View {
         TabView {
@@ -22,16 +23,49 @@ struct SettingsView: View {
                 .tabItem { Label("About", systemImage: "info.circle") }
         }
         .frame(width: 520, height: 380)
-        .task { finderStatus = await FinderExtensionChecker.check() }
+        .task { await refreshStatuses() }
         .padding()
     }
 
-    private var finderStatusText: String {
-        switch finderStatus {
+    private enum StatusTarget { case finder, preview }
+
+    private func finderStatusText(_ state: FinderExtensionState) -> String {
+        switch state {
         case .enabled: return "已启用"
         case .disabled: return "已安装但未启用"
         case .notInstalled: return "未注册"
         case .unknown: return "未知"
+        }
+    }
+
+    private func refreshStatuses() async {
+        async let finder = FinderExtensionChecker.check(bundleID: FinderExtensionChecker.bundleID)
+        async let preview = FinderExtensionChecker.check(bundleID: FinderExtensionChecker.previewBundleID)
+        finderStatus = await finder
+        previewStatus = await preview
+    }
+
+    /// Runs a registry change, then re-reads that extension's status once
+    /// `pluginkit` has had time to settle.
+    private func run(_ action: () -> Void, refresh target: StatusTarget) {
+        action()
+        settle(target)
+    }
+
+    private func unregister(_ appexName: String, refresh target: StatusTarget) {
+        FinderExtensionChecker.unregister(appexName: appexName)
+        settle(target)
+    }
+
+    private func settle(_ target: StatusTarget) {
+        Task {
+            try? await Task.sleep(nanoseconds: 500_000_000)
+            switch target {
+            case .finder:
+                finderStatus = await FinderExtensionChecker.check(bundleID: FinderExtensionChecker.bundleID)
+            case .preview:
+                previewStatus = await FinderExtensionChecker.check(bundleID: FinderExtensionChecker.previewBundleID)
+            }
         }
     }
 
@@ -141,24 +175,32 @@ struct SettingsView: View {
         Form {
             Section("Finder 右键菜单") {
                 LabeledContent("状态") {
-                    Text(finderStatusText)
+                    Text(finderStatusText(finderStatus))
                         .foregroundStyle(finderStatus == .enabled ? .green : .secondary)
                 }
                 HStack {
-                    Button("启用/注册扩展") {
-                        FinderExtensionChecker.enable()
-                        Task {
-                            try? await Task.sleep(nanoseconds: 500_000_000)
-                            finderStatus = await FinderExtensionChecker.check()
-                        }
-                    }
-                    Button("重新检查") {
-                        Task { finderStatus = await FinderExtensionChecker.check() }
-                    }
-                    Button("启用缩略图扩展") {
-                        FinderExtensionChecker.enableThumbnail()
-                    }
+                    Button("启用") { run(FinderExtensionChecker.enableFinderSync, refresh: .finder) }
+                    Button("卸载") { unregister("Mac7ZipFinderSync.appex", refresh: .finder) }
                 }
+            }
+            Section("快速预览（空格）") {
+                LabeledContent("状态") {
+                    Text(finderStatusText(previewStatus))
+                        .foregroundStyle(previewStatus == .enabled ? .green : .secondary)
+                }
+                HStack {
+                    Button("启用") { run(FinderExtensionChecker.enablePreview, refresh: .preview) }
+                    Button("卸载") { unregister("Mac7ZipPreview.appex", refresh: .preview) }
+                }
+            }
+            Section("图标") {
+                HStack {
+                    Button("重新检查") { Task { await refreshStatuses() } }
+                    Button("重置图标缓存") { FinderExtensionChecker.resetIconCache() }
+                }
+                Text("卸载会移除该项注册，下次启用时恢复；重置图标缓存会重建 LaunchServices 并重启访达。")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
             Section {
                 Toggle("Notify me when a task finishes", isOn: $store.settings.sendCompletionNotifications)

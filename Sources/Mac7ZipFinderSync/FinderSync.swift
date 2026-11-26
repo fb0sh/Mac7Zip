@@ -11,13 +11,11 @@ import FinderSync
 class FinderSync: FIFinderSync {
     override init() {
         super.init()
-        // Monitor common user folders. (A future enhancement: make this configurable.)
+        // Monitor the home folder tree: archives are rarely confined to the three
+        // standard folders, and a Finder Sync extension only shows its menu inside
+        // the directories it monitors.
         let home = FileManager.default.homeDirectoryForCurrentUser
-        FIFinderSyncController.default().directoryURLs = [
-            home.appendingPathComponent("Downloads"),
-            home.appendingPathComponent("Documents"),
-            home.appendingPathComponent("Desktop"),
-        ]
+        FIFinderSyncController.default().directoryURLs = [home]
     }
 
     override var toolbarItemName: String { "Mac7Zip" }
@@ -28,23 +26,32 @@ class FinderSync: FIFinderSync {
 
     override func menu(for menuKind: FIMenuKind) -> NSMenu {
         let menu = NSMenu(title: "")
-        switch menuKind {
-        case .contextualMenuForItems, .contextualMenuForContainer, .toolbarItemMenu:
-            menu.addItem(withTitle: "Open Archive", action: #selector(openArchive(_:)), keyEquivalent: "")
-            menu.addItem(withTitle: "Extract Here", action: #selector(extractHere(_:)), keyEquivalent: "")
-            menu.addItem(withTitle: "Extract to Folder", action: #selector(extractToFolder(_:)), keyEquivalent: "")
-            menu.addItem(.separator())
-            menu.addItem(withTitle: "Add to Archive…", action: #selector(addToArchive(_:)), keyEquivalent: "")
-        default:
-            break
+        guard menuKind == .contextualMenuForItems
+            || menuKind == .contextualMenuForContainer
+            || menuKind == .toolbarItemMenu else {
+            return menu
         }
+
+        // Finder only renders items whose target is reachable from the extension.
+        // Items without an explicit target are dropped, leaving an empty menu.
+        addItem(to: menu, title: "解压到当前文件夹", action: #selector(extractHere(_:)))
+        addItem(to: menu, title: "解压到「名称」文件夹", action: #selector(extractToFolder(_:)))
+        addItem(to: menu, title: "用 Mac7Zip 打开", action: #selector(openArchive(_:)))
+        menu.addItem(.separator())
+        addItem(to: menu, title: "添加到压缩包…", action: #selector(addToArchive(_:)))
         return menu
     }
 
-    @objc private func openArchive(_ sender: AnyObject?) { forward("openArchive") }
-    @objc private func extractHere(_ sender: AnyObject?) { forward("extractHere") }
-    @objc private func extractToFolder(_ sender: AnyObject?) { forward("extractToFolder") }
-    @objc private func addToArchive(_ sender: AnyObject?) { forward("addToArchive") }
+    private func addItem(to menu: NSMenu, title: String, action: Selector) {
+        let item = NSMenuItem(title: title, action: action, keyEquivalent: "")
+        item.target = self
+        menu.addItem(item)
+    }
+
+    @objc func openArchive(_ sender: AnyObject?) { forward("openArchive") }
+    @objc func extractHere(_ sender: AnyObject?) { forward("extractHere") }
+    @objc func extractToFolder(_ sender: AnyObject?) { forward("extractToFolder") }
+    @objc func addToArchive(_ sender: AnyObject?) { forward("addToArchive") }
 
     /// Bridges the extension (which cannot call the host directly) to the app via a
     /// `mac7zip://action?...` URL.

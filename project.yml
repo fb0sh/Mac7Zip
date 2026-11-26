@@ -40,8 +40,6 @@ targets:
     dependencies:
       - target: Mac7ZipFinderSync
         embed: true
-      - target: Mac7ZipThumbnail
-        embed: true
       - target: Mac7ZipPreview
         embed: true
     info:
@@ -61,6 +59,7 @@ targets:
             LSHandlerRank: Alternate
             CFBundleTypeIconFile: 7z
             CFBundleTypeExtensions: ["7z"]
+            LSItemContentTypes: [org.7-zip.7-zip-archive]
           - CFBundleTypeName: "apk archive"
             CFBundleTypeRole: Viewer
             LSHandlerRank: Alternate
@@ -76,6 +75,7 @@ targets:
             LSHandlerRank: Alternate
             CFBundleTypeIconFile: bz2
             CFBundleTypeExtensions: ["bz2"]
+            LSItemContentTypes: [public.bzip2-archive]
           - CFBundleTypeName: "cab archive"
             CFBundleTypeRole: Viewer
             LSHandlerRank: Alternate
@@ -86,6 +86,7 @@ targets:
             LSHandlerRank: Alternate
             CFBundleTypeIconFile: gz
             CFBundleTypeExtensions: ["gz"]
+            LSItemContentTypes: [org.gnu.gnu-zip-archive]
           - CFBundleTypeName: "img archive"
             CFBundleTypeRole: Viewer
             LSHandlerRank: Alternate
@@ -116,11 +117,13 @@ targets:
             LSHandlerRank: Alternate
             CFBundleTypeIconFile: rar
             CFBundleTypeExtensions: ["rar"]
+            LSItemContentTypes: [com.rarlab.rar-archive]
           - CFBundleTypeName: "tar archive"
             CFBundleTypeRole: Viewer
             LSHandlerRank: Alternate
             CFBundleTypeIconFile: tar
             CFBundleTypeExtensions: ["tar"]
+            LSItemContentTypes: [public.tar-archive]
           - CFBundleTypeName: "tar.gz archive"
             CFBundleTypeRole: Viewer
             LSHandlerRank: Alternate
@@ -161,79 +164,76 @@ targets:
             LSHandlerRank: Alternate
             CFBundleTypeIconFile: xz
             CFBundleTypeExtensions: ["xz"]
+            LSItemContentTypes: [org.tukaani.xz-archive]
           - CFBundleTypeName: "zip archive"
             CFBundleTypeRole: Viewer
             LSHandlerRank: Alternate
             CFBundleTypeIconFile: zip
             CFBundleTypeExtensions: ["zip"]
+            LSItemContentTypes: [public.zip-archive]
           - CFBundleTypeName: "zst archive"
             CFBundleTypeRole: Viewer
             LSHandlerRank: Alternate
             CFBundleTypeIconFile: zst
             CFBundleTypeExtensions: ["zst"]
-          - CFBundleTypeName: Archive
-            CFBundleTypeRole: Viewer
-            LSHandlerRank: Alternate
-            CFBundleTypeIconFile: zip
-            LSItemContentTypes:
-              - org.7-zip.7-zip-archive
-              - public.zip-archive
-              - public.tar-archive
-              - org.gnu.gnu-zip-archive
-              - org.gnu.gnu-zip-tar-archive
         UTImportedTypeDeclarations:
           - UTTypeIdentifier: org.7-zip.7-zip-archive
             UTTypeDescription: 7-Zip Archive
-            UTTypeIconFile: 7z
+            UTTypeIconFile: 7z.icns
             UTTypeConformsTo: [public.data, public.archive]
             UTTypeTagSpecification:
               public.filename-extension: [7z]
           - UTTypeIdentifier: org.gnu.gnu-zip-archive
             UTTypeDescription: Gzip Archive
-            UTTypeIconFile: gz
+            UTTypeIconFile: gz.icns
             UTTypeConformsTo: [public.data, public.archive]
             UTTypeTagSpecification:
               public.filename-extension: [gz]
           - UTTypeIdentifier: org.gnu.gnu-zip-tar-archive
             UTTypeDescription: Gzipped Tar Archive
-            UTTypeIconFile: tar_gz
+            UTTypeIconFile: tar_gz.icns
             UTTypeConformsTo: [public.data, public.archive]
             UTTypeTagSpecification:
               public.filename-extension: [tgz]
           - UTTypeIdentifier: org.tukaani.xz-archive
             UTTypeDescription: XZ Archive
-            UTTypeIconFile: xz
+            UTTypeIconFile: xz.icns
             UTTypeConformsTo: [public.data, public.archive]
             UTTypeTagSpecification:
               public.filename-extension: [xz]
           - UTTypeIdentifier: public.bzip2-archive
             UTTypeDescription: Bzip2 Archive
-            UTTypeIconFile: bz2
+            UTTypeIconFile: bz2.icns
             UTTypeConformsTo: [public.data, public.archive]
             UTTypeTagSpecification:
               public.filename-extension: [bz2]
           - UTTypeIdentifier: com.rarlab.rar-archive
             UTTypeDescription: RAR Archive
-            UTTypeIconFile: rar
+            UTTypeIconFile: rar.icns
             UTTypeConformsTo: [public.data, public.archive]
             UTTypeTagSpecification:
               public.filename-extension: [rar]
         NSServices:
-          - NSMenuItem: {default: Open Archive}
+          - NSMenuItem: {default: 用 Mac7Zip 打开}
             NSMessage: openArchiveService
-            NSSendFileTypes: [public.data]
-          - NSMenuItem: {default: Extract Here}
+            NSPortName: Mac7Zip
+            NSSendFileTypes: [public.archive, public.data]
+          - NSMenuItem: {default: 用 Mac7Zip 解压到此处}
             NSMessage: extractHereService
-            NSSendFileTypes: [public.data]
-          - NSMenuItem: {default: Extract to Folder}
+            NSPortName: Mac7Zip
+            NSSendFileTypes: [public.archive, public.data]
+          - NSMenuItem: {default: 用 Mac7Zip 解压到文件夹}
             NSMessage: extractToFolderService
-            NSSendFileTypes: [public.data]
-          - NSMenuItem: {default: Test Archive}
+            NSPortName: Mac7Zip
+            NSSendFileTypes: [public.archive, public.data]
+          - NSMenuItem: {default: 用 Mac7Zip 测试压缩包}
             NSMessage: testArchiveService
-            NSSendFileTypes: [public.data]
-          - NSMenuItem: {default: Add to Archive}
+            NSPortName: Mac7Zip
+            NSSendFileTypes: [public.archive, public.data]
+          - NSMenuItem: {default: 用 Mac7Zip 压缩}
             NSMessage: addToArchiveService
-            NSSendFileTypes: [public.data]
+            NSPortName: Mac7Zip
+            NSSendFileTypes: [public.item]
         CFBundleURLTypes:
           - CFBundleURLName: com.fb0sh.URL
             CFBundleURLSchemes: [mac7zip]
@@ -258,39 +258,6 @@ targets:
           NSExtensionPointIdentifier: com.apple.FinderSync
           NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).FinderSync
 
-  Mac7ZipThumbnail:
-    type: app-extension
-    platform: macOS
-    sources:
-      - path: Sources/Mac7ZipThumbnail
-      - path: Sources/Archive/ZipCentralDirectoryReader.swift
-      - path: Sources/ArchiveBridge/LibArchiveReader.swift
-    settings:
-      base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.fb0sh.Mac7Zip.Thumbnail
-        PRODUCT_NAME: Mac7ZipThumbnail
-        GENERATE_INFOPLIST_FILE: NO
-        SKIP_INSTALL: YES
-        CODE_SIGN_ENTITLEMENTS: Support/Mac7ZipThumbnail.entitlements
-    info:
-      path: Support/Thumbnail-Info.plist
-      properties:
-        CFBundleDisplayName: Mac7Zip Thumbnail
-        NSExtension:
-          NSExtensionPointIdentifier: com.apple.quicklook.thumbnail
-          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ThumbnailProvider
-          NSExtensionAttributes:
-            QLSupportedContentTypes:
-              - public.zip-archive
-              - org.7-zip.7-zip-archive
-              - public.tar-archive
-              - org.gnu.gnu-zip-archive
-              - org.gnu.gnu-zip-tar-archive
-              - com.rarlab.rar-archive
-              - public.bzip2-archive
-              - org.tukaani.xz-archive
-            QLThumbnailMinimumDimension: 16
-
   Mac7ZipPreview:
     type: app-extension
     platform: macOS
@@ -313,6 +280,7 @@ targets:
           NSExtensionPointIdentifier: com.apple.quicklook.preview
           NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).PreviewProvider
           NSExtensionAttributes:
+            QLIsDataBasedPreview: true
             QLSupportedContentTypes:
               - public.zip-archive
               - org.7-zip.7-zip-archive

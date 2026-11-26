@@ -1,3 +1,4 @@
+import CoreFoundation
 import XCTest
 @testable import Mac7Zip
 
@@ -7,6 +8,7 @@ final class SevenZipEngineIntegrationTests: XCTestCase {
     private var workDir: URL!
     private var engine: SevenZipEngine!
     private var engineWithArgvPassword: SevenZipEngine!
+    private var engineRefusingPasswords: SevenZipEngine!
 
     private static var helperURL: URL? {
         let relative = "Vendor/7zz/26.06/arm64/7zz"
@@ -50,6 +52,7 @@ final class SevenZipEngineIntegrationTests: XCTestCase {
         try FileManager.default.createDirectory(at: workDir, withIntermediateDirectories: true)
         engine = SevenZipEngine(executableURL: helper, timeout: 30)
         engineWithArgvPassword = SevenZipEngine(executableURL: helper, timeout: 30, passwordTransport: .argvExplicit)
+        engineRefusingPasswords = SevenZipEngine(executableURL: helper, timeout: 30, passwordTransport: .unavailable)
     }
 
     override func tearDownWithError() throws {
@@ -104,16 +107,16 @@ final class SevenZipEngineIntegrationTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: dest.appendingPathComponent("src/b.txt").path))
     }
 
-    func testPasswordOperationsFailClosedByDefault() async throws {
+    func testPasswordOperationsFailClosedWhenTransportIsUnavailable() async throws {
         let src = try makeSourceTree()
         let archive = workDir.appendingPathComponent("blocked.7z")
         do {
-            try await engine.createArchive(
+            try await engineRefusingPasswords.createArchive(
                 at: archive,
                 from: [src],
                 options: ArchiveOptions(format: .sevenZip, password: "correct-horse")
             )
-            XCTFail("Password operations must fail closed without an explicit transport")
+            XCTFail("Password operations must fail closed when the transport is unavailable")
         } catch let error as ArchiveError {
             XCTAssertEqual(error, .passwordTransportUnavailable)
         }
@@ -136,6 +139,110 @@ final class SevenZipEngineIntegrationTests: XCTestCase {
             options: ExtractOptions(password: "correct-horse", destination: dest)
         )
         XCTAssertTrue(FileManager.default.fileExists(atPath: dest.appendingPathComponent("src/a.txt").path))
+    }
+
+    /// Regression: a legacy ZIP whose names are GBK bytes still shows the right
+    /// names. 7-Zip decodes those bytes with the wrong single-byte code page and
+    /// emits look-alike CJK with no '?' at all, so `looksGarbled` misses it; the
+    /// libarchive cross-check has to catch it.
+    func testLegacyGBKZipNamesAreRepaired() async throws {
+        let archive = workDir.appendingPathComponent("legacy-gbk.zip")
+        let name = "项目申报/袁翔_项目申报.pdf"
+        try makeLegacyZip(at: archive, entries: [("项目申报/", Data()), (name, Data("hi".utf8))])
+
+        let entries = try await engine.listContents(of: archive)
+        let paths = entries.map(\.path)
+        XCTAssertTrue(paths.contains { $0.contains("项目申报") }, "GBK names not repaired: \(paths)")
+        XCTAssertFalse(paths.contains { $0.contains("?" ) || $0.contains("\u{FFFD}") }, "Still garbled: \(paths)")
+    }
+
+    /// Writes a ZIP whose entry names are encoded as GBK with the UTF-8 flag
+    /// cleared, i.e. what Windows tools produced before UTF-8 support.
+    private func makeLegacyZip(at url: URL, entries: [(String, Data)]) throws {
+        var body = Data()
+        var central: [(raw: Data, crc: UInt32, size: Int, mode: Int, offset: Int)] = []
+
+        for (name, payload) in entries {
+            guard let gb18030 = Self.gb18030, let raw = name.data(using: gb18030) else { continue }
+            let offset = body.count
+            let crc = Self.crc32(payload)
+            let isDir = name.hasSuffix("/")
+            let stored = payload                   // method 0: no compression needed
+            body.append(Self.le32(0x04034b50))
+            body.append(Self.le16(20))             // version needed
+            body.append(Self.le16(0))              // flags: no UTF-8 bit
+            body.append(Self.le16(0))              // method: stored
+            body.append(Self.le16(0))              // time
+            body.append(Self.le16(0x21))           // date
+            body.append(Self.le32(crc))
+            body.append(Self.le32(UInt32(stored.count)))
+            body.append(Self.le32(UInt32(stored.count)))
+            body.append(Self.le16(UInt16(raw.count)))
+            body.append(Self.le16(0))
+            body.append(raw)
+            body.append(stored)
+            central.append((raw, crc, stored.count, isDir ? 0o40755 : 0o100644, offset))
+        }
+
+        let cdOffset = body.count
+        for entry in central {
+            let (raw, crc, size, mode, offset) = (entry.raw, entry.crc, entry.size, entry.mode, entry.offset)
+            body.append(Self.le32(0x02014b50))   // signature
+            body.append(Self.le16(20))            // version made by
+            body.append(Self.le16(20))            // version needed
+            body.append(Self.le16(0))             // flags
+            body.append(Self.le16(0))             // method
+            body.append(Self.le16(0))             // time
+            body.append(Self.le16(0x21))          // date
+            body.append(Self.le32(crc))
+            body.append(Self.le32(UInt32(size)))  // compressed size
+            body.append(Self.le32(UInt32(size)))  // uncompressed size
+            body.append(Self.le16(UInt16(raw.count)))
+            body.append(Self.le16(0))             // extra length
+            body.append(Self.le16(0))             // comment length
+            body.append(Self.le16(0))             // disk number
+            body.append(Self.le16(0))             // internal attributes
+            body.append(Self.le32(UInt32(mode) << 16))  // external attributes
+            body.append(Self.le32(UInt32(offset)))
+            body.append(raw)
+        }
+        let cdSize = body.count - cdOffset
+        body.append(Self.le32(0x06054b50))
+        body.append(Self.le16(0))
+        body.append(Self.le16(0))
+        body.append(Self.le16(UInt16(central.count)))
+        body.append(Self.le16(UInt16(central.count)))
+        body.append(Self.le32(UInt32(cdSize)))
+        body.append(Self.le32(UInt32(cdOffset)))
+        body.append(Self.le16(0))
+        try body.write(to: url)
+    }
+
+    /// GB18030, matching the decoder used by `LibArchiveReader`.
+    private static var gb18030: String.Encoding? {
+        let raw = CFStringConvertEncodingToNSStringEncoding(
+            CFStringEncoding(CFStringEncodings.GB_18030_2000.rawValue)
+        )
+        return raw == kCFStringEncodingInvalidId ? nil : String.Encoding(rawValue: raw)
+    }
+
+    private static func le16(_ value: UInt16) -> Data {
+        var little = value.littleEndian
+        return withUnsafeBytes(of: &little) { Data($0) }
+    }
+
+    private static func le32(_ value: UInt32) -> Data {
+        var little = value.littleEndian
+        return withUnsafeBytes(of: &little) { Data($0) }
+    }
+
+    private static func crc32(_ data: Data) -> UInt32 {
+        var crc: UInt32 = 0xFFFFFFFF
+        for byte in data {
+            crc ^= UInt32(byte)
+            for _ in 0..<8 { crc = (crc & 1) != 0 ? (crc >> 1) ^ 0xEDB88320 : crc >> 1 }
+        }
+        return crc ^ 0xFFFFFFFF
     }
 
     func testWrongPasswordFails() async throws {
@@ -205,6 +312,7 @@ final class SevenZipEngineIntegrationTests: XCTestCase {
 final class CompressionIntegrationTests: XCTestCase {
     private var workDir: URL!
     private var engine: SevenZipEngine!
+    private var engineRefusingPasswords: SevenZipEngine!
 
     private static var helperURL: URL? {
         var dir = URL(fileURLWithPath: #filePath)
@@ -222,6 +330,7 @@ final class CompressionIntegrationTests: XCTestCase {
             .appendingPathComponent("Mac7ZipCompTests-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: workDir, withIntermediateDirectories: true)
         engine = SevenZipEngine(executableURL: helper, timeout: 30)
+        engineRefusingPasswords = SevenZipEngine(executableURL: helper, timeout: 30, passwordTransport: .unavailable)
     }
 
     override func tearDownWithError() throws {
@@ -272,11 +381,11 @@ final class CompressionIntegrationTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(try FileManager.default.attributesOfItem(atPath: archive.path)[.size] as? Int ?? 0, firstSize)
     }
 
-    func testPasswordCreationFailsClosedByDefault() async throws {
+    func testPasswordCreationFailsClosedWhenTransportIsUnavailable() async throws {
         let files = try makeFiles()
         let archive = workDir.appendingPathComponent("enc.7z")
         do {
-            try await engine.createArchive(
+            try await engineRefusingPasswords.createArchive(
                 at: archive,
                 from: files,
                 options: ArchiveOptions(format: .sevenZip, password: "pw")

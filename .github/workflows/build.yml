@@ -120,16 +120,16 @@ jobs:
             test 2>&1 | tee build-uitest.log
           echo "UI exit: ${PIPESTATUS[0]} (non-blocking)"
 
-      - name: Release build (universal arm64 + x86_64)
+      - name: Release build (arm64)
         run: |
           set -o pipefail
           xcodebuild \
             -project "$PROJECT" \
             -scheme "$SCHEME" \
             -configuration Release \
-            -destination 'platform=macOS' \
+            -destination 'platform=macOS,arch=arm64' \
             -derivedDataPath build \
-            ARCHS="arm64 x86_64" ONLY_ACTIVE_ARCH=NO \
+            ARCHS="arm64" ONLY_ACTIVE_ARCH=NO \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
             build | tee build-release.log
 
@@ -160,18 +160,14 @@ jobs:
           lipo -info "$BINARY"
           ARCHS_FOUND="$(lipo -archs "$BINARY")"
           echo "archs: $ARCHS_FOUND"
-          case "$ARCHS_FOUND" in
-            *arm64*) echo "arm64 present" ;;
-            *) echo "::error::arm64 missing from binary"; exit 1 ;;
-          esac
-          case "$ARCHS_FOUND" in
-            *x86_64*) echo "x86_64 present" ;;
-            *) echo "::error::x86_64 missing (universal build required, TKT-M6-03)"; exit 1 ;;
-          esac
+          if [ "$ARCHS_FOUND" != "arm64" ]; then
+            echo "::error::expected arm64-only binary, got: $ARCHS_FOUND"
+            exit 1
+          fi
           echo "--- otool -L ---"
           otool -L "$BINARY"
 
-      - name: Package .app into ZIP
+      - name: Package .app into DMG
         run: |
           set -euo pipefail
           APP_PATH="build/Build/Products/Release/${APP_NAME}.app"
@@ -181,27 +177,29 @@ jobs:
             exit 1
           fi
           echo "--- bundling 7zz helper ---"
-          ./scripts/bundle-7zz.sh "$APP_PATH" universal
+          ./scripts/bundle-7zz.sh "$APP_PATH" arm64
           lipo -info "$APP_PATH/Contents/Helpers/7zz"
           "$APP_PATH/Contents/Helpers/7zz" i | head -12
 
-          /usr/bin/ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "${APP_NAME}-universal.zip"
-          ls -lh "${APP_NAME}-universal.zip"
-
           echo "--- ad-hoc (self) signing for local use ---"
           ./scripts/sign-adhoc.sh "$APP_PATH"
-          /usr/bin/ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "${APP_NAME}-selfsigned.zip"
-          ls -lh "${APP_NAME}-selfsigned.zip"
-          echo "--- archive contents (top) ---"
-          /usr/bin/unzip -l "${APP_NAME}-selfsigned.zip" | head -40
+
+          ./scripts/make-dmg.sh "$APP_PATH" "${APP_NAME}-arm64.dmg"
+
+          echo "--- DMG contents ---"
+          MOUNT="dmg-verify"
+          mkdir -p "$MOUNT"
+          /usr/bin/hdiutil attach "${APP_NAME}-arm64.dmg" -nobrowse -readonly -mountpoint "$MOUNT"
+          ls -la "$MOUNT"
+          test -L "$MOUNT/Applications"
+          test -d "$MOUNT/${APP_NAME}.app"
+          /usr/bin/hdiutil detach "$MOUNT"
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.APP_NAME }}-selfsigned
-          path: |
-            ${{ env.APP_NAME }}-selfsigned.zip
-            ${{ env.APP_NAME }}-universal.zip
+          name: ${{ env.APP_NAME }}-arm64-dmg
+          path: ${{ env.APP_NAME }}-arm64.dmg
           if-no-files-found: error
           retention-days: 14
 

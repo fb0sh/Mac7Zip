@@ -2,6 +2,37 @@ import AppKit
 import Combine
 import Foundation
 
+/// An extraction waiting on a password from the user.
+struct PasswordRequest: Identifiable {
+    let id = UUID()
+    /// Re-run this to retry once the password is supplied.
+    let retry: (String) -> Void
+    /// True when a previous attempt already failed, so the prompt can say so.
+    let isRetry: Bool
+}
+
+/// Delegates to a real operation, but reports password failures to the caller
+/// before TaskCenter turns them into a plain error string.
+private struct PasswordReportingOperation: TaskOperation {
+    let inner: ExtractOperation
+    let onPasswordError: @Sendable (Error) -> Void
+
+    var kind: TaskKind { inner.kind }
+    var title: String { inner.title }
+
+    func run(report: @escaping @Sendable (Double?, TaskMetrics) -> Void) async throws {
+        do {
+            try await inner.run(report: report)
+        } catch ArchiveError.passwordRequired {
+            onPasswordError(ArchiveError.passwordRequired)
+            throw ArchiveError.passwordRequired
+        } catch ArchiveError.wrongPassword {
+            onPasswordError(ArchiveError.wrongPassword)
+            throw ArchiveError.wrongPassword
+        }
+    }
+}
+
 /// Owns the browsing state for the main window: location (real directory or
 /// archive-internal path), listing, selection, sort, history and file operations.
 @MainActor
@@ -17,6 +48,9 @@ final class BrowserStore: ObservableObject {
     @Published var extractRequested = false
     @Published var compressionRequested = false
     @Published var infoRequestedURL: URL?
+    /// Set when an extraction failed because the archive needs a password. The UI
+    /// shows a password prompt and re-runs the same extraction on confirmation.
+    @Published var passwordRequest: PasswordRequest?
     @Published var lastOperationMessage: String?
     @Published private(set) var lastExtractMessage: String?
     @Published private(set) var loadState: LoadState = .empty
@@ -253,14 +287,18 @@ final class BrowserStore: ObservableObject {
             return
         }
 
-        if !isInsideArchive, ArchiveFormat.detect(from: item.url) != nil {
+        // Content first; entries inside an archive have virtual URLs that cannot
+        // be read as files, so the name is the only signal there.
+        if !isInsideArchive, isArchiveURL(item.url) {
             if let handler = archiveActivationHandler, handler(item.url) { return }
             openArchive(item.url)
             return
         }
         if isInsideArchive {
-            if ArchiveFormat.detect(from: item.url) != nil {
+            if isArchiveURL(item.url) {
                 openNestedArchive(entryName: item.name)
+            } else {
+                openEntryWithSystemDefault(item)
             }
             return
         }
@@ -269,6 +307,12 @@ final class BrowserStore: ObservableObject {
 
     func openSelected() {
         if let first = selectedItems.first { open(first) }
+    }
+
+    /// True when the URL looks like an archive by content, falling back to the
+    /// name for paths that cannot be read (entries inside an open archive).
+    private func isArchiveURL(_ url: URL) -> Bool {
+        ArchiveFormat.detect(from: url) != nil || ArchiveFormat.detectFromName(url) != nil
     }
 
     // MARK: - Extraction
@@ -281,6 +325,9 @@ final class BrowserStore: ObservableObject {
     /// Runs extraction through `TaskCenter` so it is queued, cancellable and
     /// observable. `options.destination` is the user-chosen folder; a subfolder
     /// is applied when requested.
+    ///
+    /// If 7-Zip reports a missing/wrong password, `passwordRequest` is published
+    /// so the UI can ask for one and retry the identical extraction.
     func performExtract(options: ExtractOptions, tasks: TaskCenterAdapter) {
         guard let archiveURL, let helper = SevenZipLocator.helperURL() else {
             operationError = "The 7-Zip engine isn’t available."
@@ -296,18 +343,41 @@ final class BrowserStore: ObservableObject {
         if let subfolder = options.createSubfolder {
             effective.destination = options.destination.appendingPathComponent(subfolder, isDirectory: true)
         }
+        extractRequested = false
+        runExtract(effective, archiveURL: archiveURL, helper: helper, tasks: tasks, isRetry: options.password != nil)
+    }
+
+    private func runExtract(
+        _ options: ExtractOptions,
+        archiveURL: URL,
+        helper: URL,
+        tasks: TaskCenterAdapter,
+        isRetry: Bool
+    ) {
         let engine = SevenZipEngine(executableURL: helper)
-        let operation = ExtractOperation(
+        let inner = ExtractOperation(
             engine: engine,
             archive: archiveURL,
-            destination: effective.destination,
-            options: effective
+            destination: options.destination,
+            options: options
         )
-        extractRequested = false
+        lastExtractMessage = "Extracting to \(options.destination.lastPathComponent)…"
+
+        // Wraps the operation so a password failure can be turned into a prompt
+        // while still going through TaskCenter (queueing, progress, cancellation).
+        let reporter = PasswordReportingOperation(inner: inner) { [weak self] error in
+            guard let self else { return }
+            Task { @MainActor in
+                self.passwordRequest = PasswordRequest(retry: { password in
+                    var retried = options
+                    retried.password = password
+                    self.passwordRequest = nil
+                    self.runExtract(retried, archiveURL: archiveURL, helper: helper, tasks: tasks, isRetry: true)
+                }, isRetry: isRetry)
+            }
+        }
         Task {
-            let id = await tasks.submit(operation)
-            _ = id
-            lastExtractMessage = "Extracting to \(effective.destination.lastPathComponent)…"
+            await tasks.submit(reporter)
         }
     }
 
@@ -454,6 +524,42 @@ final class BrowserStore: ObservableObject {
                     provider = nestedProvider
                 }
                 moveTo(.archive(archiveURL: produced, internalPath: ""))
+            } catch {
+                operationError = Self.archiveMessage(error)
+            }
+        }
+    }
+
+    /// Extracts a single archive entry to a temp folder and hands it to its default
+    /// app, so files that are neither archives nor folders behave like real files.
+    /// The temp copy is deliberately left in place: the receiving app may still be
+    /// reading it, and macOS reclaims the temp directory.
+    private func openEntryWithSystemDefault(_ item: FileItem) {
+        guard let currentArchive = archiveURL, let helper = SevenZipLocator.helperURL() else {
+            operationError = "The 7-Zip engine isn’t available."
+            return
+        }
+        let entryPath = ArchiveFileSystemProvider.normalize((archiveInternalPath ?? "") + "/" + item.name)
+        let tempDir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("Mac7Zip-open-\(UUID().uuidString)", isDirectory: true)
+
+        Task {
+            do {
+                try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+                let engine = SevenZipEngine(executableURL: helper)
+                var options = ExtractOptions(destination: tempDir)
+                options.entries = [entryPath]
+                options.password = nil
+                options.overwriteMode = .overwrite
+                try await engine.extract(archive: currentArchive, to: tempDir, options: options)
+
+                // Extraction preserves the entry's internal path.
+                let produced = tempDir.appendingPathComponent(entryPath)
+                guard FileManager.default.fileExists(atPath: produced.path) else {
+                    operationError = "Couldn’t extract the file to open it."
+                    return
+                }
+                NSWorkspace.shared.open(produced)
             } catch {
                 operationError = Self.archiveMessage(error)
             }

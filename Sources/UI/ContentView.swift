@@ -39,7 +39,7 @@ struct ContentView: View {
 
             if showPreview {
                 PreviewPane(target: previewTarget)
-                    .frame(minWidth: 220, idealWidth: 300, maxWidth: 480)
+                    .frame(minWidth: 200, idealWidth: 260, maxWidth: 380)
             }
         }
         .environmentObject(tasks)
@@ -59,7 +59,7 @@ struct ContentView: View {
         }
         .navigationTitle(model.currentDirectory.lastPathComponent.isEmpty ? "Mac7Zip" : model.currentDirectory.lastPathComponent)
         .navigationSubtitle(subtitle)
-        .frame(minWidth: 760, minHeight: 480)
+        .frame(minWidth: 680, minHeight: 420)
         .task {
             // Double-click an archive: honour the Settings choice (Open vs Extract).
             model.archiveActivationHandler = { url in
@@ -112,6 +112,13 @@ struct ContentView: View {
                     onCancel: { model.extractRequested = false }
                 )
             }
+        }
+        .sheet(item: $model.passwordRequest) { request in
+            PasswordPromptSheet(
+                isRetry: request.isRetry,
+                onSubmit: { password in request.retry(password) },
+                onCancel: { model.passwordRequest = nil }
+            )
         }
         .onOpenURL { url in
             if url.scheme == "mac7zip", url.host == "action" {
