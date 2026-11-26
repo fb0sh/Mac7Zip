@@ -67,34 +67,39 @@ enum FinderExtensionChecker {
         try? process.run()
     }
 
-    /// Registers + enables the Quick Look preview extension.
-    static func enablePreview() {
-        guard let previewAppex = Bundle.main.builtInPlugInsURL?.appendingPathComponent("Mac7ZipPreview.appex"),
-              FileManager.default.fileExists(atPath: previewAppex.path) else { return }
-        runPluginkit(["-a", previewAppex.path])
-        runPluginkit(["-e", "use", "-i", previewBundleID])
+    static var previewExtensionURL: URL? {
+        Bundle.main.builtInPlugInsURL?.appendingPathComponent("Mac7ZipPreview.appex")
     }
 
-    /// Removes both bundled extensions from the system plugin registry
-    /// (`pluginkit -r`), so Finder menus / Quick Look stop offering them.
-    /// They come back on the next `enable()`.
-    static func unregister() {
-        for name in ["Mac7ZipFinderSync.appex", "Mac7ZipPreview.appex"] {
-            guard let appex = Bundle.main.builtInPlugInsURL?.appendingPathComponent(name),
-                  FileManager.default.fileExists(atPath: appex.path) else { continue }
-            runPluginkit(["-r", appex.path])
-        }
-        refreshLaunchServices()
-    }
-
-    /// Registers AND enables the bundled extension via `pluginkit` (macOS Sequoia+
-    /// removed the System Settings list, so enabling programmatically is required).
-    static func enable() {
-        guard let appex = bundledExtensionURL else { return }
+    /// Registers + enables the Finder Sync (right-click menu) extension.
+    static func enableFinderSync() {
+        guard let appex = bundledExtensionURL, FileManager.default.fileExists(atPath: appex.path) else { return }
         runPluginkit(["-a", appex.path])
         runPluginkit(["-e", "use", "-i", bundleID])
-        enablePreview()
         refreshLaunchServices()
+    }
+
+    /// Registers + enables the Quick Look preview extension.
+    static func enablePreview() {
+        guard let appex = previewExtensionURL, FileManager.default.fileExists(atPath: appex.path) else { return }
+        runPluginkit(["-a", appex.path])
+        runPluginkit(["-e", "use", "-i", previewBundleID])
+        refreshLaunchServices()
+    }
+
+    /// Removes one bundled extension from the plugin registry. It comes back on
+    /// the next `enable…()` call.
+    static func unregister(appexName: String) {
+        guard let appex = Bundle.main.builtInPlugInsURL?.appendingPathComponent(appexName),
+              FileManager.default.fileExists(atPath: appex.path) else { return }
+        runPluginkit(["-r", appex.path])
+        refreshLaunchServices()
+    }
+
+    /// Registers AND enables both extensions.
+    static func enable() {
+        enableFinderSync()
+        enablePreview()
     }
 
     /// Asks LaunchServices to re-scan the containing app, so icon/handler
