@@ -24,4 +24,21 @@ final class PreviewHTMLBuilderTests: XCTestCase {
         let html = PreviewHTMLBuilder.html(title: "e.zip", items: [], summary: "")
         XCTAssertTrue(html.contains("无法读取内容"))
     }
+
+    func testRendersSystemIconWhenProvided() {
+        let dataURL = "data:image/png;base64,AAAA"
+        let iconItem = PreviewHTMLBuilder.Item(
+            path: "a.jar", sizeText: "1 KB", dateText: "", isDirectory: false, iconDataURL: dataURL
+        )
+        let html = PreviewHTMLBuilder.html(title: "x.zip", items: [iconItem], summary: "")
+        XCTAssertTrue(html.contains("src=\"\(dataURL)\""))
+        XCTAssertTrue(html.contains("class=\"i\""))
+        XCTAssertFalse(html.contains("📄"), "No glyph fallback when a real icon is present")
+    }
+
+    func testFallsBackToGlyphWithoutIcon() {
+        let html = PreviewHTMLBuilder.html(title: "x.zip", items: [item("a.txt")], summary: "")
+        XCTAssertTrue(html.contains("class=\"g\""))
+        XCTAssertFalse(html.contains("data:image/png"))
+    }
 }

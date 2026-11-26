@@ -7,6 +7,7 @@ final class SevenZipEngineIntegrationTests: XCTestCase {
     private var workDir: URL!
     private var engine: SevenZipEngine!
     private var engineWithArgvPassword: SevenZipEngine!
+    private var engineRefusingPasswords: SevenZipEngine!
 
     private static var helperURL: URL? {
         let relative = "Vendor/7zz/26.06/arm64/7zz"
@@ -50,6 +51,7 @@ final class SevenZipEngineIntegrationTests: XCTestCase {
         try FileManager.default.createDirectory(at: workDir, withIntermediateDirectories: true)
         engine = SevenZipEngine(executableURL: helper, timeout: 30)
         engineWithArgvPassword = SevenZipEngine(executableURL: helper, timeout: 30, passwordTransport: .argvExplicit)
+        engineRefusingPasswords = SevenZipEngine(executableURL: helper, timeout: 30, passwordTransport: .unavailable)
     }
 
     override func tearDownWithError() throws {
@@ -104,16 +106,16 @@ final class SevenZipEngineIntegrationTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: dest.appendingPathComponent("src/b.txt").path))
     }
 
-    func testPasswordOperationsFailClosedByDefault() async throws {
+    func testPasswordOperationsFailClosedWhenTransportIsUnavailable() async throws {
         let src = try makeSourceTree()
         let archive = workDir.appendingPathComponent("blocked.7z")
         do {
-            try await engine.createArchive(
+            try await engineRefusingPasswords.createArchive(
                 at: archive,
                 from: [src],
                 options: ArchiveOptions(format: .sevenZip, password: "correct-horse")
             )
-            XCTFail("Password operations must fail closed without an explicit transport")
+            XCTFail("Password operations must fail closed when the transport is unavailable")
         } catch let error as ArchiveError {
             XCTAssertEqual(error, .passwordTransportUnavailable)
         }
@@ -272,11 +274,11 @@ final class CompressionIntegrationTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(try FileManager.default.attributesOfItem(atPath: archive.path)[.size] as? Int ?? 0, firstSize)
     }
 
-    func testPasswordCreationFailsClosedByDefault() async throws {
+    func testPasswordCreationFailsClosedWhenTransportIsUnavailable() async throws {
         let files = try makeFiles()
         let archive = workDir.appendingPathComponent("enc.7z")
         do {
-            try await engine.createArchive(
+            try await engineRefusingPasswords.createArchive(
                 at: archive,
                 from: files,
                 options: ArchiveOptions(format: .sevenZip, password: "pw")

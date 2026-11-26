@@ -31,7 +31,8 @@ final class PreviewProvider: QLPreviewProvider, QLPreviewingController {
                 path: entry.path,
                 sizeText: entry.isDirectory ? "--" : sizeFormatter.string(fromByteCount: entry.size),
                 dateText: entry.modified.map { dateFormatter.string(from: $0) } ?? "",
-                isDirectory: entry.isDirectory
+                isDirectory: entry.isDirectory,
+                iconDataURL: Self.iconDataURL(forPath: entry.path, isDirectory: entry.isDirectory)
             )
         }
         let html = PreviewHTMLBuilder.html(title: url.lastPathComponent, items: items, summary: summary)
@@ -42,5 +43,69 @@ final class PreviewProvider: QLPreviewProvider, QLPreviewingController {
         }
         reply.title = url.lastPathComponent
         handler(reply, nil)
+    }
+
+    /// The system's icon for the entry's type, as a base64 PNG data URL.
+    ///
+    /// Uses `NSWorkspace` (the same source Finder uses) so a `.jar` shows the Java
+    /// icon and a `.db` its database icon. Resolved on the main thread because
+    /// AppKit drawing is not thread-safe there, which also serialises the cache.
+    private static func iconDataURL(forPath path: String, isDirectory: Bool) -> String? {
+        let ext = isDirectory ? "" : (path as NSString).pathExtension.lowercased()
+        let cached = iconCache.get(ext)
+        if cached.found { return cached.value }
+
+        let dataURL = onMain {
+            let icon = isDirectory
+                ? NSWorkspace.shared.icon(forFileType: "public.folder")
+                : NSWorkspace.shared.icon(forFileType: ext.isEmpty ? "public.data" : "public.\(ext)")
+            return pngDataURL(from: icon)
+        }
+        iconCache.set(dataURL, for: ext)
+        return dataURL
+    }
+
+    private static func onMain<T>(_ body: () -> T) -> T {
+        Thread.isMainThread ? body() : DispatchQueue.main.sync(execute: body)
+    }
+
+    /// 16pt raster. Quick Look renders the table at 1x–2x, and a 32px raster
+    /// keeps it crisp without bloating the HTML.
+    private static func pngDataURL(from icon: NSImage) -> String? {
+        let side: CGFloat = 32
+        guard let bitmap = NSBitmapImageRep(
+            bitmapDataPlanes: nil, pixelsWide: Int(side), pixelsHigh: Int(side),
+            bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+            colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0
+        ) else { return nil }
+        bitmap.size = NSSize(width: side, height: side)
+
+        NSGraphicsContext.saveGraphicsState()
+        NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: bitmap)
+        icon.draw(in: NSRect(x: 0, y: 0, width: side, height: side))
+        NSGraphicsContext.restoreGraphicsState()
+
+        guard let png = bitmap.representation(using: .png, properties: [:]) else { return nil }
+        return "data:image/png;base64,\(png.base64EncodedString())"
+    }
+
+    /// Extension -> icon data URL. `.some(nil)` means "resolved, no icon".
+    private static let iconCache = IconCache()
+
+    private final class IconCache: @unchecked Sendable {
+        private var storage: [String: String?] = [:]
+        private let lock = NSLock()
+
+        /// Total lookup; returns whether the key was resolved and its value.
+        func get(_ key: String) -> (found: Bool, value: String?) {
+            lock.lock(); defer { lock.unlock() }
+            if let entry = storage[key] { return (true, entry) }
+            return (false, nil)
+        }
+
+        func set(_ value: String?, for key: String) {
+            lock.lock(); defer { lock.unlock() }
+            storage[key] = .some(value)
+        }
     }
 }

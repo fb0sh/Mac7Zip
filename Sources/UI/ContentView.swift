@@ -113,6 +113,13 @@ struct ContentView: View {
                 )
             }
         }
+        .sheet(item: $model.passwordRequest) { request in
+            PasswordPromptSheet(
+                isRetry: request.isRetry,
+                onSubmit: { password in request.retry(password) },
+                onCancel: { model.passwordRequest = nil }
+            )
+        }
         .onOpenURL { url in
             if url.scheme == "mac7zip", url.host == "action" {
                 let components = URLComponents(url: url, resolvingAgainstBaseURL: false)

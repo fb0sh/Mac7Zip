@@ -3,9 +3,9 @@ import SwiftUI
 
 /// Native extract-options sheet (SPEC-AE FR-AE-12 / SPEC-AB FR-AB-11).
 ///
-/// The password field is deliberately **disabled** with an explanation: 7zz's
-/// password prompt is console-bound, so Mac7Zip cannot read a password securely
-/// (see ADR-005). Refusing is better than silently exposing it in `ps`.
+/// The password is optional; leaving it empty extracts unencrypted archives as
+/// before. Because 7zz's prompt is console-bound (ADR-005) the value travels in
+/// argv, so it is briefly visible to other local processes via `ps`.
 struct ExtractOptionsSheet: View {
     let archiveName: String
     let defaultDestination: URL
@@ -19,6 +19,7 @@ struct ExtractOptionsSheet: View {
     @State private var eliminateDuplicateRoot: Bool = false
     @State private var overwriteMode: OverwriteMode = .ask
     @State private var restorePermissions: Bool = false
+    @State private var password: String = ""
 
     init(
         archiveName: String,
@@ -70,7 +71,8 @@ struct ExtractOptionsSheet: View {
                 }
 
                 Section("Password") {
-                    Text("Password-protected archives can’t be opened yet: macOS doesn’t let Mac7Zip read a password without exposing it to other processes.")
+                    SecureField("Password (leave empty if not encrypted)", text: $password)
+                    Text("Only needed for encrypted archives. 7-Zip cannot read a password from a prompt, so it is passed on the command line and is briefly visible to other local processes.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -92,8 +94,9 @@ struct ExtractOptionsSheet: View {
     }
 
     private func makeOptions() -> ExtractOptions {
-        ExtractOptions(
-            password: nil,
+        let trimmed = password.trimmingCharacters(in: .whitespacesAndNewlines)
+        return ExtractOptions(
+            password: trimmed.isEmpty ? nil : trimmed,
             entries: nil,
             destination: destination,
             createSubfolder: createSubfolder ? subfolderName : nil,

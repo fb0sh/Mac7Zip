@@ -11,16 +11,17 @@ import Foundation
 /// Multi-file extraction is deliberately **not** whole-operation atomic.
 /// How a password may reach 7zz.
 ///
-/// **Verified 2026-11-23 on macOS 26 / 7-Zip 26.06:** the `-p` prompt reads from
-/// the console and ignores piped stdin *and* a `script(1)` pseudo-terminal. There
-/// is therefore no non-argv transport available. Mac7Zip refuses password
-/// operations by default rather than silently exposing the password in `ps`.
+/// **Note on transport:** 7-Zip 26.06's `-p` prompt is console-bound and ignores
+/// piped stdin *and* `script(1)` pseudo-terminals (verified 2026-11-23), so the
+/// password has to travel in argv. `argvExplicit` is therefore the default: the
+/// password is visible to other local processes via `ps` for the lifetime of the
+/// extraction, which was accepted as a deliberate tradeoff to make encrypted
+/// archives usable at all.
 enum PasswordTransport: Sendable {
-    /// Fail closed (default). No insecure fallback.
-    case unavailable
-    /// Explicit opt-in: pass `-p<password>` in argv. Visible to other processes
-    /// via `ps`; must only be used with the user's informed consent.
+    /// Pass `-p<password>` in argv (default). Visible to other processes via `ps`.
     case argvExplicit
+    /// Refuse password operations outright.
+    case unavailable
 }
 
 struct SevenZipEngine: ArchiveEngine {
@@ -52,7 +53,7 @@ struct SevenZipEngine: ArchiveEngine {
     init(
         runner: SevenZipProcessRunner,
         validator: SecurityValidator = SecurityValidator(),
-        passwordTransport: PasswordTransport = .unavailable
+        passwordTransport: PasswordTransport = .argvExplicit
     ) {
         self.runner = runner
         self.validator = validator
@@ -63,7 +64,7 @@ struct SevenZipEngine: ArchiveEngine {
         executableURL: URL,
         limits: ExtractionLimits = ExtractionLimits(),
         timeout: TimeInterval = 300,
-        passwordTransport: PasswordTransport = .unavailable
+        passwordTransport: PasswordTransport = .argvExplicit
     ) {
         self.runner = SevenZipProcessRunner(executableURL: executableURL, timeout: timeout)
         self.validator = SecurityValidator(limits: limits)

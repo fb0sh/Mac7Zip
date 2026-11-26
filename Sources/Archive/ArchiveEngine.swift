@@ -151,6 +151,11 @@ enum ArchiveError: Error, Equatable, Sendable {
             if lower.contains("wrong password") || lower.contains("password is incorrect") {
                 return .wrongPassword
             }
+            // No password supplied for an encrypted archive. 7-Zip exits 2 and asks
+            // for one; with `-y` it aborts instead of prompting.
+            if lower.contains("enter password") || lower.contains("password required") {
+                return .passwordRequired
+            }
             if lower.contains("can not open the file as archive") || lower.contains("is not archive") {
                 return .corrupt(diagnostic)
             }
