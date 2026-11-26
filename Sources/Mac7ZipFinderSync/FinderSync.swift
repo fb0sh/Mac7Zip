@@ -11,13 +11,11 @@ import FinderSync
 class FinderSync: FIFinderSync {
     override init() {
         super.init()
-        // Monitor common user folders. (A future enhancement: make this configurable.)
+        // Monitor the home folder tree: archives are rarely confined to the three
+        // standard folders, and a Finder Sync extension only shows its menu inside
+        // the directories it monitors.
         let home = FileManager.default.homeDirectoryForCurrentUser
-        FIFinderSyncController.default().directoryURLs = [
-            home.appendingPathComponent("Downloads"),
-            home.appendingPathComponent("Documents"),
-            home.appendingPathComponent("Desktop"),
-        ]
+        FIFinderSyncController.default().directoryURLs = [home]
     }
 
     override var toolbarItemName: String { "Mac7Zip" }

@@ -72,11 +72,20 @@ enum FinderExtensionChecker {
     }
 
     /// Registers + enables the Finder Sync (right-click menu) extension.
+    ///
+    /// `pluginkit` only records the registration; Finder loads Finder Sync
+    /// extensions at launch, so without a restart the menu never appears.
     static func enableFinderSync() {
         guard let appex = bundledExtensionURL, FileManager.default.fileExists(atPath: appex.path) else { return }
         runPluginkit(["-a", appex.path])
         runPluginkit(["-e", "use", "-i", bundleID])
         refreshLaunchServices()
+        restartFinder()
+    }
+
+    /// Relaunches Finder so it picks up extension registration changes.
+    static func restartFinder() {
+        run("/usr/bin/killall", ["Finder"])
     }
 
     /// Registers + enables the Quick Look preview extension.
@@ -114,7 +123,7 @@ enum FinderExtensionChecker {
         run(launchServicesPath, ["-f", "-R", "-domain", "local", "-domain", "system", "-domain", "user"])
         run("/usr/bin/qlmanage", ["-r", "cache"])
         run("/usr/bin/qlmanage", ["-r"])
-        run("/usr/bin/killall", ["Finder"])
+        restartFinder()
     }
 
     private static var launchServicesPath: String {
