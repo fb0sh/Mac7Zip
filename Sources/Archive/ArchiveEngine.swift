@@ -134,7 +134,8 @@ enum ArchiveFormat: String, Sendable, CaseIterable {
         var octal = ""
         for byte in bytes[148..<156] {
             if byte == 0 || byte == 0x20 { break }
-            guard (0x30...0x37).contains(byte) else { return false }
+            // 0x30…0x37 are the ASCII digits 0–7.
+            guard byte >= 0x30, byte <= 0x37 else { return false }
             octal.append(Character(UnicodeScalar(byte)))
         }
         guard !octal.isEmpty, let stored = Int(octal, radix: 8) else { return false }
