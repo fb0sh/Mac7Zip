@@ -33,8 +33,24 @@ final class PreviewHTMLBuilderTests: XCTestCase {
             path: "a.jar", sizeText: "1 KB", dateText: "", isDirectory: false, iconDataURL: dataURL
         )
         let html = PreviewHTMLBuilder.html(title: "x.zip", items: [iconItem], summary: "")
-        XCTAssertTrue(html.contains("src=\"\(dataURL)\""))
-        XCTAssertTrue(html.contains("class=\"i\""))
+        // The data URL appears once in the stylesheet, not on the row.
+        XCTAssertTrue(html.contains(".i0{background-image:url(\(dataURL))}"))
+        XCTAssertTrue(html.contains("<i class=\"i i0\">"))
+        XCTAssertFalse(html.contains("src=\""), "Icons must not be inlined per row")
+    }
+
+    /// A repeated icon must not duplicate its base64 payload, which is what made
+    /// large archives slow to preview.
+    func testIconPayloadIsEmittedOnceForRepeatedTypes() {
+        let dataURL = "data:image/png;base64,AAAA"
+        let items = (0..<50).map {
+            PreviewHTMLBuilder.Item(
+                path: "f\($0).jar", sizeText: "1 KB", dateText: "", isDirectory: false, iconDataURL: dataURL
+            )
+        }
+        let html = PreviewHTMLBuilder.html(title: "x.zip", items: items, summary: "")
+        let occurrences = html.components(separatedBy: dataURL).count - 1
+        XCTAssertEqual(occurrences, 1, "Icon data URL repeated \(occurrences) times")
     }
 
     func testOmitsImageWithoutIcon() {

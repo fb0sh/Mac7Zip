@@ -26,14 +26,18 @@ final class PreviewProvider: QLPreviewProvider, QLPreviewingController {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd HH:mm"
 
-        let items = entries.prefix(1000).map { entry in
+        // Cap the rows so a huge archive cannot stall Quick Look on rendering.
+        let shown = Array(entries.prefix(1000))
+        // One batch, one main-thread hop: rendering icons per row was the main cost.
+        let icons = Self.renderIcons(for: shown)
+        let items = shown.map { entry in
             PreviewHTMLBuilder.Item(
                 path: entry.path,
                 sizeText: entry.isDirectory ? "--" : sizeFormatter.string(fromByteCount: entry.size),
                 dateText: entry.modified.map { dateFormatter.string(from: $0) } ?? "",
                 isDirectory: entry.isDirectory,
                 kindText: Self.kindText(forPath: entry.path, isDirectory: entry.isDirectory),
-                iconDataURL: Self.iconDataURL(forPath: entry.path, isDirectory: entry.isDirectory)
+                iconDataURL: icons[Self.iconKey(forPath: entry.path, isDirectory: entry.isDirectory)] ?? nil
             )
         }
         let html = PreviewHTMLBuilder.html(title: url.lastPathComponent, items: items, summary: summary)
@@ -50,44 +54,75 @@ final class PreviewProvider: QLPreviewProvider, QLPreviewingController {
     /// reads "XLSX document" and a `.pdf` "PDF document". Folder and unknown-type
     /// labels come from the system too, so the column stays consistent.
     private static func kindText(forPath path: String, isDirectory: Bool) -> String {
+        let key = iconKey(forPath: path, isDirectory: isDirectory)
+        let cached = kindCache.get(key)
+        if cached.found { return cached.value ?? "" }
+
+        let text: String
         if isDirectory {
-            return UTType.folder.localizedDescription ?? "Folder"
+            text = UTType.folder.localizedDescription ?? "Folder"
+        } else if !key.isEmpty, let type = UTType(filenameExtension: key) {
+            text = type.localizedDescription ?? key.uppercased() + " document"
+        } else {
+            text = UTType.data.localizedDescription ?? "Document"
         }
-        let ext = (path as NSString).pathExtension.lowercased()
-        guard !ext.isEmpty, let type = UTType(filenameExtension: ext) else {
-            return UTType.data.localizedDescription ?? "Document"
-        }
-        return type.localizedDescription ?? ext.uppercased() + " document"
+        kindCache.set(text, for: key)
+        return text
     }
 
-    /// The system's icon for the entry's type, as a base64 PNG data URL.
+    /// Renders the icons for a whole listing in one main-thread hop.
     ///
-    /// Uses `NSWorkspace` (the same source Finder uses) so a `.jar` shows the Java
-    /// icon and a `.db` its database icon. Resolved on the main thread because
-    /// AppKit drawing is not thread-safe there, which also serialises the cache.
-    private static func iconDataURL(forPath path: String, isDirectory: Bool) -> String? {
-        let ext = isDirectory ? "" : (path as NSString).pathExtension.lowercased()
-        let cached = iconCache.get(ext)
-        if cached.found { return cached.value }
-
-        let dataURL = onMain {
-            let icon = isDirectory
-                ? NSWorkspace.shared.icon(forFileType: "public.folder")
-                : NSWorkspace.shared.icon(forFileType: ext.isEmpty ? "public.data" : "public.\(ext)")
-            return pngDataURL(from: icon)
+    /// Doing this per row would mean up to a thousand synchronous hops to the main
+    /// thread, each drawing an `NSImage`; a large archive then blocks Quick Look for
+    /// seconds. AppKit drawing is not thread-safe, so the whole batch runs there.
+    /// Returns extension -> data URL.
+    private static func renderIcons(for entries: [LibArchiveReader.Entry]) -> [String: String?] {
+        var needed: [String] = []
+        var seen: Set<String> = []
+        for entry in entries {
+            let key = iconKey(forPath: entry.path, isDirectory: entry.isDirectory)
+            if seen.insert(key).inserted { needed.append(key) }
         }
-        iconCache.set(dataURL, for: ext)
-        return dataURL
+
+        var missing: [String] = []
+        for key in needed where !iconCache.get(key).found { missing.append(key) }
+        guard !missing.isEmpty else {
+            return resolved(keys: needed)
+        }
+
+        let rendered = onMain { () -> [String: String?] in
+            var result: [String: String?] = [:]
+            for key in missing {
+                // "" is the folder key; an extension-less file maps to public.data.
+                let uti = key.isEmpty ? "public.folder" : "public.\(key)"
+                let icon = NSWorkspace.shared.icon(forFileType: uti)
+                result[key] = pngDataURL(from: icon)
+            }
+            return result
+        }
+        for (key, value) in rendered { iconCache.set(value, for: key) }
+        return resolved(keys: needed)
+    }
+
+    private static func resolved(keys: [String]) -> [String: String?] {
+        var result: [String: String?] = [:]
+        for key in keys { result[key] = iconCache.get(key).value }
+        return result
+    }
+
+    /// Cache key for an entry's icon: the lowercase extension, or "" for folders.
+    private static func iconKey(forPath path: String, isDirectory: Bool) -> String {
+        isDirectory ? "" : (path as NSString).pathExtension.lowercased()
     }
 
     private static func onMain<T>(_ body: () -> T) -> T {
         Thread.isMainThread ? body() : DispatchQueue.main.sync(execute: body)
     }
 
-    /// 16pt raster. Quick Look renders the table at 1x–2x, and a 32px raster
-    /// keeps it crisp without bloating the HTML.
+    /// 16px raster, matching the 16px CSS box. Drawing larger only inflates the
+    /// base64 payload; Quick Look scales the element to 16 CSS pixels.
     private static func pngDataURL(from icon: NSImage) -> String? {
-        let side: CGFloat = 32
+        let side: CGFloat = 16
         guard let bitmap = NSBitmapImageRep(
             bitmapDataPlanes: nil, pixelsWide: Int(side), pixelsHigh: Int(side),
             bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
@@ -97,7 +132,12 @@ final class PreviewProvider: QLPreviewProvider, QLPreviewingController {
 
         NSGraphicsContext.saveGraphicsState()
         NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: bitmap)
-        icon.draw(in: NSRect(x: 0, y: 0, width: side, height: side))
+        icon.draw(
+            in: NSRect(x: 0, y: 0, width: side, height: side),
+            from: .zero,
+            operation: .sourceOver,
+            fraction: 1
+        )
         NSGraphicsContext.restoreGraphicsState()
 
         guard let png = bitmap.representation(using: .png, properties: [:]) else { return nil }
@@ -105,13 +145,17 @@ final class PreviewProvider: QLPreviewProvider, QLPreviewingController {
     }
 
     /// Extension -> icon data URL. `.some(nil)` means "resolved, no icon".
-    private static let iconCache = IconCache()
+    private static let iconCache = ValueCache()
+    /// Extension -> Finder kind text. UTType lookups are not free either.
+    private static let kindCache = ValueCache()
 
-    private final class IconCache: @unchecked Sendable {
+    /// Small thread-safe cache from extension -> optional string value.
+    /// Recording a resolved-but-empty entry matters, so a missing icon is not
+    /// re-rendered on every lookup.
+    private final class ValueCache: @unchecked Sendable {
         private var storage: [String: String?] = [:]
         private let lock = NSLock()
 
-        /// Total lookup; returns whether the key was resolved and its value.
         func get(_ key: String) -> (found: Bool, value: String?) {
             lock.lock(); defer { lock.unlock() }
             if let entry = storage[key] { return (true, entry) }

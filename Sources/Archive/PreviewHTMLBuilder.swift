@@ -40,13 +40,14 @@ enum PreviewHTMLBuilder {
     }
 
     static func html(title: String, items: [Item], summary: String) -> String {
+        let icons = IconTable(items: items)
         let nodes = tree(from: items)
         var body = ""
         if items.isEmpty {
             body = "<div class=\"empty\">无法读取内容</div>"
         } else {
             body = header()
-            render(nodes, depth: 0, into: &body)
+            render(nodes, depth: 0, icons: icons, into: &body)
         }
         return """
         <!DOCTYPE html><html><head><meta charset="utf-8">
@@ -68,9 +69,11 @@ enum PreviewHTMLBuilder {
         details[open]>summary .tw::before{content:"▼"}
         .tw::before{content:"▶"}
         .leaf .tw::before{content:""}
-        img.i{width:16px;height:16px;vertical-align:-3px;margin-right:5px}
+        i.i{display:inline-block;width:16px;height:16px;margin-right:5px;vertical-align:-3px;
+             background-size:16px 16px;background-repeat:no-repeat}
         .kids{margin-left:15px}
         .empty{color:#8a8a8e;text-align:center;padding:20px}
+        \(icons.css)
         </style></head><body>
         <h2>\(escape(title))</h2><div class="sum">\(escape(summary))</div>
         \(body)
@@ -78,11 +81,33 @@ enum PreviewHTMLBuilder {
         """
     }
 
-    /// Column headings, matching Finder's list view order.
-    private static func header() -> String {
-        """
-        <div class="row hdr"><span>名称</span><span class="s">大小</span><span>种类</span><span>修改时间</span></div>
-        """
+    /// Distinct icon data URLs mapped to short CSS classes. An archive repeats a
+    /// handful of types across thousands of entries, so inlining the base64 data
+    /// URL per row would bloat the HTML by megabytes and stall Quick Look.
+    struct IconTable {
+        private let index: [String: Int]
+        /// `.i0{background-image:url(data:…)}` rules, one per distinct icon.
+        let css: String
+
+        init(items: [Item]) {
+            var order: [String] = []
+            var index: [String: Int] = [:]
+            for item in items {
+                guard let dataURL = item.iconDataURL, index[dataURL] == nil else { continue }
+                index[dataURL] = order.count
+                order.append(dataURL)
+            }
+            self.index = index
+            self.css = order.enumerated()
+                .map { ".i\($0.offset){background-image:url(\($0.element))}" }
+                .joined(separator: "\n")
+        }
+
+        /// Class name for an item's icon, or nil when it has none.
+        func className(for dataURL: String?) -> String? {
+            guard let dataURL, let position = index[dataURL] else { return nil }
+            return "i\(position)"
+        }
     }
 
     // MARK: - Tree building
@@ -149,14 +174,10 @@ enum PreviewHTMLBuilder {
 
     /// Only the outermost level starts expanded; deeper folders stay collapsed so
     /// a large archive does not open as thousands of rows.
-    private static func render(_ nodes: [Node], depth: Int, into out: inout String) {
+    private static func render(_ nodes: [Node], depth: Int, icons: IconTable, into out: inout String) {
         for node in nodes {
-            let icon: String
-            if let dataURL = node.iconDataURL {
-                icon = "<img class=\"i\" src=\"\(dataURL)\" alt=\"\">"
-            } else {
-                icon = ""
-            }
+            // The data URL lives once in the stylesheet; rows only carry the class.
+            let icon = icons.className(for: node.iconDataURL).map { "<i class=\"i \($0)\"></i>" } ?? ""
             // Finder's column order: Name, Size, Kind, Date Modified.
             let cells = """
             <span class="s">\(escape(node.sizeText))</span>\
@@ -168,7 +189,7 @@ enum PreviewHTMLBuilder {
                 out += "<details\(depth == 0 ? " open" : "")>"
                 out += "<summary class=\"row\"><span class=\"n\"><span class=\"tw\"></span>\(icon)\(escape(node.name))/</span>\(cells)</summary>"
                 out += "<div class=\"kids\">"
-                render(node.children, depth: depth + 1, into: &out)
+                render(node.children, depth: depth + 1, icons: icons, into: &out)
                 out += "</div></details>"
             } else {
                 let suffix = node.isDirectory ? "/" : ""
