@@ -41,7 +41,8 @@ final class ArchiveFormatDetectionTests: XCTestCase {
     /// Old tar has no "ustar" magic; the header checksum identifies it.
     func testTarByChecksum() {
         var header = [UInt8](repeating: 0, count: 512)
-        header.replaceSubrange(0..<9, with: Array("oldstyle".utf8))
+        let name = Array("oldstyle".utf8)
+        header.replaceSubrange(0..<name.count, with: name)
         // Checksum field: 8 spaces while summing.
         for index in 148..<156 { header[index] = 0x20 }
         let sum = header.reduce(0) { $0 + Int($1) }
