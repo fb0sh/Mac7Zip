@@ -81,6 +81,13 @@ enum PreviewHTMLBuilder {
         """
     }
 
+    /// Column headings, matching Finder's list view order.
+    private static func header() -> String {
+        """
+        <div class="row hdr"><span>名称</span><span class="s">大小</span><span>种类</span><span>修改时间</span></div>
+        """
+    }
+
     /// Distinct icon data URLs mapped to short CSS classes. An archive repeats a
     /// handful of types across thousands of entries, so inlining the base64 data
     /// URL per row would bloat the HTML by megabytes and stall Quick Look.
