@@ -45,8 +45,9 @@ enum ArchiveFormat: String, Sendable, CaseIterable {
         }
     }
 
-    /// Best-effort detection from a file name.
-    static func detect(from url: URL) -> ArchiveFormat? {
+    /// Detection from the file name alone. Fast, but wrong for renamed files and
+    /// for the many archives that ship without a recognisable extension.
+    static func detectFromName(_ url: URL) -> ArchiveFormat? {
         let name = url.lastPathComponent.lowercased()
         if name.hasSuffix(".tar.gz") || name.hasSuffix(".tgz") { return .gzip }
         switch url.pathExtension.lowercased() {
@@ -59,6 +60,86 @@ enum ArchiveFormat: String, Sendable, CaseIterable {
         case "rar": return .rar
         default: return nil
         }
+    }
+
+    /// Detection by file content alone.
+    ///
+    /// The extension is deliberately ignored: the same bytes arrive with any name,
+    /// and a renamed or extensionless archive must still open. `detectFromName` is
+    /// kept only for callers that have no file to read.
+    static func detect(from url: URL) -> ArchiveFormat? {
+        detectFromMagicBytes(at: url)
+    }
+
+    /// Sniffs the leading bytes. Reads at most `magicByteCount` bytes, so it is
+    /// safe to call on arbitrary files.
+    static func detectFromMagicBytes(at url: URL) -> ArchiveFormat? {
+        // Opening a directory succeeds on macOS but reading from it fails, and a
+        // folder is never an archive.
+        var isDirectory: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory),
+              !isDirectory.boolValue else { return nil }
+        guard let handle = try? FileHandle(forReadingFrom: url) else { return nil }
+        defer { try? handle.close() }
+        guard let head = try? handle.read(upToCount: magicByteCount), !head.isEmpty else { return nil }
+        return format(forMagic: head)
+    }
+
+    /// Enough for every signature below, including the tar checksum probe.
+    static let magicByteCount = 512
+
+    /// Pure signature match over the leading bytes.
+    static func format(forMagic bytes: Data) -> ArchiveFormat? {
+        func has(_ signature: [UInt8], at offset: Int = 0) -> Bool {
+            guard bytes.count >= offset + signature.count else { return false }
+            return Array(bytes[offset..<(offset + signature.count)]) == signature
+        }
+        func hasASCII(_ signature: String, at offset: Int = 0) -> Bool {
+            has(Array(signature.utf8), at: offset)
+        }
+
+        // 7z: "7z¼¯'×" + version bytes.
+        if has([0x37, 0x7A, 0xBC, 0xAF, 0x27, 0x1C]) { return .sevenZip }
+        // ZIP (also jar/docx/xlsx/apk): local header, empty archive, or spanned.
+        if has([0x50, 0x4B, 0x03, 0x04]) || has([0x50, 0x4B, 0x05, 0x06]) || has([0x50, 0x4B, 0x07, 0x08]) {
+            return .zip
+        }
+        // RAR 4.x ("Rar!") and RAR 5.x ("Rar!").
+        if has([0x52, 0x61, 0x72, 0x21, 0x1A, 0x07]) { return .rar }
+        // gzip.
+        if has([0x1F, 0x8B]) { return .gzip }
+        // bzip2: "BZh" + level digit.
+        if hasASCII("BZh") { return .bzip2 }
+        // xz: FD 37 7A 58 5A 00.
+        if has([0xFD, 0x37, 0x7A, 0x58, 0x5A, 0x00]) { return .xz }
+        // tar: "ustar" at offset 257 (GNU/POSIX). Old-style tar has no magic, so
+        // fall back to the checksum rule below.
+        if hasASCII("ustar", at: 257) { return .tar }
+        if looksLikeTar(bytes) { return .tar }
+
+        return nil
+    }
+
+    /// Classic tar heuristic: the 512-byte header carries an octal checksum that
+    /// matches the sum of its own bytes with the checksum field treated as spaces.
+    private static func looksLikeTar(_ header: Data) -> Bool {
+        let bytes = [UInt8](header)
+        guard bytes.count >= 512 else { return false }
+        // Names are not NUL-padded everywhere, but the header must start with
+        // something printable and end in NULs.
+        guard bytes[0] != 0 else { return false }
+
+        let checksumField = bytes[148..<156]
+        let text = checksumField.compactMap { $0 == 0 || $0 == 0x20 ? nil : Character(UnicodeScalar($0)) }
+        guard let stored = Int(String(text).trimmingCharacters(in: .whitespaces).prefix(7), radix: 8) else {
+            return false
+        }
+
+        var sum = 0
+        for (index, byte) in bytes[0..<512].enumerated() {
+            sum += (148..<156).contains(index) ? 0x20 : Int(byte)
+        }
+        return sum == stored
     }
 }
 

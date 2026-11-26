@@ -148,11 +148,13 @@ final class ArchiveErrorMappingTests: XCTestCase {
         XCTAssertTrue(ArchiveFormat.rar.canExtract)
     }
 
-    func testFormatDetection() {
-        XCTAssertEqual(ArchiveFormat.detect(from: URL(fileURLWithPath: "/tmp/a.7z")), .sevenZip)
-        XCTAssertEqual(ArchiveFormat.detect(from: URL(fileURLWithPath: "/tmp/a.zip")), .zip)
-        XCTAssertEqual(ArchiveFormat.detect(from: URL(fileURLWithPath: "/tmp/a.tar.gz")), .gzip)
-        XCTAssertEqual(ArchiveFormat.detect(from: URL(fileURLWithPath: "/tmp/a.rar")), .rar)
-        XCTAssertNil(ArchiveFormat.detect(from: URL(fileURLWithPath: "/tmp/a.txt")))
+    /// `detect(from:)` reads the file header, so it needs a real file; the name-based
+    /// path is what these fixtures describe.
+    func testFormatDetectionByName() {
+        XCTAssertEqual(ArchiveFormat.detectFromName(URL(fileURLWithPath: "/tmp/a.7z")), .sevenZip)
+        XCTAssertEqual(ArchiveFormat.detectFromName(URL(fileURLWithPath: "/tmp/a.zip")), .zip)
+        XCTAssertEqual(ArchiveFormat.detectFromName(URL(fileURLWithPath: "/tmp/a.tar.gz")), .gzip)
+        XCTAssertEqual(ArchiveFormat.detectFromName(URL(fileURLWithPath: "/tmp/a.rar")), .rar)
+        XCTAssertNil(ArchiveFormat.detectFromName(URL(fileURLWithPath: "/tmp/a.txt")))
     }
 }
