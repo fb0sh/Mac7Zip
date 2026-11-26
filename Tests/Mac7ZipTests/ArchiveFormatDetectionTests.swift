@@ -45,9 +45,13 @@ final class ArchiveFormatDetectionTests: XCTestCase {
         // Checksum field: 8 spaces while summing.
         for index in 148..<156 { header[index] = 0x20 }
         let sum = header.reduce(0) { $0 + Int($1) }
-        let octal = String(format: "%06o", sum)
-        header.replaceSubrange(148..<154, with: Array(octal.utf8))
-        header[154] = 0
+        // Build the octal field explicitly: `String(format: "%o", Int)` passes the
+        // wrong C type to a variadic, so the format is not reliable here.
+        let octal = String(sum, radix: 8)
+        XCTAssertFalse(octal.isEmpty)
+        let padded = String(repeating: "0", count: max(0, 6 - octal.count)) + octal
+        header.replaceSubrange(148..<148 + padded.count, with: Array(padded.utf8))
+        header[148 + padded.count] = 0
 
         XCTAssertEqual(ArchiveFormat.format(forMagic: Data(header)), .tar)
     }
